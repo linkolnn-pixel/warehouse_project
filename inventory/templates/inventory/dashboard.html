@@ -1,0 +1,32 @@
+{% load extra_tags %}
+<!DOCTYPE html>
+<html>
+<head><title>Остатки</title></head>
+<body>
+  <h1>Остатки по складам</h1>
+  <a href="{% url 'inbound' %}">Оприходовать</a> |
+  <a href="{% url 'outbound' %}">Отгрузить</a> |
+  <a href="{% url 'movement_report' %}">Движение товаров</a>
+
+  <table border="1" cellpadding="8">
+    <thead>
+      <tr>
+        <th>Товар</th>
+        {% for wh in warehouses %}
+          <th>{{ wh.name }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td>{{ row.product.sku }} — {{ row.product.name }} ({{ row.product.category }})</td>
+          {% for wh in warehouses %}
+            <td>{{ row|dict_value:wh.id|default:0 }}</td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>
