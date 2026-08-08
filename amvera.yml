@@ -1,0 +1,13 @@
+meta:
+  environment: python
+  toolchain:
+    name: pip
+    version: "3.14"
+
+build:
+  requirementsPath: requirements.txt
+
+run:
+  command: gunicorn --bind 0.0.0.0:80 warehouse_project.wsgi:application
+  containerPort: 80
+  persistenceMount: /data
