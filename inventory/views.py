@@ -39,6 +39,7 @@ def stock_management_view(request):
         'warehouse': warehouse
     })
 
+@login_required
 @transaction.atomic
 def upload_products(request):
     if request.method == 'POST' and request.FILES.get('file'):
@@ -180,7 +181,7 @@ def upload_products(request):
 
     return render(request, 'inventory/upload_products.html')
 
-
+@login_required
 def create_product(request):
     if request.method == 'POST':
         form = ProductForm(request.POST)
@@ -351,7 +352,7 @@ def product_edit(request, pk):
         }
     )
 
-
+@login_required
 def category_create(request):
     # Получаем next из GET параметров
     next_url = request.GET.get('next')

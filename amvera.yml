@@ -8,6 +8,6 @@ build:
   requirementsPath: requirements.txt
 
 run:
-  command: python manage.py migrate && python manage.py create_admin && gunicorn --bind 0.0.0.0:80 warehouse_project.wsgi:application
+  command: python manage.py migrate && python manage.py collectstatic --noinput && python manage.py create_admin && gunicorn --bind 0.0.0.0:80 warehouse_project.wsgi:application
   containerPort: 80
   persistenceMount: /data
