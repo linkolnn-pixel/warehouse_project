@@ -1,10 +1,335 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'inventory/base.html' %}
+
+{% block title %}
+Создание прихода
+{% endblock %}
+
+
+{% block content %}
+
+<style>
+
+.quantity-field {
+    max-width: 120px;
+}
+
+</style>
+
+
+<div class="container mt-4">
+
+
+<h2 class="mb-4">
+📥 Создание прихода
+</h2>
+
+
+
+<form method="post">
+
+{% csrf_token %}
+
+
+
+<div class="card shadow p-4">
+
+
+<h5>
+Основная информация
+</h5>
+
+<hr>
+
+
+
+<div class="mb-3">
+
+<label class="form-label">
+Склад
+</label>
+
+{{ form.warehouse }}
+
+</div>
+
+
+
+<div class="mb-3">
+
+<label class="form-label">
+Поставщик
+</label>
+
+{{ form.supplier }}
+
+</div>
+
+
+
+<div class="mb-3">
+
+<label class="form-label">
+Комментарий
+</label>
+
+{{ form.comment }}
+
+</div>
+
+
+
+<hr>
+
+
+<h5>
+Товары
+</h5>
+
+
+
+<a
+href="{% url 'product_picker' %}?target=receipt{% for f in formset %}{% if f.initial.product %}&selected={{ f.initial.product.id }}{% elif f.product.value %}&selected={{ f.product.value }}{% endif %}{% endfor %}"
+class="btn btn-primary mb-3">
+
+📦 Добавить товары
+
+</a>
+
+
+
+{{ formset.management_form }}
+
+
+
+<table class="table table-bordered align-middle">
+
+
+<thead class="table-light">
+
+<tr>
+
+<th>
+Товар
+</th>
+
+<th width="120">
+Количество
+</th>
+
+<th width="150">
+Себестоимость
+</th>
+
+<th width="150">
+Цена продажи
+</th>
+
+<th width="90">
+Удалить
+</th>
+
+</tr>
+
+</thead>
+
+
+
+<tbody>
+
+
+{% for f in formset %}
+
+<tr>
+
+<td>
+
+{% if f.instance.pk %}
+
+    {{ f.instance.product.name }}
+    {{ f.product.as_hidden }}
+
+{% elif f.initial.product %}
+
+    {{ f.initial.product.name }}
+    {{ f.product.as_hidden }}
+
+{% else %}
+
+    {{ f.product }}
+
+{% endif %}
+
+</td>
+
+<td>
+
+<div class="quantity-field">
+    {{ f.quantity }}
+</div>
+
+</td>
+
+<td>
+    {{ f.cost_price }}
+</td>
+
+<td>
+    {{ f.sale_price }}
+</td>
+
+<td class="text-center">
+
+{% if f.DELETE %}
+
+    {{ f.DELETE }}
+
+    <button
+        type="button"
+        class="btn btn-danger btn-sm delete-row">
+        🗑
+    </button>
+
+{% endif %}
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+
+
+</tbody>
+
+
+</table>
+
+
+
+<button
+type="submit"
+class="btn btn-success w-100">
+
+✅ Создать приход
+
+</button>
+
+
+<a
+href="{% url 'stock_management' %}"
+class="btn btn-secondary w-100 mt-2">
+
+⬅ Назад
+
+</a>
+
+
+
+</div>
+
+
+</form>
+
+
+</div>
+
+
+
+<script>
+
+
+// передача уже выбранных товаров в product_picker
+
+document
+.getElementById("add-products")
+.addEventListener(
+"click",
+function(e){
+
+
+let products = [];
+
+
+document
+.querySelectorAll(
+"input[name$='-product']"
+)
+.forEach(function(input){
+
+
+if(input.value){
+
+products.push(
+input.value
+);
+
+}
+
+
+});
+
+
+
+if(products.length){
+
+
+this.href +=
+"&selected=" +
+products.join(",");
+
+
+}
+
+
+
+});
+
+
+
+
+// удаление строки
+
+document
+.querySelectorAll(".delete-row")
+.forEach(function(btn){
+
+
+btn.addEventListener(
+"click",
+function(){
+
+
+let row =
+this.closest("tr");
+
+
+let checkbox =
+row.querySelector(
+"input[type=checkbox]"
+);
+
+
+
+if(checkbox){
+
+checkbox.checked = true;
+
+}
+
+
+
+row.style.display="none";
+
+
+});
+
+
+});
+
+
+
+</script>
+
+
+
+{% endblock %}

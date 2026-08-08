@@ -1,10 +1,65 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавить поставщика</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-$END$
+<body class="bg-light">
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Создание поставщика</h4>
+                </div>
+                <div class="card-body">
+
+                    <!-- Блок вывода сообщений (success, error, warning) -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- Рендерим поля формы.
+                             as_p оборачивает каждое поле в <p>, что удобно для Bootstrap.
+                             Если в форме есть ошибки валидации, они отобразятся рядом с полями. -->
+                        {{ form.as_p }}
+
+                        <div class="d-flex gap-2 mt-4">
+
+                            <button type="submit" class="btn btn-success">
+                                Сохранить
+                            </button>
+
+                            {% if request.GET.next %}
+                                <a href="{% url request.GET.next %}" class="btn btn-secondary">
+                                    Отмена
+                                </a>
+                            {% else %}
+                                <a href="{% url 'products_catalog' %}" class="btn btn-secondary">
+                                    Отмена
+                                </a>
+                            {% endif %}
+
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Подключаем JS Bootstrap для работы кнопок закрытия уведомлений -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

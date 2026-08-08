@@ -1,10 +1,206 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавить товар - Склад</title>
+    <!-- Подключаем Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Иконки FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body { background-color: #f8f9fa; padding-top: 20px; }
+        .card { box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; }
+        .form-label { font-weight: 600; color: #495057; }
+        .btn-primary { background-color: #0d6efd; border-color: #0d6efd; }
+        .btn-secondary { background-color: #6c757d; border-color: #6c757d; }
+    </style>
 </head>
 <body>
-$END$
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="container mt-3">
+                <!-- Bootstrap alert: success, error, warning и т.д. -->
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card p-4">
+                <h2 class="text-center mb-4"><i class="fas fa-box me-2"></i>Добавить новый товар</h2>
+                <hr class="my-4">
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <!--  БЛОК ПОСТАВЩИК  -->
+                    <div class="mb-3">
+                        <label class="form-label">Поставщик <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <!-- Django сам заполнит этот select всеми поставщиками из БД -->
+                            {{ form.supplier }}
+
+                            <!-- Кнопка вызова модального окна -->
+                            <button type="button" class="btn btn-outline-secondary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#addSupplierModal"
+                                    title="Добавить нового поставщика">
+                                +
+                            </button>
+                        </div>
+                        <small class="text-muted">Нажмите «+», если нужного поставщика нет в списке</small>
+                    </div>
+
+                    <!-- Название -->
+                    <div class="mb-3">
+                        <label class="form-label">Название товара <span class="text-danger">*</span></label>
+                        <!-- Django подставит свой input с нужными атрибутами -->
+                        {{ form.name }}
+                    </div>
+
+                    <!-- Категория -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Артикул <span class="text-danger">*</span></label>
+                            {{ form.sku }}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Бренд (Категория) <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                {{ form.category }}
+
+                                <!-- Кнопка вызова модального окна для категории -->
+                                <button type="button" class="btn btn-outline-secondary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#addCategoryModal"
+                                        title="Добавить новую категорию">
+                                    +
+                                </button>
+                            </div>
+                            <small class="text-muted">Нажмите «+», если нужного бренда нет в списке</small>
+                        </div>
+
+                    </div>
+
+                    <!-- Ед. изм., Вес/Объем (в ряд) -->
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Ед. измерения</label>
+                            {{ form.unit }}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Значение (вес/объем)</label>
+                            {{ form.quantity_value }}
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Единица измерения</label>
+                            {{ form.measure_unit }}
+                        </div>
+                    </div>
+
+                    <!-- Цены (в ряд) -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Цена закупки <span class="text-danger">*</span></label>
+                            {{ form.cost_price }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Цена продажи <span class="text-danger">*</span></label>
+                            {{ form.sale_price }}
+                        </div>
+                    </div>
+
+                    <!-- Кнопки -->
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="fas fa-save me-2"></i>Сохранить товар
+                        </button>
+                        <a href="{% url 'products_catalog' %}" class="btn btn-secondary">Отмена</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 🔥 МОДАЛЬНОЕ ОКНО  -->
+<div class="modal fade" id="addSupplierModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Новый поставщик</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+
+      <form action="{% url 'counterparty_create' %}?next=create_product" method="post" class="p-3">
+          {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label">Название компании <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control" required placeholder="ООО Ромашка" autofocus>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">ИНН</label>
+          <input type="text" name="inn" class="form-control" placeholder="1234567890">
+        </div>
+
+        <!-- Скрытое поле: тип всегда будет "supplier" -->
+        <input type="hidden" name="type" value="supplier">
+
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-success">Создать и вернуться</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО: Создание категории (Бренда) -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Новая категория (Бренд)</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <!-- action ведет на category_create -->
+      <form action="{% url 'category_create' %}?next=create_product" method="post" class="p-3">
+          {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label">Название категории <span class="text-danger">*</span></label>
+          <input type="text" name="name" class="form-control" required placeholder="Например: DMK" autofocus>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-success">Создать и вернуться</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- Подключаем JS Bootstrap для работы модалки -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

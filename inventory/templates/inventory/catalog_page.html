@@ -1,10 +1,444 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{ page_title }}</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- DataTables -->
+    <link rel="stylesheet"
+          href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+
+
+<style>
+
+body {
+    background:#f4f6f9;
+    font-family:'Segoe UI', sans-serif;
+}
+
+
+/* боковое меню */
+
+.sidebar {
+    width:240px;
+    position:fixed;
+    top:0;
+    bottom:0;
+    left:0;
+    background:white;
+    border-right:1px solid #ddd;
+    overflow-y:auto;
+}
+
+
+.sidebar-title {
+    padding:20px;
+    font-weight:700;
+    color:#495057;
+}
+
+
+.brand-link {
+    display:block;
+    padding:10px 20px;
+    color:#495057;
+    text-decoration:none;
+}
+
+
+.brand-link:hover {
+    background:#f1f3f5;
+}
+
+
+.brand-link.active {
+    background:#e7f1ff;
+    color:#0d6efd;
+    border-left:4px solid #0d6efd;
+    font-weight:600;
+}
+
+
+
+/* основной блок */
+
+.main {
+    margin-left:240px;
+    padding:25px;
+}
+
+
+
+.card {
+    border:none;
+    box-shadow:0 2px 10px rgba(0,0,0,.05);
+}
+
+
+
+/* таблица */
+
+table.dataTable thead th {
+    background:#f8f9fa;
+    font-size:12px;
+    text-transform:uppercase;
+    color:#6c757d;
+}
+
+
+.table td {
+    vertical-align:middle;
+    font-size:14px;
+}
+
+
+.product-name {
+    font-weight:600;
+}
+
+
+.price-buy {
+    color:#6c757d;
+}
+
+
+.price-sale {
+    font-weight:700;
+    color:#198754;
+}
+
+
+</style>
+
 </head>
+
+
 <body>
-$END$
+
+
+<!-- Sidebar -->
+
+<div class="sidebar">
+
+    <div class="sidebar-title">
+        <i class="fa-solid fa-tags"></i>
+        Бренды
+    </div>
+
+
+    <a href="{% url 'products_catalog' %}"
+       class="brand-link {% if not selected_category %}active{% endif %}">
+        Все товары
+    </a>
+
+
+    {% for brand in brands %}
+
+    <a href="{% url 'products_catalog' %}?cat={{ brand.id }}"
+       class="brand-link
+       {% if selected_category.id == brand.id %}active{% endif %}">
+
+        {{ brand.name }}
+
+    </a>
+
+    {% endfor %}
+
+</div>
+
+
+
+
+<!-- Main -->
+
+
+<div class="main">
+
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+
+
+<h4>
+<i class="fa-solid fa-box"></i>
+{{ page_title }}
+</h4>
+
+
+<div>
+
+
+<a href="{% url 'upload_products' %}"
+class="btn btn-outline-secondary btn-sm">
+
+<i class="fa-solid fa-file-excel"></i>
+Excel
+
+</a>
+
+
+
+<a href="{% url 'create_product' %}"
+class="btn btn-primary btn-sm">
+
+<i class="fa-solid fa-plus"></i>
+Добавить
+
+</a>
+
+
+<a href="{% url 'stock_management' %}"
+class="btn btn-outline-dark btn-sm">
+
+<i class="fa-solid fa-warehouse"></i>
+Склад
+
+</a>
+
+
+</div>
+
+
+</div>
+
+
+
+
+<div class="card p-3">
+
+
+<table id="catalogTable"
+class="table table-hover">
+
+
+<thead>
+
+<tr>
+
+<th>Наименование</th>
+
+<th>Код</th>
+
+<th>Артикул</th>
+
+<th>Бренд</th>
+
+<th>Объем</th>
+
+<th>Поставщик</th>
+
+<th>Закупка</th>
+
+<th>Продажа</th>
+
+
+</tr>
+
+</thead>
+
+
+
+<tbody>
+
+
+{% for product in products %}
+
+<tr>
+
+
+<td>
+
+<a href="{% url 'product_detail' product.id %}"
+class="text-decoration-none product-name">
+
+{{ product.name }}
+
+</a>
+
+</td>
+
+
+
+<td>
+
+{{ product.internal_code }}
+
+</td>
+
+
+
+<td>
+
+{{ product.sku|default:"—" }}
+
+</td>
+
+
+
+<td>
+
+{% if product.category %}
+
+{{ product.category.name }}
+
+{% else %}
+
+—
+
+{% endif %}
+
+</td>
+
+
+
+<td>
+
+{% if product.quantity_value %}
+
+{{ product.quantity_value }}
+{{ product.measure_unit }}
+
+{% else %}
+
+—
+
+{% endif %}
+
+</td>
+
+
+
+<td>
+
+{% if product.supplier %}
+
+{{ product.supplier.company_name }}
+
+{% else %}
+
+<span class="text-danger">
+Нет
+</span>
+
+{% endif %}
+
+</td>
+
+
+
+
+<td class="price-buy">
+
+{{ product.cost_price }} ₽
+
+</td>
+
+
+
+<td class="price-sale">
+
+{{ product.sale_price }} ₽
+
+</td>
+
+
+</tr>
+
+
+{% empty %}
+
+
+<tr>
+
+<td colspan="8"
+class="text-center text-muted">
+
+Товары отсутствуют
+
+</td>
+
+</tr>
+
+
+{% endfor %}
+
+
+
+</tbody>
+
+
+</table>
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+<!-- JS -->
+
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+
+
+<script>
+
+
+$(document).ready(function(){
+
+
+$('#catalogTable').DataTable({
+
+language: {
+
+url:
+'https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json'
+
+},
+
+
+pageLength:25,
+
+
+order:[
+
+[0,'asc']
+
+],
+
+
+responsive:true
+
+
+});
+
+
+});
+
+
+</script>
+
+
 </body>
 </html>

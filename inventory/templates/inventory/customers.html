@@ -1,10 +1,154 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'inventory/base.html' %}
+
+{% block title %}
+Клиенты
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <h2>
+            👥 Клиенты
+        </h2>
+
+        <a
+            href="{% url 'customer_create' %}?next=customers_list"
+            class="btn btn-primary"
+        >
+            ➕ Добавить клиента
+        </a>
+
+    </div>
+
+
+    {% if customers %}
+
+    <div class="card shadow">
+
+        <div class="card-body p-0">
+
+            <div class="table-responsive">
+
+                <table class="table table-hover table-bordered mb-0 align-middle">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th>
+                                Клиент
+                            </th>
+
+                            <th>
+                                Телефон
+                            </th>
+
+                            <th>
+                                ИНН
+                            </th>
+
+                            <th width="120">
+                                Действия
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for customer in customers %}
+
+                        <tr>
+
+                            <td>
+
+                                <strong>
+
+                                    {% if customer.company_name %}
+
+                                        {{ customer.company_name }}
+
+                                    {% else %}
+
+                                        {{ customer.first_name }}
+                                        {{ customer.last_name }}
+
+                                    {% endif %}
+
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                {% if customer.phone %}
+
+                                    {{ customer.phone }}
+
+                                {% else %}
+
+                                    —
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if customer.inn %}
+
+                                    {{ customer.inn }}
+
+                                {% else %}
+
+                                    —
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                <a
+                                    href="{% url 'customer_detail' customer.pk %}"
+                                    class="btn btn-sm btn-outline-primary"
+                                >
+                                    👁 Открыть
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% else %}
+
+    <div class="alert alert-info">
+
+        Клиентов пока нет.
+
+    </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

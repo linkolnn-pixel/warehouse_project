@@ -1,64 +1,151 @@
-<!DOCTYPE html>
-<html>
-<head><title>Движение товаров</title></head>
-<body>
-  <h1>Отчёт по движению товаров</h1>
-  <form method="get">
-    <label>Период с: <input type="date" name="start_date" value="{{ filters.start_date }}"></label>
-    <label>по: <input type="date" name="end_date" value="{{ filters.end_date }}"></label>
-    <label>Товар:
-      <select name="product">
-        <option value="">Все</option>
-        {% for p in products %}
-          <option value="{{ p.id }}" {% if filters.product == p.id|stringformat:"s" %}selected{% endif %}>
-            {{ p.sku }} {{ p.name }}
-          </option>
-        {% endfor %}
-      </select>
-    </label>
-    <label>Склад:
-      <select name="warehouse">
-        <option value="">Все</option>
-        {% for w in warehouses %}
-          <option value="{{ w.id }}" {% if filters.warehouse == w.id|stringformat:"s" %}selected{% endif %}>
-            {{ w.name }}
-          </option>
-        {% endfor %}
-      </select>
-    </label>
-    <button type="submit">Фильтр</button>
-  </form>
+{% extends 'inventory/base.html' %}
 
-  <h3>Итого по типам</h3>
-  <ul>
-    {% for t in totals %}
-      <li>{{ t.get_type_display }}: {{ t.total_qty }}</li>
-    {% endfor %}
-  </ul>
+{% block title %}
+Операции
+{% endblock %}
 
-  <h3>Детализация</h3>
-  <table border="1" cellpadding="6">
-    <thead>
-      <tr>
-        <th>Дата</th><th>Тип</th><th>Товар</th><th>Склад</th><th>Контрагент</th><th>Кол-во</th><th>Комментарий</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for tx in transactions %}
-        <tr>
-          <td>{{ tx.date|date:"d.m.Y H:i" }}</td>
-          <td>{{ tx.get_type_display }}</td>
-          <td>{{ tx.product.sku }} {{ tx.product.name }}</td>
-          <td>{{ tx.warehouse.name }}</td>
-          <td>{{ tx.counterparty|default:"—" }}</td>
-          <td>{{ tx.quantity }} {{ tx.product.unit }}</td>
-          <td>{{ tx.comment|default:"—" }}</td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="7">Нет данных</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <p><a href="{% url 'dashboard' %}">Назад</a></p>
-</body>
-</html>
+{% block content %}
+
+<div class="container-fluid mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2>
+                <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                Операции
+            </h2>
+
+            <p class="text-muted">
+                История движения товаров
+            </p>
+        </div>
+
+    </div>
+
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered table-hover align-middle">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th>Дата</th>
+                            <th>Тип</th>
+                            <th>Товар</th>
+                            <th>Склад</th>
+                            <th>Количество</th>
+                            <th>Контрагент</th>
+                            <th>Документ</th>
+                            <th>Комментарий</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                    {% for tx in transactions %}
+
+                    <tr>
+
+                        <td>
+                            {{ tx.date|date:"d.m.Y H:i" }}
+                        </td>
+
+                        <td>
+                            {% if tx.type == 'IN' %}
+                                <span class="badge bg-success">
+                                    Приход
+                                </span>
+                            {% elif tx.type == 'OUT' %}
+                                <span class="badge bg-danger">
+                                    Отгрузка
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">
+                                    {{ tx.type }}
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if tx.product %}
+                                <a href="{% url 'product_detail' tx.product.pk %}">
+                                    {{ tx.product.name }}
+                                </a>
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ tx.warehouse|default:"—" }}
+                        </td>
+
+                        <td>
+                            {% if tx.type == 'IN' %}
+                                <span class="text-success fw-bold">
+                                    +{{ tx.quantity }}
+                                </span>
+                            {% elif tx.type == 'OUT' %}
+                                <span class="text-danger fw-bold">
+                                    -{{ tx.quantity }}
+                                </span>
+                            {% else %}
+                                {{ tx.quantity }}
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if tx.counterparty %}
+                                {{ tx.counterparty }}
+                            {% elif tx.receipt and tx.receipt.supplier %}
+                                {{ tx.receipt.supplier }}
+                            {% elif tx.sale and tx.sale.customer %}
+                                {{ tx.sale.customer }}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if tx.receipt %}
+                                Приход №{{ tx.receipt.number }}
+                            {% elif tx.sale %}
+                                Продажа №{{ tx.sale.number }}
+                            {% else %}
+                                Ручное движение
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ tx.reference|default:"—" }}
+                        </td>
+
+                    </tr>
+
+                    {% empty %}
+
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">
+                            Операций пока нет
+                        </td>
+                    </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

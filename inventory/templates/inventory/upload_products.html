@@ -1,10 +1,139 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <title>Загрузка товаров</title>
+    <!-- Подключаем Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Иконки FontAwesome (опционально, для красоты значков) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-$END$
+<body class="bg-light">
+
+<div class="container mt-4">
+    <h2 class="mb-4">🚀 Загрузка базы товаров из Excel</h2>
+
+    <!-- === БЛОК СООБЩЕНИЙ (ОБЯЗАТЕЛЬНО) === -->
+    {% if messages %}
+        <div class="alert alert-dismissible fade show" role="alert">
+            {% for message in messages %}
+                {% if message.tags == 'error' %}
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> {{ message }}
+                    </div>
+                {% elif message.tags == 'success' %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> {{ message }}
+                    </div>
+                {% elif message.tags == 'warning' %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> {{ message }}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        {{ message }}
+                    </div>
+                {% endif %}
+            {% endfor %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endif %}
+    <!-- ======================================= -->
+
+    <!-- Блок с правилами -->
+    <div class="alert alert-info border-start border-info" role="alert">
+        <h5 class="fw-bold">📋 Правила загрузки:</h5>
+        <ul>
+            <li><strong>Бренд (Колонка "Бренд"):</strong> <span class="text-danger">Обязательно!</span> Это создаст категорию (например, Angiopharm). Без бренда товар не загрузится.</li>
+            <li><strong>Артикул (SKU):</strong> Если есть — обязательно заполни. Это главный ключ для поиска дублей.</li>
+            <li><strong>Объем / Вес:</strong> Заполни хотя бы одно поле. Если пусто — будет 0.</li>
+        </ul>
+    </div>
+
+    <!-- Форма загрузки -->
+    <form method="post" enctype="multipart/form-data" class="border p-4 rounded shadow-sm bg-white">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="file" class="form-label fw-bold">Выберите Excel файл (.xlsx)</label>
+            <input type="file" name="file" id="file" class="form-control" accept=".xlsx, .xls" required>
+            <small class="text-muted">Поддерживаются форматы .xlsx и .xls. Размер файла не более 10 МБ.</small>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg">
+            <i class="fas fa-cloud-upload-alt"></i> Начать загрузку
+        </button>
+        <a href="{% url 'products_catalog' %}" class="btn btn-secondary btn-lg ms-2">
+            <i class="fas fa-arrow-left"></i> ← В каталог
+        </a>
+
+    </form>
+
+    <!-- Пример структуры Excel -->
+    <div class="mt-5 p-3 bg-white border rounded">
+        <h4 class="fw-bold">Пример структуры вашего Excel файла:</h4>
+
+        <table class="table table-bordered table-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>Колонка в Excel</th>
+                    <th>Что будет в базе</th>
+                    <th class="text-center">Статус</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><b>Бренд</b></td>
+                    <td>Категория (создается автоматически)</td>
+                    <td class="text-danger text-center"><b>ОБЯЗАТЕЛЬНО</b></td>
+                </tr>
+                <tr>
+                    <td><b>Артикул</b></td>
+                    <td>SKU (Ключ для проверки дублей)</td>
+                    <td class="text-warning text-center">Рекомендуется</td>
+                </tr>
+                <tr>
+                    <td><b>Наименование</b></td>
+                    <td>Name</td>
+                    <td class="text-success text-center">ОБЯЗАТЕЛЬНО</td>
+                </tr>
+                <tr>
+                    <td>Объем</td>
+                    <td>Quantity Value (число) + Measure Unit = 'мл'</td>
+                    <td class="text-muted text-center">Опционально</td>
+                </tr>
+                <tr>
+                    <td>Вес</td>
+                    <td>Quantity Value (число) + Measure Unit = 'г'</td>
+                    <td class="text-muted text-center">Опционально (если нет объема)</td>
+                </tr>
+                <tr>
+                    <td>Ед. изм.</td>
+                    <td>Unit (шт, упак, набор)</td>
+                    <td class="text-muted text-center">По умолчанию 'шт'</td>
+                </tr>
+                <tr>
+                    <td><b>Закупочная цена</b></td>
+                    <td>Cost Price (Decimal)</td>
+                    <td class="text-success text-center">ОБЯЗАТЕЛЬНО</td>
+                </tr>
+                <tr>
+                    <td><b>Цена продажи</b></td>
+                    <td>Sale Price (Decimal)</td>
+                    <td class="text-success text-center">ОБЯЗАТЕЛЬНО</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p class="small text-muted mt-3">
+            💡 <b>Важно:</b> В Excel используйте точку или запятую для дробных чисел (скрипт сам исправит запятые на точки).
+            Названия брендов должны совпадать точно (Angiopharm ≠ angiopharm), либо скрипт создаст новый бренд.
+        </p>
+    </div>
+</div>
+
+<!-- Подключаем JS Bootstrap для работы кнопки закрытия alert -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

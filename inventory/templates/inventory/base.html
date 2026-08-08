@@ -1,10 +1,348 @@
+{% load static %}
+
 <!DOCTYPE html>
-<html lang="en">
+
+<html lang="ru">
+
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>
+    {% block title %}
+    Склад
+    {% endblock %}
+</title>
+
+
+<!-- Django Select2 -->
+{{ form.media }}
+{{ formset.media }}
+
+
+<!-- Bootstrap -->
+<link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+>
+
+
+<!-- Font Awesome -->
+<link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+>
+
+
+<style>
+
+    body {
+        background: #f1f3f5;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+
+    .navbar-brand {
+        font-weight: 700;
+    }
+
+
+    .navbar {
+        box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    }
+
+
+    .nav-link {
+        font-weight: 500;
+        margin-right: 5px;
+    }
+
+
+    .nav-link:hover {
+        color: #fff !important;
+        background: rgba(255,255,255,.12);
+        border-radius: 8px;
+    }
+
+
+    .card {
+        border: none;
+        border-radius: 12px;
+    }
+
+
+    .card-header {
+        background: white;
+        font-weight: 600;
+    }
+
+
+    .btn {
+        border-radius: 8px;
+    }
+
+
+    /* Select2 */
+
+    .select2-container {
+        width: 100% !important;
+    }
+
+
+    .select2-selection {
+        min-height: 38px;
+        border: 1px solid #ced4da !important;
+        border-radius: 6px !important;
+    }
+
+
+    /* Активный пункт меню */
+
+    .nav-link.active {
+        background: rgba(255,255,255,.18);
+        border-radius: 8px;
+        color: white !important;
+    }
+
+</style>
+
+
 </head>
+
 <body>
-$END$
+
+
+
+<!--       ВЕРХНЕЕ МЕНЮ        -->
+
+
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+
+
+<div class="container-fluid">
+
+
+    <!-- Логотип -->
+
+    <a
+        class="navbar-brand"
+        href="{% url 'stock_management' %}"
+    >
+
+        📦 Склад
+
+    </a>
+
+
+    <!-- Кнопка мобильного меню -->
+
+    <button
+        class="navbar-toggler"
+        type="button"
+        data-bs-toggle="collapse"
+        data-bs-target="#mainNavbar"
+        aria-controls="mainNavbar"
+        aria-expanded="false"
+        aria-label="Открыть меню"
+    >
+
+        <span class="navbar-toggler-icon"></span>
+
+    </button>
+
+
+    <!-- Меню -->
+
+    <div
+        class="collapse navbar-collapse"
+        id="mainNavbar"
+    >
+
+
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+
+
+            <!-- Остатки -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link {% if request.resolver_match.url_name == 'stock_management' %}active{% endif %}"
+                    href="{% url 'stock_management' %}"
+                >
+
+                    📊 Остатки
+
+                </a>
+
+            </li>
+
+
+            <!-- Каталог -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link {% if request.resolver_match.url_name == 'products_catalog' %}active{% endif %}"
+                    href="{% url 'products_catalog' %}"
+                >
+
+                    🛍️ Каталог
+
+                </a>
+
+            </li>
+
+
+            <!-- Приход -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link {% if request.resolver_match.url_name == 'receipt_create' %}active{% endif %}"
+                    href="{% url 'receipt_create' %}"
+                >
+
+                    📥 Приход
+
+                </a>
+
+            </li>
+
+
+            <!-- Продажа -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link {% if request.resolver_match.url_name == 'sale_create' %}active{% endif %}"
+                    href="{% url 'sale_create' %}"
+                >
+
+                    📤 Продажа
+
+                </a>
+
+            </li>
+
+
+            <!-- Клиенты -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link {% if request.resolver_match.url_name == 'customers_list' %}active{% endif %}"
+                    href="{% url 'customers_list' %}"
+                >
+
+                    👥 Клиенты
+
+                </a>
+
+            </li>
+
+
+            <!-- Операции -->
+
+            <li class="nav-item">
+
+                <a
+                    class="nav-link {% if request.resolver_match.url_name == 'movement_report' %}active{% endif %}"
+                    href="{% url 'movement_report' %}"
+                >
+
+                    📋 Операции
+
+                </a>
+
+            </li>
+
+
+        </ul>
+
+
+    </div>
+
+</div>
+
+
+</nav>
+
+
+
+<!--       СООБЩЕНИЯ            -->
+
+
+
+<div class="container mt-3">
+
+
+{% if messages %}
+
+    {% for message in messages %}
+
+        <div
+            class="
+                alert
+                {% if message.tags == 'error' %}
+                    alert-danger
+                {% elif message.tags == 'success' %}
+                    alert-success
+                {% elif message.tags == 'warning' %}
+                    alert-warning
+                {% else %}
+                    alert-info
+                {% endif %}
+                alert-dismissible
+                fade
+                show
+            "
+            role="alert"
+        >
+
+            {{ message }}
+
+
+            <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Закрыть"
+            ></button>
+
+        </div>
+
+    {% endfor %}
+
+{% endif %}
+
+
+</div>
+
+
+
+<!--       ОСНОВНОЙ КОНТЕНТ     -->
+
+
+
+{% block content %}
+
+{% endblock %}
+
+<!-- Bootstrap JS -->
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+</script>
+
+<!-- Select2 JS -->
+
+{{ form.media.js }}
+{{ formset.media.js }}
+
 </body>
+
 </html>

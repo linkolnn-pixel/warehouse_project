@@ -1,10 +1,145 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <title>Склад: Управление остатками</title>
+
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+
+    <style>
+        body{
+            font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+            padding:20px;
+            background:#f4f6f9;
+            color:#333;
+        }
+
+        h1{
+            color:#2c3e50;
+            margin-bottom:25px;
+        }
+
+        .controls{
+            margin-bottom:20px;
+            display:flex;
+            gap:10px;
+            flex-wrap:wrap;
+        }
+
+        .btn{
+            padding:8px 16px;
+            border:none;
+            cursor:pointer;
+            text-decoration:none;
+            border-radius:4px;
+            font-size:14px;
+            color:white;
+        }
+
+        .btn-success{background:#2ecc71;}
+        .btn-danger{background:#e74c3c;}
+        .btn-secondary{background:#95a5a6;}
+
+        table.dataTable{
+            font-size:13px;
+        }
+
+        table.dataTable th,
+        table.dataTable td{
+            padding:6px 8px;
+            white-space:nowrap;
+        }
+
+        th{
+            background:#ecf0f1;
+        }
+    </style>
 </head>
+
 <body>
-$END$
+
+<h1>📦 Склад: Управление остатками</h1>
+
+<div class="controls">
+    <a href="{% url 'sale_create' %}" class="btn btn-danger">Отгрузка</a>
+    <a href="{% url 'receipt_create' %}" class="btn btn-success">Оприходование</a>
+    <a href="{% url 'products_catalog' %}" class="btn btn-secondary">Каталог товаров</a>
+    <a href="{% url 'customers_list' %}" class="btn btn-secondary">Клиенты</a>
+    <a href="{% url 'movement_report' %}" class="btn btn-secondary">Операции</a>
+</div>
+
+<table id="productsTable" class="display">
+    <thead>
+        <tr>
+            <th>Товар</th>
+            <th>Бренд</th>
+            <th>Остаток</th>
+            <th>Себестоимость</th>
+            <th>Цена продажи</th>
+            <th>Прибыль</th>
+            <th>Прибыль с учетом остатка</th>
+            <th>Код</th>
+            <th>Артикул</th>
+            <th>Склад</th>
+
+        </tr>
+    </thead>
+
+    <tbody>
+
+    {% for row in rows %}
+        <tr>
+
+            <td>{{ row.product.name }}</td>
+
+            <td>{{ row.product.category }}</td>
+
+            <td>{{ row.balance }} шт.</td>
+
+            <td>{{ row.product.cost_price }}</td>
+
+            <td>{{ row.product.sale_price }}</td>
+
+            <td>{{ row.product.profit }}</td>
+
+            <td>{{ row.stock_profit }}</td>
+
+            <td>{{ row.product.internal_code }}</td>
+
+            <td>{{ row.product.sku|default:"-" }}</td>
+
+            <td>{{ row.warehouse_name }}</td>
+
+
+        </tr>
+    {% endfor %}
+
+    </tbody>
+</table>
+
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+
+<script>
+$(function () {
+
+    $('#productsTable').DataTable({
+
+        pageLength:50,
+
+        stateSave:true,
+
+        order:[[0,'asc']],
+
+        language:{
+            url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/ru.json'
+        }
+
+    });
+
+});
+</script>
+
 </body>
 </html>

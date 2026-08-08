@@ -1,10 +1,503 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'inventory/base.html' %}
+
+{% block title %}
+Создание продажи
+{% endblock %}
+
+{% block content %}
+
+<style>
+
+.quantity-field {
+    max-width: 120px;
+}
+
+.balance-field {
+    max-width: 120px;
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+</style>
+
+<div class="container mt-4">
+
+```
+<h2 class="mb-4">
+    🛒 Создание продажи
+</h2>
+
+
+<form method="post">
+
+    {% csrf_token %}
+
+
+    <div class="card shadow p-4">
+
+
+        <!-- ОСНОВНАЯ ИНФОРМАЦИЯ -->
+
+        <h5>
+            Основная информация
+        </h5>
+
+        <hr>
+
+
+        <!-- СКЛАД -->
+
+        <div class="mb-3">
+
+            <label class="form-label">
+                Склад
+            </label>
+
+            {{ form.warehouse }}
+
+            {% if form.warehouse.errors %}
+                <div class="error-message">
+                    {% for error in form.warehouse.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+        </div>
+
+
+        <!-- КЛИЕНТ -->
+
+        <div class="mb-3">
+
+            <label class="form-label">
+                Клиент
+            </label>
+
+
+            <div class="d-flex gap-2">
+
+                {{ form.customer }}
+
+
+                <a
+                    class="btn btn-outline-primary"
+                    href="{% url 'customer_create' %}?next=sale_create{% for f in formset %}{% if f.product.value %}&products={{ f.product.value }}{% endif %}{% endfor %}{% if form.customer.value %}&customer={{ form.customer.value }}{% endif %}"
+                >
+                    ➕
+                </a>
+
+            </div>
+
+
+            {% if form.customer.errors %}
+
+                <div class="error-message">
+
+                    {% for error in form.customer.errors %}
+                        {{ error }}
+                    {% endfor %}
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+
+        <!-- КОММЕНТАРИЙ -->
+
+        <div class="mb-3">
+
+            <label class="form-label">
+                Комментарий
+            </label>
+
+            {{ form.comment }}
+
+        </div>
+
+
+        <hr>
+
+
+        <!-- ТОВАРЫ -->
+
+        <h5>
+            Товары
+        </h5>
+
+
+        <a
+            href="{% url 'product_picker' %}?target=sale{% for f in formset %}{% if f.product.value %}&selected={{ f.product.value }}{% endif %}{% endfor %}{% if form.customer.value %}&customer={{ form.customer.value }}{% endif %}"
+            class="btn btn-primary mb-3"
+        >
+            📦 Добавить товары
+        </a>
+
+
+        {{ formset.management_form }}
+
+
+        <!-- ОБЩИЕ ОШИБКИ FORMSET -->
+
+        {% if formset.non_form_errors %}
+
+            <div class="alert alert-danger">
+
+                {% for error in formset.non_form_errors %}
+                    <div>
+                        {{ error }}
+                    </div>
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+
+        <!-- ОШИБКИ ФОРМЫ -->
+
+        {% if form.errors %}
+
+            <div class="alert alert-danger">
+
+                {% for field in form %}
+
+                    {% for error in field.errors %}
+
+                        <div>
+                            {{ error }}
+                        </div>
+
+                    {% endfor %}
+
+                {% endfor %}
+
+            </div>
+
+        {% endif %}
+
+
+        <!-- ТАБЛИЦА ТОВАРОВ -->
+
+        <table class="table table-bordered align-middle">
+
+            <thead class="table-light">
+
+                <tr>
+
+                    <th>
+                        Товар
+                    </th>
+
+                    <th width="130">
+                        Остаток
+                    </th>
+
+                    <th width="120">
+                        Количество
+                    </th>
+
+                    <th width="150">
+                        Цена продажи
+                    </th>
+
+                    <th width="90">
+                        Удалить
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+
+                {% for f in formset %}
+
+                <tr>
+
+
+                    <!-- ТОВАР -->
+
+                    <td>
+
+                        {% if f.initial.product %}
+
+                            {{ f.initial.product.name }}
+
+                            {{ f.product.as_hidden }}
+
+                        {% elif f.instance.product %}
+
+                            {{ f.instance.product.name }}
+
+                            {{ f.product.as_hidden }}
+
+                        {% else %}
+
+                            {{ f.product }}
+
+                        {% endif %}
+
+
+                        <!-- Ошибки товара -->
+
+                        {% for error in f.product.errors %}
+
+                            <div class="error-message">
+                                {{ error }}
+                            </div>
+
+                        {% endfor %}
+
+                    </td>
+
+
+                    <!-- ОСТАТОК -->
+
+                    <td>
+
+                        <div class="balance-field">
+
+                            {{ f.balance }}
+
+                        </div>
+
+                    </td>
+
+
+                    <!-- КОЛИЧЕСТВО -->
+
+                    <td>
+
+                        <div class="quantity-field">
+
+                            {{ f.quantity }}
+
+                        </div>
+
+
+                        {% for error in f.quantity.errors %}
+
+                            <div class="error-message">
+                                {{ error }}
+                            </div>
+
+                        {% endfor %}
+
+                    </td>
+
+
+                    <!-- ЦЕНА -->
+
+                    <td>
+
+                        {{ f.sale_price }}
+
+
+                        {% for error in f.sale_price.errors %}
+
+                            <div class="error-message">
+                                {{ error }}
+                            </div>
+
+                        {% endfor %}
+
+                    </td>
+
+
+                    <!-- УДАЛЕНИЕ -->
+
+                    <td class="text-center">
+
+                        {% if f.DELETE %}
+
+                            {{ f.DELETE }}
+
+                            <button
+                                type="button"
+                                class="btn btn-danger btn-sm delete-row"
+                            >
+                                🗑
+                            </button>
+
+                        {% endif %}
+
+                    </td>
+
+
+                </tr>
+
+                {% endfor %}
+
+
+            </tbody>
+
+        </table>
+
+
+        <!-- ИТОГ -->
+
+        <div class="alert alert-info mt-3 text-end">
+
+            <h5 class="mb-0">
+
+                Итоговая стоимость продажи:
+
+                <strong>
+
+                    <span id="total-sale">
+                        0.00
+                    </span>
+
+                    ₽
+
+                </strong>
+
+            </h5>
+
+        </div>
+
+
+        <!-- КНОПКА СОЗДАНИЯ -->
+
+        <button
+            type="submit"
+            class="btn btn-success w-100"
+        >
+
+            ✅ Создать продажу
+
+        </button>
+
+
+    </div>
+
+</form>
+```
+
+</div>
+
+<script>
+
+/* =====================================================
+   ИТОГОВАЯ СТОИМОСТЬ
+   ===================================================== */
+
+function calculateTotal() {
+
+    let total = 0;
+
+
+    document.querySelectorAll("tbody tr").forEach(function(row) {
+
+        /*
+         * Не считаем скрытые удалённые строки
+         */
+
+        if (row.style.display === "none") {
+            return;
+        }
+
+
+        let quantity = row.querySelector(
+            "input[name$='-quantity']"
+        );
+
+
+        let price = row.querySelector(
+            "input[name$='-sale_price']"
+        );
+
+
+        if (quantity && price) {
+
+            let qty =
+                parseFloat(quantity.value) || 0;
+
+
+            let sale =
+                parseFloat(price.value) || 0;
+
+
+            total += qty * sale;
+
+        }
+
+    });
+
+
+    document.getElementById("total-sale").innerText =
+        total.toFixed(2);
+
+}
+
+
+
+/* =====================================================
+   ПЕРЕСЧЁТ ПРИ ИЗМЕНЕНИИ КОЛИЧЕСТВА И ЦЕНЫ
+   ===================================================== */
+
+document.querySelectorAll(
+    "input[name$='-quantity'], input[name$='-sale_price']"
+).forEach(function(input) {
+
+    input.addEventListener(
+        "input",
+        calculateTotal
+    );
+
+});
+
+
+
+/* =====================================================
+   УДАЛЕНИЕ ТОВАРА
+   ===================================================== */
+
+document.querySelectorAll(".delete-row").forEach(function(button) {
+
+    button.addEventListener("click", function() {
+
+        let row = this.closest("tr");
+
+
+        let checkbox = row.querySelector(
+            "input[type=checkbox]"
+        );
+
+
+        if (checkbox) {
+
+            checkbox.checked = true;
+
+        }
+
+
+        row.style.display = "none";
+
+
+        calculateTotal();
+
+    });
+
+});
+
+
+
+/* =====================================================
+   ПЕРВЫЙ РАСЧЁТ
+   ===================================================== */
+
+calculateTotal();
+
+</script>
+
+{% endblock %}
