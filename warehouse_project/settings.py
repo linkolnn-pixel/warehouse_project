@@ -36,10 +36,14 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['warehouse-mkhiln.amvera.io']
+ALLOWED_HOSTS = [
+    'warehouse-mkhiln.amvera.io',
+    'workhouse-test-mkhiln.amvera.io',
+]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://warehouse-mkhiln.amvera.io",
+    'https://workhouse-test-mkhiln.amvera.io'
 ]
 
 
