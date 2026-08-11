@@ -16,9 +16,10 @@ from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.core.exceptions import ValidationError
+from .decorators import test_mode_login_required
 
 
-@login_required
+@test_mode_login_required
 def stock_management_view(request):
     products = Product.objects.select_related('category')
     warehouse = Warehouse.objects.first()  # Берем первый склад для отображения
@@ -44,7 +45,7 @@ def stock_management_view(request):
         'categories': categories,
     })
 
-@login_required
+@test_mode_login_required
 @transaction.atomic
 def upload_products(request):
     if request.method == 'POST' and request.FILES.get('file'):
@@ -169,7 +170,7 @@ def upload_products(request):
             return redirect('upload_products')
     return render(request, 'inventory/upload_products.html')
 
-@login_required
+@test_mode_login_required
 def create_product(request):
     if request.method == 'POST':
         form = ProductForm(request.POST)
@@ -184,7 +185,7 @@ def create_product(request):
         form = ProductForm()
     return render(request, 'inventory/create_product.html', {'form': form})
 
-@login_required
+@test_mode_login_required
 def counterparty_create(request):
     next_name = request.GET.get("next", "products_catalog")
     if request.method == "POST":
@@ -202,7 +203,7 @@ def counterparty_create(request):
         form = CounterpartyForm( counterparty_type="supplier" )
     return render(request, "inventory/counterparty_form.html", { "form": form })
 
-@login_required
+@test_mode_login_required
 def product_detail(request, pk):
     product = get_object_or_404(Product.objects.select_related('category', 'supplier'), pk=pk)
     warehouse = Warehouse.objects.first()
@@ -229,7 +230,7 @@ def product_detail(request, pk):
         }
     )
 
-@login_required
+@test_mode_login_required
 def product_edit(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == 'POST':
@@ -242,7 +243,7 @@ def product_edit(request, pk):
         form = ProductEditForm(instance=product)
     return render(request, 'inventory/product_edit.html', {'form': form, 'product': product})
 
-@login_required
+@test_mode_login_required
 def category_create(request):
     next_url = request.GET.get('next')
     if next_url and not next_url.startswith('/'):
@@ -266,7 +267,7 @@ def category_create(request):
     form = CategoryForm()
     return render(request, 'inventory/category_form.html', {'form': form})
 
-@login_required
+@test_mode_login_required
 def movement_report(request):
     qs = (
         Transaction.objects
@@ -281,7 +282,7 @@ def movement_report(request):
     )
     return render(request, 'inventory/movement_report.html', {'transactions': qs})
 
-@login_required
+@test_mode_login_required
 def products_catalog_view(request):
     # Бренды = корневые категории
     brands = (
@@ -334,7 +335,8 @@ def products_catalog_view(request):
         'inventory/catalog_page.html',
         context
     )
-@login_required
+
+@test_mode_login_required
 def receipt_create(request):
     warehouse = Warehouse.objects.first()
     if not warehouse:
@@ -397,7 +399,7 @@ def receipt_create(request):
         }
     )
 
-@login_required
+@test_mode_login_required
 def receipt_detail(request, pk):
     receipt = get_object_or_404(
         Receipt,
@@ -405,7 +407,7 @@ def receipt_detail(request, pk):
     )
     return render(request, 'inventory/receipt_detail.html', {'receipt':receipt})
 
-@login_required
+@test_mode_login_required
 def receipt_post(request, pk):
     receipt = get_object_or_404(Receipt, pk=pk)
     try:
@@ -415,7 +417,7 @@ def receipt_post(request, pk):
         messages.error(request, str(e))
     return redirect('receipt_detail', pk=pk)
 
-@login_required
+@test_mode_login_required
 def sale_create(request):
     warehouse = Warehouse.objects.first()
     if not warehouse:
@@ -504,12 +506,12 @@ def sale_create(request):
         }
     )
 
-@login_required
+@test_mode_login_required
 def sale_detail(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     return render(request, 'inventory/sale_detail.html', {'sale':sale})
 
-@login_required
+@test_mode_login_required
 def sale_post(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     try:
@@ -519,7 +521,7 @@ def sale_post(request, pk):
         messages.error(request, str(e))
     return redirect('sale_detail', pk=pk)
 
-@login_required
+@test_mode_login_required
 def product_picker(request):
     query = request.GET.get('q', '')
     target = request.GET.get(
@@ -589,7 +591,7 @@ def product_picker(request):
         }
     )
 
-@login_required
+@test_mode_login_required
 def customer_create(request):
     next_name = request.GET.get(
         "next",
@@ -621,7 +623,7 @@ def customer_create(request):
         form = CounterpartyForm(counterparty_type="customer")
     return render(request, "inventory/customer_form.html", {"form": form})
 
-@login_required
+@test_mode_login_required
 def customers_list(request):
     customers = (
         Counterparty.objects
@@ -630,7 +632,7 @@ def customers_list(request):
     )
     return render(request, 'inventory/customers.html', {'customers': customers})
 
-@login_required
+@test_mode_login_required
 def customer_detail(request, pk):
     customer = get_object_or_404(
         Counterparty,
