@@ -1,463 +1,182 @@
 {% extends 'inventory/base.html' %}
 
-{% block title %}
-Выбор товаров
-{% endblock %}
-
+{% block title %}Выбор товаров{% endblock %}
 
 {% block content %}
-
 <div class="container mt-4">
+    <h3 class="mb-4 d-flex align-items-center">
+        <i class="fas fa-box me-2"></i> Выбор товаров
+    </h3>
 
-<h3 class="mb-3">
-📦 Выбор товаров
-</h3>
+    <!-- Форма поиска -->
+    <form method="get" class="mb-4 p-3 bg-white rounded shadow-sm">
+        <input type="hidden" name="target" value="{{ request.GET.target }}">
 
+        <div class="row g-3">
+            <div class="col-md-4">
+                <input
+                    type="text"
+                    name="q"
+                    value="{{ query }}"
+                    class="form-control"
+                    placeholder="Поиск по названию, коду или артикулу..."
+                    autofocus
+                >
+            </div>
 
-<form method="get" class="mb-3">
+            <div class="col-md-3">
+                <select name="category" class="form-select">
+                    <option value="">Все категории</option>
+                    {% for c in categories %}
+                        <option value="{{ c.id }}" {% if request.GET.category == c.id|stringformat:"s" %}selected{% endif %}>
+                            {{ c.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-<input type="hidden" name="target" value="{{ request.GET.target }}">
+            <div class="col-md-3">
+                <select name="supplier" class="form-select">
+                    <option value="">Все поставщики</option>
+                    {% for s in suppliers %}
+                        <option value="{{ s.id }}" {% if request.GET.supplier == s.id|stringformat:"s" %}selected{% endif %}>
+                            {{ s.company_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    🔎 Найти
+                </button>
+            </div>
+        </div>
+    </form>
 
-<div class="row g-2">
+    <!-- Форма выбора товаров -->
+    <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="target" value="{{ request.GET.target }}">
 
-<div class="col-md-4">
+        {% for id in selected_ids %}
+            <input type="hidden" name="products" value="{{ id }}">
+        {% endfor %}
 
-<input
-type="text"
-name="q"
-value="{{ query }}"
-class="form-control"
-placeholder="Поиск товара..."
->
+        <div class="alert alert-info d-flex justify-content-between align-items-center rounded-0 border-0 mb-3">
+            <span>Выбрано товаров: <strong><span id="selected-count">{{ selected_ids|length }}</span></strong></span>
+            <small class="text-muted">Клик по строке выделяет товар</small>
+        </div>
 
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th width="50"></th>
+                        <th>Наименование</th>
+                        <th>Код</th>
+                        <th>Артикул (SKU)</th>
+                        <th>Бренд/Категория</th>
+                        <th class="text-end">Остаток</th>
+                        <th>Поставщик</th>
+                        <th class="text-end">Закупка</th>
+                        <th class="text-end">Продажа</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                        <tr class="product-row {% if product.id in selected_ids %}table-success{% endif %}" style="cursor: pointer;">
+                            <td>
+                                <input
+                                    type="checkbox"
+                                    name="products"
+                                    value="{{ product.id }}"
+                                    class="product-check"
+                                    {% if product.id in selected_ids %}checked{% endif %}
+                                >
+                            </td>
+                            <td>
+                                <strong>{{ product.name }}</strong>
+                            </td>
+                            <td>{{ product.internal_code|default:"—" }}</td>
+                            <td>{{ product.sku|default:"—" }}</td>
+                            <td>
+                                {% if product.category %}
+                                    {{ product.category.name }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td class="text-end">{{ product.balance|default:0 }}</td>
+                            <td>
+                                {% if product.supplier %}
+                                    {{ product.supplier.company_name }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td class="text-end">{{ product.cost_price|floatformat:2 }} ₽</td>
+                            <td class="text-end">{{ product.sale_price|floatformat:2 }} ₽</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-5 text-muted">
+                                Товары не найдены
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <button type="submit" class="btn btn-success w-100 mt-3">
+            <i class="fas fa-check-circle me-2"></i> Добавить выбранные товары
+        </button>
+    </form>
 </div>
-
-
-<div class="col-md-3">
-
-<select name="category" class="form-select">
-
-<option value="">
-Все категории
-</option>
-
-
-{% for c in categories %}
-
-<option
-value="{{ c.id }}"
-{% if request.GET.category == c.id|stringformat:"s" %}
-selected
-{% endif %}
->
-
-{{ c.name }}
-
-</option>
-
-{% endfor %}
-
-</select>
-
-</div>
-
-
-
-<div class="col-md-3">
-
-<select name="supplier" class="form-select">
-
-<option value="">
-Все поставщики
-</option>
-
-
-{% for s in suppliers %}
-
-<option
-value="{{ s.id }}"
-{% if request.GET.supplier == s.id|stringformat:"s" %}
-selected
-{% endif %}
->
-
-{{ s.company_name }}
-
-</option>
-
-{% endfor %}
-
-</select>
-
-</div>
-
-
-
-<div class="col-md-2">
-
-<button class="btn btn-primary w-100">
-
-🔎 Найти
-
-</button>
-
-</div>
-
-
-</div>
-
-</form>
-
-
-
-<form method="post">
-
-{% csrf_token %}
-
-
-<input type="hidden"
-name="target"
-value="{{ request.GET.target }}">
-
-
-{% for id in selected_ids %}
-
-<input type="hidden"
-name="products"
-value="{{ id }}">
-
-{% endfor %}
-
-
-
-<div class="alert alert-info">
-
-Выбрано товаров:
-
-<strong>
-<span id="selected-count">
-{{ selected_ids|length }}
-</span>
-</strong>
-
-</div>
-
-
-
-<div class="table-responsive">
-
-
-<table class="table table-bordered table-hover align-middle">
-
-
-<thead class="table-light">
-
-<tr>
-
-<th>
-</th>
-
-<th>
-Наименование
-</th>
-
-<th>
-Код
-</th>
-
-<th>
-Артикул
-</th>
-
-<th>
-Бренд
-</th>
-
-<th>
-Остаток
-</th>
-
-<th>
-Поставщик
-</th>
-
-<th>
-Закупка
-</th>
-
-<th>
-Продажа
-</th>
-
-</tr>
-
-</thead>
-
-
-
-<tbody>
-
-
-
-{% for product in products %}
-
-
-<tr
-class="product-row {% if product.id in selected_ids %}table-success{% endif %}"
-style="cursor:pointer"
->
-
-
-<td>
-
-
-<input
-type="checkbox"
-name="products"
-value="{{ product.id }}"
-class="product-check"
-{% if product.id in selected_ids %}
-checked
-{% endif %}
->
-
-
-</td>
-
-
-
-<td>
-
-{{ product.name }}
-
-</td>
-
-
-
-<td>
-
-{{ product.internal_code|default:"—" }}
-
-</td>
-
-
-
-<td>
-
-{% if product.sku %}
-
-{{ product.sku }}
-
-{% else %}
-
-—
-
-{% endif %}
-
-</td>
-
-
-
-<td>
-
-{% if product.category %}
-
-{{ product.category.name }}
-
-{% else %}
-
-—
-
-{% endif %}
-
-</td>
-
-
-
-<td>
-
-{{ product.balance|default:"0" }}
-
-</td>
-
-
-
-<td>
-
-{% if product.supplier %}
-
-{{ product.supplier.company_name }}
-
-{% else %}
-
-—
-
-{% endif %}
-
-</td>
-
-
-
-<td>
-
-{{ product.cost_price|floatformat:2 }} ₽
-
-</td>
-
-
-
-<td>
-
-{{ product.sale_price|floatformat:2 }} ₽
-
-</td>
-
-
-
-</tr>
-
-
-{% empty %}
-
-
-<tr>
-
-<td colspan="9"
-class="text-center">
-
-Товары не найдены
-
-</td>
-
-</tr>
-
-
-{% endfor %}
-
-
-
-</tbody>
-
-
-</table>
-
-
-</div>
-
-
-
-<button
-type="submit"
-class="btn btn-success w-100">
-
-✅ Добавить выбранные товары
-
-</button>
-
-
-
-</form>
-
-
-</div>
-
-
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    function updateCount() {
+        const count = document.querySelectorAll('.product-check:checked').length;
+        const element = document.getElementById('selected-count');
+        if (element) element.innerText = count;
+    }
 
+    // Обработка клика по строке таблицы
+    document.querySelectorAll('.product-row').forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Если кликнули по чекбоксу — ничего не делаем, событие обработается ниже
+            if (e.target.type === 'checkbox') return;
 
-function updateCount(){
+            const checkbox = row.querySelector('.product-check');
+            checkbox.checked = !checkbox.checked;
 
-    let count =
-    document.querySelectorAll(
-        '.product-check:checked'
-    ).length;
-
-
-    document.getElementById(
-        'selected-count'
-    ).innerText = count;
-
-}
-
-
-
-document.querySelectorAll(
-    '.product-row'
-).forEach(function(row){
-
-
-    row.addEventListener(
-        'click',
-        function(e){
-
-
-            if(e.target.type === "checkbox"){
-                return;
+            // Переключаем класс строки
+            if (checkbox.checked) {
+                row.classList.add('table-success');
+            } else {
+                row.classList.remove('table-success');
             }
 
-
-            let checkbox =
-            row.querySelector(
-                '.product-check'
-            );
-
-
-            checkbox.checked =
-            !checkbox.checked;
-
-
-            row.classList.toggle(
-                'table-success',
-                checkbox.checked
-            );
-
-
             updateCount();
+        });
+    });
 
-
-        }
-    );
-
-
-});
-
-
-
-document.querySelectorAll(
-    '.product-check'
-).forEach(function(cb){
-
-
-    cb.addEventListener(
-        'change',
-        function(){
-
-
-            this.closest(
-                '.product-row'
-            ).classList.toggle(
-                'table-success',
-                this.checked
-            );
-
-
+    // Обработка изменения чекбокса
+    document.querySelectorAll('.product-check').forEach(cb => {
+        cb.addEventListener('change', function() {
+            const row = this.closest('.product-row');
+            if (this.checked) {
+                row.classList.add('table-success');
+            } else {
+                row.classList.remove('table-success');
+            }
             updateCount();
+        });
+    });
 
-
-        }
-    );
-
-
+    updateCount();
 });
-
-
-
-updateCount();
-
-
 </script>
-
-
 {% endblock %}

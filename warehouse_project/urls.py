@@ -26,6 +26,11 @@ urlpatterns = [
     ),
 
     path(
+        'api/',
+        include('inventory.api_urls')
+    ),
+
+    path(
         'select2/',
         include('django_select2.urls')
     ),

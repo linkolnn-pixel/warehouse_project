@@ -1,139 +1,156 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Склад: Управление остатками</title>
+{% extends 'inventory/base.html' %}
 
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+{% block title %}
+Управление остатками
+{% endblock %}
 
-    <style>
-        body{
-            font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
-            padding:20px;
-            background:#f4f6f9;
-            color:#333;
-        }
 
-        h1{
-            color:#2c3e50;
-            margin-bottom:25px;
-        }
+{% block content %}
 
-        .controls{
-            margin-bottom:20px;
-            display:flex;
-            gap:10px;
-            flex-wrap:wrap;
-        }
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
 
-        .btn{
-            padding:8px 16px;
-            border:none;
-            cursor:pointer;
-            text-decoration:none;
-            border-radius:4px;
-            font-size:14px;
-            color:white;
-        }
+<style>
+    /* Страница */
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        padding: 18px;
+        margin: 0;
+        background: #f4f6f9;
+        color: #333;
+    }
 
-        .btn-success{background:#2ecc71;}
-        .btn-danger{background:#e74c3c;}
-        .btn-secondary{background:#95a5a6;}
+    /* Контент */
+    .stock-content {
+        padding: 10px 8px 20px 8px;
+    }
 
-        table.dataTable{
-            font-size:13px;
-        }
+    h1 {
+        color: #2c3e50;
+        margin: 0 0 8px 0;
+        font-size: 32px;
+    }
 
-        table.dataTable th,
-        table.dataTable td{
-            padding:6px 8px;
-            white-space:nowrap;
-        }
+    .controls {
+        margin-bottom: 8px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
 
-        th{
-            background:#ecf0f1;
-        }
-    </style>
-</head>
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+        border-radius: 4px;
+        font-size: 14px;
+        color: white;
+    }
 
-<body>
+    .btn-success {
+        background: #2ecc71;
+    }
 
-<h1>📦 Склад: Управление остатками</h1>
+    .btn-danger {
+        background: #e74c3c;
+    }
 
-<div class="controls">
-    <a href="{% url 'sale_create' %}" class="btn btn-danger">Отгрузка</a>
-    <a href="{% url 'receipt_create' %}" class="btn btn-success">Оприходование</a>
-    <a href="{% url 'products_catalog' %}" class="btn btn-secondary">Каталог товаров</a>
-    <a href="{% url 'customers_list' %}" class="btn btn-secondary">Клиенты</a>
-    <a href="{% url 'movement_report' %}" class="btn btn-secondary">Операции</a>
+    .btn-secondary {
+        background: #95a5a6;
+    }
+
+    table.dataTable {
+        font-size: 13px;
+    }
+
+    table.dataTable th,
+    table.dataTable td {
+        padding: 6px 8px;
+        white-space: nowrap;
+    }
+
+    th {
+        background: #ecf0f1;
+    }
+</style>
+
+<div class="stock-content">
+
+    <h1>Управление остатками</h1>
+
+
+    <table id="stock-table" class="display">
+
+        <thead>
+            <tr>
+                <th>Наименование</th>
+                <th>Категория</th>
+                <th>Остаток</th>
+                <th>Закупочная цена</th>
+                <th>Цена продажи</th>
+                <th>Прибыль</th>
+                <th>Прибыль со склада</th>
+                <th>Внутренний код</th>
+                <th>Артикул</th>
+                <th>Склад</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+        {% for row in rows %}
+            <tr>
+                <td>{{ row.product.name }}</td>
+                <td>{{ row.product.category }}</td>
+                <td>{{ row.balance }} шт.</td>
+                <td>{{ row.product.cost_price }}</td>
+                <td>{{ row.product.sale_price }}</td>
+                <td>{{ row.product.profit }}</td>
+                <td>{{ row.stock_profit }}</td>
+                <td>{{ row.product.internal_code }}</td>
+                <td>{{ row.product.sku|default:"-" }}</td>
+                <td>{{ row.warehouse_name }}</td>
+            </tr>
+        {% endfor %}
+
+        </tbody>
+
+    </table>
+
 </div>
-
-<table id="productsTable" class="display">
-    <thead>
-        <tr>
-            <th>Товар</th>
-            <th>Бренд</th>
-            <th>Остаток</th>
-            <th>Себестоимость</th>
-            <th>Цена продажи</th>
-            <th>Прибыль</th>
-            <th>Прибыль с учетом остатка</th>
-            <th>Код</th>
-            <th>Артикул</th>
-            <th>Склад</th>
-
-        </tr>
-    </thead>
-
-    <tbody>
-
-    {% for row in rows %}
-        <tr>
-
-            <td>{{ row.product.name }}</td>
-
-            <td>{{ row.product.category }}</td>
-
-            <td>{{ row.balance }} шт.</td>
-
-            <td>{{ row.product.cost_price }}</td>
-
-            <td>{{ row.product.sale_price }}</td>
-
-            <td>{{ row.product.profit }}</td>
-
-            <td>{{ row.stock_profit }}</td>
-
-            <td>{{ row.product.internal_code }}</td>
-
-            <td>{{ row.product.sku|default:"-" }}</td>
-
-            <td>{{ row.warehouse_name }}</td>
-
-
-        </tr>
-    {% endfor %}
-
-    </tbody>
-</table>
-
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 
 <script>
-$(function () {
+$(document).ready(function () {
 
-    $('#productsTable').DataTable({
+    $('#stock-table').DataTable({
 
-        pageLength:50,
+        pageLength: 50,
 
-        stateSave:true,
+        language: {
+            processing: "Обработка...",
+            search: "Поиск:",
+            lengthMenu: "Показать _MENU_ записей",
+            info: "Показаны записи с _START_ по _END_ из _TOTAL_",
+            infoEmpty: "Записей нет",
+            infoFiltered: "(отфильтровано из _MAX_ записей)",
+            loadingRecords: "Загрузка...",
+            zeroRecords: "Совпадений не найдено",
+            emptyTable: "В таблице нет данных",
 
-        order:[[0,'asc']],
+            paginate: {
+                first: "Первая",
+                previous: "Предыдущая",
+                next: "Следующая",
+                last: "Последняя"
+            },
 
-        language:{
-            url:'https://cdn.datatables.net/plug-ins/1.13.8/i18n/ru.json'
+            aria: {
+                sortAscending: ": активировать для сортировки по возрастанию",
+                sortDescending: ": активировать для сортировки по убыванию"
+            }
         }
 
     });
@@ -141,5 +158,4 @@ $(function () {
 });
 </script>
 
-</body>
-</html>
+{% endblock %}

@@ -1,120 +1,62 @@
-{% load static %}
+{% extends 'inventory/base.html' %}
 
-<!DOCTYPE html>
-<html lang="ru">
+{% block title %}Редактирование: {{ product.name|default:"Товар" }}{% endblock %}
 
-<head>
-<meta charset="UTF-8">
-
-<title>
-Редактирование {{ product.name }}
-</title>
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet">
-
-</head>
-
-
-<body class="bg-light">
-
-
+{% block content %}
 <div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-pen"></i> Редактирование товара
+            </h5>
+            <small class="text-muted">
+                Код: {{ product.internal_code|default:"—" }}
+            </small>
+        </div>
 
+        <div class="card-body">
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
 
-<div class="card shadow">
+            <form method="post">
+                {% csrf_token %}
 
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">
-            ✏️ Редактирование товара
-        </h5>
+                {% for field in form %}
+                    <div class="mb-3">
+                        <label for="{{ field.id_for_label }}" class="form-label">
+                            {{ field.label }}
+                        </label>
 
-        <small class="text-muted">
-            Код: {{ product.internal_code }}
-        </small>
-    </div>
+                        {{ field }}
 
+                        {% if field.help_text %}
+                            <div class="form-text text-muted">
+                                {{ field.help_text }}
+                            </div>
+                        {% endif %}
 
-    <div class="card-body">
-
-
-        {% if form.non_field_errors %}
-            <div class="alert alert-danger">
-                {{ form.non_field_errors }}
-            </div>
-        {% endif %}
-
-
-        <form method="post">
-
-            {% csrf_token %}
-
-
-            {% for field in form %}
-
-            <div class="mb-3">
-
-                <label class="form-label">
-                    {{ field.label }}
-                </label>
-
-
-                {{ field }}
-
-
-                {% if field.help_text %}
-                    <div class="form-text">
-                        {{ field.help_text }}
+                        {% if field.errors %}
+                            <div class="text-danger small">
+                                {{ field.errors }}
+                            </div>
+                        {% endif %}
                     </div>
-                {% endif %}
+                {% endfor %}
 
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> Сохранить
+                    </button>
 
-                {% if field.errors %}
-
-                    <div class="text-danger">
-                        {{ field.errors }}
-                    </div>
-
-                {% endif %}
-
-
-            </div>
-
-            {% endfor %}
-
-
-
-            <div class="mt-4">
-
-                <button type="submit"
-                        class="btn btn-success">
-
-                    💾 Сохранить
-
-                </button>
-
-
-                <a href="{% url 'product_detail' product.id %}"
-                   class="btn btn-secondary">
-
-                    Отмена
-
-                </a>
-
-            </div>
-
-
-        </form>
-
-
+                    <a href="{% url 'product_detail' product.id %}" class="btn btn-secondary">
+                        Отмена
+                    </a>
+                </div>
+            </form>
+        </div>
     </div>
-
 </div>
-
-
-</div>
-
-
-</body>
-
-</html>
+{% endblock %}

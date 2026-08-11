@@ -1,134 +1,38 @@
 {% extends 'inventory/base.html' %}
 
-
 {% block content %}
-
-
-<h2>
-📥 Приход №{{ receipt.number }}
-</h2>
-
-
-<div class="card p-3 mb-3">
-
-
-<p>
-<b>Склад:</b>
-{{ receipt.warehouse }}
-</p>
-
-
-<p>
-<b>Поставщик:</b>
-{{ receipt.supplier }}
-</p>
-
-
-<p>
-<b>Дата:</b>
-{{ receipt.date }}
-</p>
-
-
-</div>
-
-
-
-<table class="table table-bordered">
-
-
-<thead>
-
-<tr>
-
-<th>
-Товар
-</th>
-
-<th>
-Количество
-</th>
-
-<th>
-Цена
-</th>
-
-<th>
-Сумма
-</th>
-
-</tr>
-
-</thead>
-
-
-
-<tbody>
-
-
-{% for item in receipt.items.all %}
-
-
-<tr>
-
-
-<td>
-{{ item.product.name }}
-</td>
-
-
-<td>
-{{ item.quantity }}
-</td>
-
-
-<td>
-{{ item.cost_price }}
-</td>
-
-
-<td>
-{{ item.total }}
-</td>
-
-
-</tr>
-
-
-{% endfor %}
-
-
-</tbody>
-
-
-</table>
-
-
-
-{% if receipt.posted %}
-
-
-<div class="alert alert-success">
-
-✅ Документ проведен
-
-</div>
-
-
-{% else %}
-
-
-<a 
-href="{% url 'receipt_post' receipt.id %}"
-class="btn btn-success">
-
-✅ Провести приход
-
-</a>
-
-
-{% endif %}
-
-
-
+  <h2>📥 Приход №{{ receipt.number }}</h2>
+
+  <div class="card p-3 mb-3">
+    <p><b>Склад:</b> {{ receipt.warehouse }}</p>
+    <p><b>Поставщик:</b> {{ receipt.supplier }}</p>
+    <p><b>Дата:</b> {{ receipt.date }}</p>
+  </div>
+
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Товар</th>
+        <th>Количество</th>
+        <th>Цена</th>
+        <th>Сумма</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in receipt.items.all %}
+        <tr>
+          <td>{{ item.product.name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>{{ item.cost_price }}</td>
+          <td>{{ item.total }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if receipt.posted %}
+    <div class="alert alert-success">✅ Документ проведён</div>
+  {% else %}
+    <a href="{% url 'receipt_post' receipt.id %}" class="btn btn-success">✅ Провести приход</a>
+  {% endif %}
 {% endblock %}

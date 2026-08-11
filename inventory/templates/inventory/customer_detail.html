@@ -1,251 +1,91 @@
 {% extends 'inventory/base.html' %}
 
-{% block title %}
-Клиент
-{% endblock %}
+{% block title %}Клиент: {{ customer.company_name|default:customer.first_name }}{% endblock %}
 
 {% block content %}
-
 <div class="container mt-4">
-
+    <!-- Заголовок и кнопка назад -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-
-        <h2>
-            👤 Клиент
-        </h2>
-
-        <a
-            href="{% url 'customers_list' %}"
-            class="btn btn-secondary"
-        >
+        <h2>👤 Клиент</h2>
+        <a href="{% url 'customers_list' %}" class="btn btn-secondary">
             ← Назад к клиентам
         </a>
-
     </div>
 
-
-    <!-- Информация о клиенте -->
-
+    <!-- Карточка с основной информацией -->
     <div class="card shadow mb-4">
-
         <div class="card-body">
-
             <h4 class="mb-3">
-
                 {% if customer.company_name %}
-
                     {{ customer.company_name }}
-
                 {% else %}
-
-                    {{ customer.first_name }}
-                    {{ customer.last_name }}
-
+                    {{ customer.first_name }} {{ customer.last_name }}
                 {% endif %}
-
             </h4>
-
 
             <div class="row">
-
                 <div class="col-md-4">
-
-                    <strong>Телефон:</strong>
-
-                    <br>
-
-                    {% if customer.phone %}
-                        {{ customer.phone }}
-                    {% else %}
-                        —
-                    {% endif %}
-
-                </div>
-
-
-                <div class="col-md-4">
-
-                    <strong>ИНН:</strong>
-
-                    <br>
-
-                    {% if customer.inn %}
-                        {{ customer.inn }}
-                    {% else %}
-                        —
-                    {% endif %}
-
-                </div>
-
-
-                <div class="col-md-4">
-
-                    <strong>Количество продаж:</strong>
-
-                    <br>
-
+                    <strong>Количество продаж:</strong><br>
                     {{ sales_count }}
-
                 </div>
-
             </div>
-
         </div>
-
     </div>
 
-
-    <!-- Итог -->
-
+    <!-- Карточка с итогом -->
     <div class="card shadow mb-4">
-
         <div class="card-body text-end">
-
-            <h5>
-                Общая сумма покупок:
-            </h5>
-
-            <h2 class="text-success">
-
-                {{ total_sales|floatformat:2 }} ₽
-
-            </h2>
-
+            <h5 class="text-muted">Общая сумма покупок:</h5>
+            <h2 class="text-success">{{ total_sales|floatformat:2 }} ₽</h2>
         </div>
-
     </div>
-
 
     <!-- История продаж -->
-
     <div class="card shadow">
-
         <div class="card-body">
-
-            <h4 class="mb-3">
-                🧾 История продаж
-            </h4>
-
+            <h4 class="mb-3">🧾 История продаж</h4>
 
             {% if sales %}
-
-            <div class="table-responsive">
-
-                <table class="table table-bordered table-hover align-middle">
-
-                    <thead class="table-light">
-
-                        <tr>
-
-                            <th>
-                                Продажа
-                            </th>
-
-                            <th>
-                                Дата
-                            </th>
-
-                            <th>
-                                Товары
-                            </th>
-
-                            <th>
-                                Сумма
-                            </th>
-
-                            <th>
-                                Действие
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-
-                    <tbody>
-
-                        {% for sale in sales %}
-
-                        <tr>
-
-                            <td>
-
-                                №{{ sale.number }}
-
-                            </td>
-
-
-                            <td>
-
-                                {{ sale.date|date:"d.m.Y H:i" }}
-
-                            </td>
-
-
-                            <td>
-
-                                {% for item in sale.items.all %}
-
-                                    {{ item.product.name }}
-
-                                    × {{ item.quantity }}
-
-                                    {% if not forloop.last %}
-                                        <br>
-                                    {% endif %}
-
-                                {% endfor %}
-
-                            </td>
-
-
-                            <td>
-
-                                <strong>
-
-                                    {{ sale.calculated_total|floatformat:2 }} ₽
-
-                                </strong>
-
-                            </td>
-
-
-                            <td>
-
-                                <a
-                                    href="{% url 'sale_detail' sale.pk %}"
-                                    class="btn btn-sm btn-outline-primary"
-                                >
-                                    Открыть
-                                </a>
-
-                            </td>
-
-                        </tr>
-
-                        {% endfor %}
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Продажа</th>
+                                <th>Дата</th>
+                                <th>Товары</th>
+                                <th>Сумма</th>
+                                <th>Действие</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sale in sales %}
+                                <tr>
+                                    <td>№{{ sale.number }}</td>
+                                    <td>{{ sale.date|date:"d.m.Y H:i" }}</td>
+                                    <td>
+                                        {% for item in sale.items.all %}
+                                            {{ item.product.name }} × {{ item.quantity }}
+                                            {% if not forloop.last %}<br>{% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    <td><strong>{{ sale.calculated_total|floatformat:2 }} ₽</strong></td>
+                                    <td>
+                                        <a href="{% url 'sale_detail' sale.pk %}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            Открыть
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             {% else %}
-
-            <div class="alert alert-info mb-0">
-
-                У этого клиента пока нет продаж.
-
-            </div>
-
+                <div class="alert alert-info mb-0">
+                    У этого клиента пока нет продаж.
+                </div>
             {% endif %}
-
         </div>
-
     </div>
-
-
 </div>
-
 {% endblock %}

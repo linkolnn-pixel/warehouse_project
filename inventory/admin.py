@@ -1,8 +1,5 @@
 from django.contrib import admin
 from .models import Warehouse, Product, Counterparty, Transaction, Category
-from django.contrib.admin.utils import NestedObjects
-from django.db import router
-
 
 @admin.register(Warehouse)
 class WarehouseAdmin(admin.ModelAdmin):
@@ -31,32 +28,17 @@ class CounterpartyAdmin(admin.ModelAdmin):
 
     def delete_model(self, request, obj):
         from .models import Receipt, Sale, Transaction
-
-        # удаляем связанные документы
         Receipt.objects.filter(supplier=obj).delete()
         Sale.objects.filter(customer=obj).delete()
-
-        # удаляем движения
         Transaction.objects.filter(counterparty=obj).delete()
-
         obj.delete()
 
     def delete_queryset(self, request, queryset):
         from .models import Receipt, Sale, Transaction
-
         for counterparty in queryset:
-            Receipt.objects.filter(
-                supplier=counterparty
-            ).delete()
-
-            Sale.objects.filter(
-                customer=counterparty
-            ).delete()
-
-            Transaction.objects.filter(
-                counterparty=counterparty
-            ).delete()
-
+            Receipt.objects.filter(supplier=counterparty).delete()
+            Sale.objects.filter(customer=counterparty).delete()
+            Transaction.objects.filter(counterparty=counterparty).delete()
         queryset.delete()
 
     def get_deleted_objects(self, objs, request):
@@ -109,9 +91,7 @@ class ProductAdmin(admin.ModelAdmin):
         queryset.delete()
 
     def get_deleted_objects(self, objs, request):
-        """
-        Отключаем блокировку PROTECT в админке
-        """
+        # Отключаем блокировку PROTECT в админке
         deleted_objects = []
         model_count = {}
         perms_needed = set()
@@ -137,14 +117,8 @@ class TransactionAdmin(admin.ModelAdmin):
         'counterparty__last_name',
     )
 
-    # Группировка по дате в сайдбаре
     date_hierarchy = 'date'
 
-    # Поля, которые можно редактировать прямо в списке (быстрое изменение кол-ва, например)
     readonly_fields = ('date',)
 
-    # Опционально: если нужно видеть баланс товара прямо в карточке операции (требует доп. логики)
-    # def get_balance_display(self, obj):
-    #     return obj.product.get_balance(obj.warehouse)
-    # get_balance_display.short_description = 'Текущий остаток'
-    # list_display += ('get_balance_display',)
+

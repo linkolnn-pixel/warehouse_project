@@ -5,13 +5,12 @@ from django_select2.forms import ModelSelect2Widget
 
 
 
-# Формы для товаров и Excel (чтобы работали кнопки создания и загрузки)
+# Формы для товаров и Excel
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = ['name', 'sku', 'category', 'supplier', 'unit', 'quantity_value', 'measure_unit', 'cost_price',
                   'sale_price']
-
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'sku': forms.TextInput(attrs={'class': 'form-control'}),
@@ -24,12 +23,9 @@ class ProductForm(forms.ModelForm):
             'sale_price': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
         }
 
-
 class ProductEditForm(forms.ModelForm):
-
     class Meta:
         model = Product
-
         fields = [
             'name',
             'category',
@@ -41,7 +37,6 @@ class ProductEditForm(forms.ModelForm):
             'quantity_value',
             'measure_unit',
         ]
-
         labels = {
             'name': 'Наименование',
             'category': 'Бренд',
@@ -53,43 +48,34 @@ class ProductEditForm(forms.ModelForm):
             'measure_unit': 'Ед. измерения объема',
             'unit': 'Единица учета',
         }
-
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control'
             }),
-
             'category': forms.Select(attrs={
                 'class': 'form-select'
             }),
-
             'supplier': forms.Select(attrs={
                 'class': 'form-select'
             }),
-
             'sku': forms.TextInput(attrs={
                 'class': 'form-control'
             }),
-
             'cost_price': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01'
             }),
-
             'sale_price': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01'
             }),
-
             'unit': forms.TextInput(attrs={
                 'class': 'form-control'
             }),
-
             'quantity_value': forms.NumberInput(attrs={
                 'class': 'form-control',
                 'step': '0.01'
             }),
-
             'measure_unit': forms.Select(attrs={
                 'class': 'form-select'
             }),
@@ -100,7 +86,6 @@ class CounterpartyForm(forms.ModelForm):
 
     class Meta:
         model = Counterparty
-
         fields = [
             'type',
             'company_name',
@@ -108,35 +93,30 @@ class CounterpartyForm(forms.ModelForm):
             'last_name',
             'first_name'
         ]
-
         widgets = {
             'type': forms.Select(
                 attrs={
                     'class': 'form-select'
                 }
             ),
-
             'company_name': forms.TextInput(
                 attrs={
                     'class': 'form-control',
                     'placeholder': 'ООО Ромашка'
                 }
             ),
-
             'inn': forms.TextInput(
                 attrs={
                     'class': 'form-control',
                     'placeholder': '1234567890'
                 }
             ),
-
             'first_name': forms.TextInput(
                 attrs={
                     'class': 'form-control',
                     'placeholder': 'Иван'
                 }
             ),
-
             'last_name': forms.TextInput(
                 attrs={
                     'class': 'form-control',
@@ -144,7 +124,6 @@ class CounterpartyForm(forms.ModelForm):
                 }
             ),
         }
-
 
     def __init__(self, *args, counterparty_type=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -162,36 +141,29 @@ class CounterpartyForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-
         type = cleaned_data.get('type')
-
         if type == 'customer':
             if not cleaned_data.get('first_name'):
                 self.add_error(
                     'first_name',
                     'Введите имя клиента'
                 )
-
             if not cleaned_data.get('last_name'):
                 self.add_error(
                     'last_name',
                     'Введите фамилию клиента'
                 )
-
-
         if type == 'supplier':
             if not cleaned_data.get('company_name'):
                 self.add_error(
                     'company_name',
                     'Введите название компании'
                 )
-
             if not cleaned_data.get('inn'):
                 self.add_error(
                     'inn',
                     'Введите ИНН'
                 )
-
         return cleaned_data
 
 class CategoryForm(forms.ModelForm):
@@ -205,32 +177,25 @@ class CategoryForm(forms.ModelForm):
 class ExcelUploadForm(forms.Form):
     file = forms.FileField(label="Выберите файл Excel (.xlsx)")
 
-
 class ReceiptForm(forms.ModelForm):
-
     class Meta:
         model = Receipt
-
         fields = [
             'warehouse',
             'supplier',
             'comment'
         ]
-
         widgets = {
-
             'warehouse': forms.Select(
                 attrs={
                     'class': 'form-select'
                 }
             ),
-
             'supplier': forms.Select(
                 attrs={
                     'class': 'form-select'
                 }
             ),
-
             'comment': forms.Textarea(
                 attrs={
                     'rows': 3,
@@ -241,17 +206,13 @@ class ReceiptForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         # если склад не выбран — ставим первый
         if not self.instance.pk:
-
             first_warehouse = Warehouse.objects.first()
-
             if first_warehouse:
                 self.fields['warehouse'].initial = first_warehouse
 
 class ReceiptItemForm(forms.ModelForm):
-
     balance = forms.DecimalField(
         required=False,
         disabled=True,
@@ -262,8 +223,6 @@ class ReceiptItemForm(forms.ModelForm):
             }
         )
     )
-
-
     product = forms.ModelChoiceField(
         queryset=Product.objects.all(),
         widget=ModelSelect2Widget(
@@ -276,12 +235,8 @@ class ReceiptItemForm(forms.ModelForm):
         ),
         label="Товар"
     )
-
-
     class Meta:
-
         model = ReceiptItem
-
         fields = [
             'product',
             'balance',
@@ -289,24 +244,19 @@ class ReceiptItemForm(forms.ModelForm):
             'cost_price',
             'sale_price',
         ]
-
-
         widgets = {
-
             'quantity': forms.NumberInput(
                 attrs={
                     'class':'form-control',
                     'min':1
                 }
             ),
-
             'cost_price': forms.NumberInput(
                 attrs={
                     'class':'form-control',
                     'step':'0.01'
                 }
             ),
-
             'sale_price': forms.NumberInput(
                 attrs={
                     'class':'form-control',
@@ -314,59 +264,49 @@ class ReceiptItemForm(forms.ModelForm):
                 }
             )
         }
-
-
     def __init__(self, *args, **kwargs):
-
         super().__init__(*args, **kwargs)
-
-
-        # БЕЗОПАСНАЯ ПРОВЕРКА
         product = None
-
         if self.instance and self.instance.pk:
-
             product = getattr(
                 self.instance,
                 'product',
                 None
             )
-
-
         if product:
-
             self.fields['cost_price'].initial = product.cost_price
-
             self.fields['sale_price'].initial = (
                 product.sale_price or 0
             )
 
-
 class SaleForm(forms.ModelForm):
-
     class Meta:
-
         model = Sale
-
         fields = [
             'warehouse',
             'customer',
             'comment'
         ]
-
         widgets = {
-
             'comment': forms.Textarea(
                 attrs={
                     'rows': 3,
                     'class': 'form-control'
                 }
             )
-
         }
 
-class SaleItemForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
+        if not self.instance.pk and not self.initial.get('warehouse'):
+            warehouse = Warehouse.objects.first()
+
+            if warehouse:
+                self.initial['warehouse'] = warehouse.pk
+
+
+class SaleItemForm(forms.ModelForm):
     balance = forms.DecimalField(
         required=False,
         disabled=True,
@@ -377,7 +317,6 @@ class SaleItemForm(forms.ModelForm):
             }
         )
     )
-
     product = forms.ModelChoiceField(
         queryset=Product.objects.all(),
         widget=ModelSelect2Widget(
@@ -390,27 +329,22 @@ class SaleItemForm(forms.ModelForm):
         ),
         label="Товар"
     )
-
     class Meta:
-
         model = SaleItem
-
         fields = [
             'product',
             "balance",
             'quantity',
             'sale_price'
         ]
-
         widgets = {
-
             'quantity': forms.NumberInput(
                 attrs={
                     'class': 'form-control',
-                    'min': 1
+                    'min': 1,
+                    'step': 1
                 }
             ),
-
             'sale_price': forms.NumberInput(
                 attrs={
                     'class': 'form-control',
@@ -420,7 +354,10 @@ class SaleItemForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        warehouse = kwargs.pop('warehouse', None)
         super().__init__(*args, **kwargs)
+
+        self.warehouse = warehouse
 
         if self.instance.pk:
             product = self.instance.product
@@ -428,41 +365,24 @@ class SaleItemForm(forms.ModelForm):
             product = self.initial.get("product")
 
         if product:
-            warehouse = Warehouse.objects.first()
-
             self.fields["balance"].initial = (
                 product.get_balance(warehouse)
                 if warehouse else 0
             )
-
             self.fields["sale_price"].initial = product.sale_price
 
 ReceiptItemFormSet = inlineformset_factory(
-
     Receipt,
-
     ReceiptItem,
-
     form=ReceiptItemForm,
-
     extra=5,
-
     can_delete=True
-
 )
 
-
-
 SaleItemFormSet = inlineformset_factory(
-
     Sale,
-
     SaleItem,
-
     form=SaleItemForm,
-
     extra=1,
-
     can_delete=True
-
 )

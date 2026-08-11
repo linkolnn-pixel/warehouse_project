@@ -8,219 +8,118 @@
 {% block content %}
 
 <div class="container mt-4">
+    <h2 class="mb-4">🧾 Продажа №{{ sale.number }}</h2>
+        <div class="card shadow p-4">
+            <div class="row">
+                <div class="col-md-6">
+
+                <p>
+                <strong>Дата:</strong><br>
+                {{ sale.date }}
+                </p>
+
+                <p>
+                <strong>Клиент:</strong><br>
+                {% if sale.customer %}
+                    {{ sale.customer.last_name }}
+                    {{ sale.customer.first_name }}
+                {% else %}
+                —
+                {% endif %}
+                </p>
+
+                <p>
+                <strong>Склад:</strong><br>
+                {{ sale.warehouse }}
+                </p>
+
+                </div>
+                <div class="col-md-6 text-end">
+                    {% if sale.posted %}
+                        <div class="alert alert-success">✅ Продажа проведена</div>
+                        {% else %}
+
+                        <form method="post" action="{% url 'sale_post' sale.pk %}">
+                            {% csrf_token %}
+                            <button type="submit"
+                            class="btn btn-success btn-lg">
+                            ✅ Провести продажу
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+
+        <hr>
+
+        <h4>Товары</h4>
+
+
+        <table class="table table-bordered table-hover mt-3">
+
+            <thead class="table-light">
+                <tr>
+                    <th>Товар</th>
+                    <th width="120">Количество</th>
+                    <th width="150">Цена</th>
+                    <th width="150">Сумма</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in sale.items.all %}
+                    <tr>
+                        <td>{{ item.product.name }}</td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.sale_price }} ₽</td>
+                        <td>{{ item.total }} ₽</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center">Товары отсутствуют</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+
+        <hr>
+
+
+            <div class="d-flex justify-content-between">
+
+                <div>
+
+                    <a href="{% url 'sale_create' %}"
+                    class="btn btn-primary">
+                    ➕ Новая продажа
+                    </a>
+
+                    <a href="{% url 'stock_management' %}"
+                    class="btn btn-secondary">
+                    🏬 Склад
+                    </a>
+
+                    <a href="{% url 'products_catalog' %}"
+                    class="btn btn-outline-secondary">
+                    📦 Каталог
+                    </a>
+
+                </div>
+
+                <div>
+                <a href="javascript:history.back()"
+                class="btn btn-outline-dark">
+                ← Назад
+                </a>
+                </div>
 
 
-<h2 class="mb-4">
-🧾 Продажа №{{ sale.number }}
-</h2>
+            </div>
 
 
-<div class="card shadow p-4">
-
-
-<div class="row">
-
-<div class="col-md-6">
-
-<p>
-<strong>Дата:</strong><br>
-{{ sale.date }}
-</p>
-
-
-<p>
-<strong>Клиент:</strong><br>
-
-{% if sale.customer %}
-    {{ sale.customer.last_name }}
-    {{ sale.customer.first_name }}
-{% else %}
-—
-{% endif %}
-
-</p>
-
-
-<p>
-<strong>Склад:</strong><br>
-{{ sale.warehouse }}
-</p>
-
-</div>
-
-
-<div class="col-md-6 text-end">
-
-
-{% if sale.posted %}
-
-<div class="alert alert-success">
-✅ Продажа проведена
-</div>
-
-
-{% else %}
-
-<form method="post" action="{% url 'sale_post' sale.pk %}">
-
-{% csrf_token %}
-
-<button type="submit"
-class="btn btn-success btn-lg">
-
-✅ Провести продажу
-
-</button>
-
-</form>
-
-
-{% endif %}
-
-
-</div>
-
-</div>
-
-
-<hr>
-
-
-<h4>
-Товары
-</h4>
-
-
-<table class="table table-bordered table-hover mt-3">
-
-
-<thead class="table-light">
-
-<tr>
-
-<th>
-Товар
-</th>
-
-<th width="120">
-Количество
-</th>
-
-<th width="150">
-Цена
-</th>
-
-<th width="150">
-Сумма
-</th>
-
-</tr>
-
-</thead>
-
-
-<tbody>
-
-
-{% for item in sale.items.all %}
-
-<tr>
-
-<td>
-{{ item.product.name }}
-</td>
-
-
-<td>
-{{ item.quantity }}
-</td>
-
-
-<td>
-{{ item.sale_price }} ₽
-</td>
-
-
-<td>
-{{ item.total }} ₽
-</td>
-
-
-</tr>
-
-
-{% empty %}
-
-<tr>
-
-<td colspan="4" class="text-center">
-
-Товары отсутствуют
-
-</td>
-
-</tr>
-
-
-{% endfor %}
-
-
-</tbody>
-
-
-</table>
-
-
-<hr>
-
-
-<div class="d-flex justify-content-between">
-
-
-<div>
-
-<a href="{% url 'sale_create' %}"
-class="btn btn-primary">
-
-➕ Новая продажа
-
-</a>
-
-
-<a href="{% url 'stock_management' %}"
-class="btn btn-secondary">
-
-🏬 Склад
-
-</a>
-
-
-<a href="{% url 'products_catalog' %}"
-class="btn btn-outline-secondary">
-
-📦 Каталог
-
-</a>
-
-</div>
-
-
-<div>
-
-<a href="javascript:history.back()"
-class="btn btn-outline-dark">
-
-← Назад
-
-</a>
-
-</div>
-
-
-</div>
-
-
-</div>
+        </div>
 
 
 </div>
