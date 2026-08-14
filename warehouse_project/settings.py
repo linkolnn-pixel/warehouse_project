@@ -57,23 +57,15 @@ else:
 
 if AMVERA:
 
-    if TEST_MODE:
-        ALLOWED_HOSTS = [
-            'workhouse-test-mkhiln.amvera.io',
-        ]
+    ALLOWED_HOSTS = [
+        'warehouse-mkhiln.amvera.io',
+        'workhouse-test-mkhiln.amvera.io',
+    ]
 
-        CSRF_TRUSTED_ORIGINS = [
-            'https://workhouse-test-mkhiln.amvera.io',
-        ]
-
-    else:
-        ALLOWED_HOSTS = [
-            'warehouse-mkhiln.amvera.io',
-        ]
-
-        CSRF_TRUSTED_ORIGINS = [
-            'https://warehouse-mkhiln.amvera.io',
-        ]
+    CSRF_TRUSTED_ORIGINS = [
+        'https://warehouse-mkhiln.amvera.io',
+        'https://workhouse-test-mkhiln.amvera.io',
+    ]
 
 else:
 
