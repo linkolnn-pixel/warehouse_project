@@ -3,14 +3,12 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
 
-
 class Warehouse(models.Model):
     name = models.CharField(max_length=100, unique=True)
     address = models.TextField(blank=True)
 
     def __str__(self):
         return self.name
-
 
 class Counterparty(models.Model):
     TYPE_CHOICES = (
@@ -49,6 +47,30 @@ class Counterparty(models.Model):
     class Meta:
         verbose_name = 'Контрагент'
         verbose_name_plural = 'Контрагенты'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['type', 'first_name', 'last_name'],
+                condition=models.Q(type='customer'),
+                name='unique_customer_name',
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+
+        if self.type == 'customer':
+            if not self.first_name or not self.first_name.strip():
+                raise ValidationError({'first_name': 'Введите имя клиента.'})
+
+            if not self.last_name or not self.last_name.strip():
+                raise ValidationError({'last_name': 'Введите фамилию клиента.'})
+
+        elif self.type == 'supplier':
+            if not self.company_name or not self.company_name.strip():
+                raise ValidationError({'company_name': 'Введите название компании.'})
+
+            if not self.inn or not self.inn.strip():
+                raise ValidationError({'inn': 'Введите ИНН.'})
 
     def __str__(self):
         if self.type == 'customer':
@@ -80,8 +102,6 @@ class Category(models.Model):
             k = k.parent
         return ' > '.join(full_path[::-1])
 
-
-#  СЧЕТЧИК
 class ProductCodeSequence(models.Model):
 
     next_code = models.PositiveIntegerField(default=1)
@@ -99,7 +119,6 @@ class ProductCodeSequence(models.Model):
         sequence.next_code += 1
         sequence.save(update_fields=['next_code'])
         return current_code
-
 
 # -----------------------------
 
@@ -171,7 +190,6 @@ class Product(models.Model):
             self.internal_code = f"{code_number:04d}"
         super().save(*args, **kwargs)
 
-
 class Transaction(models.Model):
     TYPE_CHOICES = (
         ('IN', 'Приход'),
@@ -214,7 +232,6 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f"{self.get_type_display()} {self.product.name} ({self.quantity} {self.product.unit})"
-
 
 class Receipt(models.Model):
     number = models.PositiveIntegerField(
@@ -404,7 +421,6 @@ class Sale(models.Model):
 
         # Обновляем текущий объект
         self.posted = True
-
 
 class SaleItem(models.Model):
     sale = models.ForeignKey(

@@ -81,7 +81,6 @@ class ProductEditForm(forms.ModelForm):
             }),
         }
 
-
 class CounterpartyForm(forms.ModelForm):
 
     class Meta:
@@ -101,32 +100,29 @@ class CounterpartyForm(forms.ModelForm):
             ),
             'company_name': forms.TextInput(
                 attrs={
-                    'class': 'form-control',
-                    'placeholder': 'ООО Ромашка'
+                    'class': 'form-control'
                 }
             ),
             'inn': forms.TextInput(
                 attrs={
-                    'class': 'form-control',
-                    'placeholder': '1234567890'
+                    'class': 'form-control'
                 }
             ),
             'first_name': forms.TextInput(
                 attrs={
-                    'class': 'form-control',
-                    'placeholder': 'Иван'
+                    'class': 'form-control'
                 }
             ),
             'last_name': forms.TextInput(
                 attrs={
-                    'class': 'form-control',
-                    'placeholder': 'Иванов'
+                    'class': 'form-control'
                 }
             ),
         }
 
     def __init__(self, *args, counterparty_type=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.counterparty_type = counterparty_type
 
         if counterparty_type == 'customer':
             self.fields.pop('company_name')
@@ -138,32 +134,52 @@ class CounterpartyForm(forms.ModelForm):
             self.fields.pop('last_name')
             self.fields.pop('type')
 
-
     def clean(self):
         cleaned_data = super().clean()
-        type = cleaned_data.get('type')
-        if type == 'customer':
-            if not cleaned_data.get('first_name'):
+
+        if self.counterparty_type == 'customer':
+            first_name = cleaned_data.get('first_name')
+            last_name = cleaned_data.get('last_name')
+
+            if not first_name:
                 self.add_error(
                     'first_name',
                     'Введите имя клиента'
                 )
-            if not cleaned_data.get('last_name'):
+
+            if not last_name:
                 self.add_error(
                     'last_name',
                     'Введите фамилию клиента'
                 )
-        if type == 'supplier':
+
+            if first_name and last_name:
+                exists = Counterparty.objects.filter(
+                    type='customer',
+                    first_name__iexact=first_name.strip(),
+                    last_name__iexact=last_name.strip(),
+                ).exclude(
+                    pk=self.instance.pk
+                ).exists()
+
+                if exists:
+                    raise forms.ValidationError(
+                        'Клиент с таким именем и фамилией уже существует.'
+                    )
+
+        elif self.counterparty_type == 'supplier':
             if not cleaned_data.get('company_name'):
                 self.add_error(
                     'company_name',
                     'Введите название компании'
                 )
+
             if not cleaned_data.get('inn'):
                 self.add_error(
                     'inn',
                     'Введите ИНН'
                 )
+
         return cleaned_data
 
 class CategoryForm(forms.ModelForm):
@@ -171,7 +187,7 @@ class CategoryForm(forms.ModelForm):
         model = Category
         fields = ['name']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'required': 'required', 'placeholder': 'Angiopharm'})
+            'name': forms.TextInput(attrs={'class': 'form-control', 'required': 'required'})
         }
 
 class ExcelUploadForm(forms.Form):
@@ -304,7 +320,6 @@ class SaleForm(forms.ModelForm):
 
             if warehouse:
                 self.initial['warehouse'] = warehouse.pk
-
 
 class SaleItemForm(forms.ModelForm):
     balance = forms.DecimalField(
