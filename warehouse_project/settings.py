@@ -15,6 +15,7 @@ from pathlib import Path
 from django import template
 
 register = template.Library()
+
 @register.filter
 def dict_value(d, key):
     return d.get(key, 0)
@@ -22,31 +23,66 @@ def dict_value(d, key):
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# ============================================================
+# ENVIRONMENT
+# ============================================================
+AMVERA = os.getenv('AMVERA', 'False') == 'True'
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+# Локально автоматически тестовый режим.
+# На Amvera режим задаётся явно через TEST_MODE.
+if AMVERA:
+    TEST_MODE = os.getenv('TEST_MODE', 'False') == 'True'
+else:
+    TEST_MODE = True
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# ============================================================
+# SECURITY
+# ============================================================
 
 SECRET_KEY = os.environ.get(
     'DJANGO_SECRET_KEY',
     'django-insecure-local-dev-key'
 )
 
-TEST_MODE = os.getenv('TEST_MODE', 'False') == 'True'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
+if AMVERA:
+    DEBUG = os.getenv('DJANGO_DEBUG', 'False') == 'True'
+else:
+    DEBUG = True
 
-ALLOWED_HOSTS = [
-    'warehouse-mkhiln.amvera.io',
-    'workhouse-test-mkhiln.amvera.io',
-]
+# ============================================================
+# HOSTS / CSRF
+# ============================================================
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://warehouse-mkhiln.amvera.io",
-    'https://workhouse-test-mkhiln.amvera.io'
-]
+if AMVERA:
+
+    if TEST_MODE:
+        ALLOWED_HOSTS = [
+            'workhouse-test-mkhiln.amvera.io',
+        ]
+
+        CSRF_TRUSTED_ORIGINS = [
+            'https://workhouse-test-mkhiln.amvera.io',
+        ]
+
+    else:
+        ALLOWED_HOSTS = [
+            'warehouse-mkhiln.amvera.io',
+        ]
+
+        CSRF_TRUSTED_ORIGINS = [
+            'https://warehouse-mkhiln.amvera.io',
+        ]
+
+else:
+
+    ALLOWED_HOSTS = [
+        'localhost',
+        '127.0.0.1',
+    ]
+
+    CSRF_TRUSTED_ORIGINS = []
 
 
 # Application definition
@@ -97,12 +133,23 @@ WSGI_APPLICATION = 'warehouse_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': '/data/db.sqlite3',
+if AMVERA:
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': '/data/db.sqlite3',
+        }
     }
-}
+
+else:
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -148,3 +195,10 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 LOGIN_URL = '/'
 LOGIN_REDIRECT_URL = '/inventory/'
 LOGOUT_REDIRECT_URL = '/'
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'inventory.permissions.TestModeOrAuthenticated',
+    ],
+}

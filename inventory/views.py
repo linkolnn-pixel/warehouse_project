@@ -17,6 +17,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.core.exceptions import ValidationError
 from .decorators import test_mode_login_required
+from .permissions import TestModeOrAuthenticated
 
 
 @test_mode_login_required
@@ -668,6 +669,7 @@ def customer_detail(request, pk):
     )
 
 class ProductViewSet(ReadOnlyModelViewSet):
+    permission_classes = [TestModeOrAuthenticated]
     queryset = Product.objects.select_related(
         'category',
         'supplier',
@@ -675,6 +677,7 @@ class ProductViewSet(ReadOnlyModelViewSet):
     serializer_class = ProductSerializer
 
 class WarehouseViewSet(ReadOnlyModelViewSet):
+    permission_classes = [TestModeOrAuthenticated]
     queryset = Warehouse.objects.all()
     serializer_class = WarehouseSerializer
 
@@ -727,8 +730,8 @@ class WarehouseViewSet(ReadOnlyModelViewSet):
 
         return Response(serializer.data)
 
-
 class ReceiptViewSet(ModelViewSet):
+    permission_classes = [TestModeOrAuthenticated]
     queryset = Receipt.objects.select_related(
         'warehouse',
         'supplier',
@@ -774,6 +777,7 @@ class ReceiptViewSet(ModelViewSet):
         )
 
 class SaleViewSet(ModelViewSet):
+    permission_classes = [TestModeOrAuthenticated]
     queryset = Sale.objects.select_related(
         'warehouse',
         'customer',
