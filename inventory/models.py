@@ -172,8 +172,6 @@ class Product(models.Model):
         super().save(*args, **kwargs)
 
 
-
-
 class Transaction(models.Model):
     TYPE_CHOICES = (
         ('IN', 'Приход'),
