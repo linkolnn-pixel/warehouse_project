@@ -55,26 +55,17 @@ else:
 # HOSTS / CSRF
 # ============================================================
 
-if AMVERA:
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'warehouse-mkhiln.amvera.io',
+    'workhouse-test-mkhiln.amvera.io',
+]
 
-    ALLOWED_HOSTS = [
-        'warehouse-mkhiln.amvera.io',
-        'workhouse-test-mkhiln.amvera.io',
-    ]
-
-    CSRF_TRUSTED_ORIGINS = [
-        'https://warehouse-mkhiln.amvera.io',
-        'https://workhouse-test-mkhiln.amvera.io',
-    ]
-
-else:
-
-    ALLOWED_HOSTS = [
-        'localhost',
-        '127.0.0.1',
-    ]
-
-    CSRF_TRUSTED_ORIGINS = []
+CSRF_TRUSTED_ORIGINS = [
+    'https://warehouse-mkhiln.amvera.io',
+    'https://workhouse-test-mkhiln.amvera.io',
+]
 
 
 # Application definition
