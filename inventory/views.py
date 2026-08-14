@@ -173,36 +173,133 @@ def upload_products(request):
 
 @test_mode_login_required
 def create_product(request):
+    next_name = request.GET.get(
+        'next',
+        'products_catalog'
+    )
+    target = request.GET.get(
+        'target',
+        ''
+    )
+    selected_products = request.GET.getlist(
+        'products'
+    )
+    customer_id = request.GET.get(
+        'customer'
+    )
+    supplier_id = request.GET.get(
+        'supplier'
+    )
     if request.method == 'POST':
         form = ProductForm(request.POST)
         if form.is_valid():
             product = form.save(commit=False)
             product.save()
-            messages.success(request, "Товар успешно создан!")
+            messages.success(
+                request,
+                "Товар успешно создан!"
+            )
+            # Если пришли из выбора товаров
+            if next_name == 'product_picker':
+                params = [
+                    f'target={target}',
+                    f'products={product.pk}',
+                ]
+                # Старые товары
+                for product_id in selected_products:
+                    if product_id != str(product.pk):
+                        params.append(
+                            f'products={product_id}'
+                        )
+                # Клиент
+                if customer_id and customer_id.isdigit():
+                    params.append(
+                        f'customer={customer_id}'
+                    )
+                # Поставщик
+                if supplier_id and supplier_id.isdigit():
+                    params.append(
+                        f'supplier={supplier_id}'
+                    )
+                return redirect(
+                    f"{reverse('product_picker')}?"
+                    + "&".join(params)
+                )
             return redirect('products_catalog')
-        else:
-            messages.error(request, "Исправьте ошибки в форме.")
+        messages.error(
+            request,
+            "Исправьте ошибки в форме."
+        )
     else:
         form = ProductForm()
-    return render(request, 'inventory/create_product.html', {'form': form})
+    return render(
+        request,
+        'inventory/create_product.html',
+        {
+            'form': form,
+            'next_name': next_name,
+            'target': target,
+            'selected_products': selected_products,
+        }
+    )
 
 @test_mode_login_required
 def counterparty_create(request):
-    next_name = request.GET.get("next", "products_catalog")
+    next_name = request.GET.get(
+        "next",
+        "products_catalog"
+    )
+    selected_products = request.GET.getlist(
+        "products"
+    )
+    return_url = request.GET.get(
+        "return_url"
+    )
     if request.method == "POST":
-        form = CounterpartyForm(request.POST, counterparty_type="supplier")
+        form = CounterpartyForm(
+            request.POST,
+            counterparty_type="supplier"
+        )
         if form.is_valid():
             supplier = form.save(commit=False)
             supplier.type = "supplier"
             try:
                 supplier.save()
-                messages.success(request, f"Поставщик «{supplier.company_name}» создан.")
-                return redirect(next_name)
+                messages.success(
+                    request,
+                    f"Поставщик «{supplier.company_name}» создан."
+                )
+                # Возвращаемся в create_product
+                # и восстанавливаем весь контекст.
+                url = reverse(next_name)
+                params = []
+                for product_id in selected_products:
+                    params.append(
+                        f"products={product_id}"
+                    )
+                if return_url:
+                    params.append(
+                        f"return_url={return_url}"
+                    )
+                if params:
+                    url += "?" + "&".join(params)
+                return redirect(url)
             except IntegrityError:
-                messages.error(request, "Такой поставщик уже существует.")
+                messages.error(
+                    request,
+                    "Такой поставщик уже существует."
+                )
     else:
-        form = CounterpartyForm( counterparty_type="supplier" )
-    return render(request, "inventory/counterparty_form.html", { "form": form })
+        form = CounterpartyForm(
+            counterparty_type="supplier"
+        )
+    return render(
+        request,
+        "inventory/counterparty_form.html",
+        {
+            "form": form
+        }
+    )
 
 @test_mode_login_required
 def product_detail(request, pk):
@@ -246,27 +343,63 @@ def product_edit(request, pk):
 
 @test_mode_login_required
 def category_create(request):
-    next_url = request.GET.get('next')
-    if next_url and not next_url.startswith('/'):
-        redirect_name = next_url
-    else:
-        redirect_name = 'products_catalog'
-    if request.method == 'POST':
+    next_name = request.GET.get(
+        "next",
+        "products_catalog"
+    )
+    selected_products = request.GET.getlist(
+        "products"
+    )
+    return_url = request.GET.get(
+        "return_url"
+    )
+    if request.method == "POST":
         form = CategoryForm(request.POST)
         if form.is_valid():
             try:
-                instance = form.save(commit=False)
+                instance = form.save(
+                    commit=False
+                )
                 instance.save()
-                messages.success(request, "Категория успешно создана!")
-                return redirect(redirect_name)
+                messages.success(
+                    request,
+                    "Категория успешно создана!"
+                )
+                # Возвращаемся в create_product
+                # с сохранённым контекстом.
+                url = reverse(next_name)
+                params = []
+                for product_id in selected_products:
+                    params.append(
+                        f"products={product_id}"
+                    )
+                if return_url:
+                    params.append(
+                        f"return_url={return_url}"
+                    )
+                if params:
+                    url += "?" + "&".join(params)
+                return redirect(url)
             except IntegrityError:
-                messages.error(request, "Ошибка: Категория с таким названием или slug уже существует.")
-                return render(request, 'inventory/category_form.html', {'form': form})
+                messages.error(
+                    request,
+                    "Ошибка: Категория с таким названием или slug уже существует."
+                )
         else:
-            messages.error(request, "Исправьте ошибки в форме.")
-            return render(request, 'inventory/category_form.html', {'form': form})
-    form = CategoryForm()
-    return render(request, 'inventory/category_form.html', {'form': form})
+            messages.error(
+                request,
+                "Исправьте ошибки в форме."
+
+            )
+    else:
+        form = CategoryForm()
+    return render(
+        request,
+        "inventory/category_form.html",
+        {
+            "form": form
+        }
+    )
 
 @test_mode_login_required
 def movement_report(request):
@@ -341,27 +474,44 @@ def products_catalog_view(request):
 def receipt_create(request):
     warehouse = Warehouse.objects.first()
     if not warehouse:
-        messages.error(request, "Нет склада. Создайте склад.")
-        return redirect('stock_management')
-    selected_products = request.GET.getlist('products')
+        messages.error(
+            request,
+            "Нет склада. Создайте склад."
+        )
+        return redirect("stock_management")
+    selected_products = (
+            request.POST.getlist("products")
+            or request.GET.getlist("products")
+    )
+    supplier_id = (
+            request.POST.get("supplier")
+            or request.GET.get("supplier")
+    )
     product_ids = [
         int(x)
         for x in selected_products
         if x.isdigit()
     ]
-    products = Product.objects.filter(id__in=product_ids).select_related('category')
+    products = (
+        Product.objects
+        .filter(id__in=product_ids)
+        .select_related("category")
+    )
     ReceiptItemFormSetDynamic = inlineformset_factory(
         Receipt,
         ReceiptItem,
         form=ReceiptItemForm,
         extra=len(products) if products else 1,
-        can_delete=True
+        can_delete=True,
     )
     if request.method == "POST":
-        form = ReceiptForm(request.POST)
+        post_data = request.POST.copy()
+        if not post_data.get("supplier") and supplier_id:
+            post_data["supplier"] = supplier_id
+        form = ReceiptForm(post_data)
         if form.is_valid():
             receipt = form.save(commit=False)
-            receipt.warehouse = form.cleaned_data['warehouse']
+            receipt.warehouse = form.cleaned_data["warehouse"]
             receipt.save()
             formset = ReceiptItemFormSetDynamic(
                 request.POST,
@@ -372,31 +522,50 @@ def receipt_create(request):
                 for item in items:
                     item.receipt = receipt
                     item.save()
-                messages.success(request, f"Приход №{receipt.number} создан")
-                return redirect('receipt_detail', pk=receipt.pk)
+                for obj in formset.deleted_objects:
+                    obj.delete()
+                messages.success(
+                    request,
+                    f"Приход №{receipt.number} создан"
+                )
+                return redirect(
+                    "receipt_detail",
+                    pk=receipt.pk
+                )
     else:
-        form = ReceiptForm(initial={'warehouse': warehouse})
+        initial_data = {
+            "warehouse": warehouse
+        }
+        supplier_id = request.GET.get("supplier")
+        if supplier_id:
+            initial_data["supplier"] = supplier_id
+        form = ReceiptForm(
+            initial=initial_data
+        )
         initial = []
-        for product in products:
+        for selected_product in products:
             initial.append(
                 {
-                    'product': product,
-                    'quantity': 1,
-                    'cost_price': product.cost_price,
-                    'sale_price': product.sale_price,
+                    "product": selected_product,
+                    "quantity": 1,
+                    "cost_price": selected_product.cost_price,
+                    "sale_price": selected_product.sale_price,
                 }
             )
-        receipt = Receipt()
+        receipt = Receipt(
+            warehouse=warehouse
+        )
         formset = ReceiptItemFormSetDynamic(
             instance=receipt,
             initial=initial
         )
     return render(
         request,
-        'inventory/receipt_create.html',
+        "inventory/receipt_create.html",
         {
-            'form': form,
-            'formset': formset,
+            "form": form,
+            "formset": formset,
+            "supplier_id": supplier_id,
         }
     )
 
@@ -424,15 +593,24 @@ def sale_create(request):
     if not warehouse:
         messages.error(request, "Нет склада.")
         return redirect("stock_management")
-    selected_products = request.GET.getlist("products")
-    customer_id = request.GET.get("customer")
+    selected_products = (
+            request.POST.getlist("products")
+            or request.GET.getlist("products")
+    )
+    customer_id = (
+            request.POST.get("customer")
+            or request.GET.get("customer")
+    )
     product_ids = [
         int(x)
         for x in selected_products
         if x.isdigit()
     ]
-    products = Product.objects.filter(id__in=product_ids).select_related("category")
-    selected_products_string = ",".join(selected_products)
+    products = (
+        Product.objects
+        .filter(id__in=product_ids)
+        .select_related("category")
+    )
     SaleItemFormSetDynamic = inlineformset_factory(
         Sale,
         SaleItem,
@@ -443,7 +621,10 @@ def sale_create(request):
     if request.method == "POST":
         form = SaleForm(request.POST)
         sale = Sale()
-        formset = SaleItemFormSetDynamic(request.POST, instance=sale)
+        formset = SaleItemFormSetDynamic(
+            request.POST,
+            instance=sale
+        )
         if form.is_valid() and formset.is_valid():
             stock_error = False
             for item_form in formset:
@@ -457,31 +638,47 @@ def sale_create(request):
                     continue
                 current_stock = product.get_balance(warehouse)
                 if quantity > current_stock:
-                    messages.error( request, f"Недостаточно товара: " f"{product.name}. " f"Доступно: {current_stock}, " f"запрошено: {quantity}.")
+                    messages.error(
+                        request,
+                        f"Недостаточно товара: {product.name}. "
+                        f"Доступно: {current_stock}, "
+                        f"запрошено: {quantity}."
+                    )
                     stock_error = True
-            # Если товара недостаточно —
-            # НЕ сохраняем продажу и возвращаем форму.
             if stock_error:
-                return render( request, "inventory/sale_create.html", { "form": form, "formset": formset, })
-            # ЕСЛИ ОСТАТКОВ ДОСТАТОЧНО — СОХРАНЯЕМ
+                return render(
+                    request,
+                    "inventory/sale_create.html",
+                    {
+                        "form": form,
+                        "formset": formset,
+                    }
+                )
             sale = form.save()
             formset.instance = sale
             items = formset.save(commit=False)
             for item in items:
                 item.sale = sale
                 item.save()
-            # Удаляем отмеченные строки
             for obj in formset.deleted_objects:
                 obj.delete()
-            messages.success(request, f"Продажа №{sale.id} создана")
-            return redirect("sale_detail", pk=sale.pk)
+            messages.success(
+                request,
+                f"Продажа №{sale.id} создана"
+            )
+            return redirect(
+                "sale_detail",
+                pk=sale.pk
+            )
     else:
-
+        initial_data = {
+            "warehouse": warehouse,
+        }
+        customer_id = request.GET.get("customer")
+        if customer_id:
+            initial_data["customer"] = customer_id
         form = SaleForm(
-            initial={
-                "warehouse": warehouse,
-                "customer": customer_id
-            }
+            initial=initial_data
         )
         initial = []
         for product in products:
@@ -490,7 +687,6 @@ def sale_create(request):
                     "product": product,
                     "quantity": 1,
                     "sale_price": product.sale_price,
-                    "balance": product.get_balance(warehouse),
                 }
             )
         sale = Sale()
@@ -504,6 +700,7 @@ def sale_create(request):
         {
             "form": form,
             "formset": formset,
+            "customer_id": customer_id,
         }
     )
 
@@ -525,61 +722,100 @@ def sale_post(request, pk):
 @test_mode_login_required
 def product_picker(request):
     query = request.GET.get('q', '')
-    target = request.GET.get(
-        'target',
-        'receipt'
-    )
-    customer_id = request.GET.get('customer')
+    target = request.GET.get('target', 'receipt')
     category_id = request.GET.get('category')
-    supplier_id = request.GET.get('supplier')
-    # уже добавленные товары
+    customer_id = (
+        request.POST.get('customer')
+        or request.GET.get('customer')
+    )
+    supplier_id = (
+        request.POST.get('supplier')
+        or request.GET.get('supplier')
+    )
     selected_existing = request.GET.getlist('selected')
+    selected_from_products = request.GET.getlist('products')
     selected_ids = {
         int(x)
-        for x in selected_existing
+        for x in (
+            selected_existing +
+            selected_from_products
+        )
         if x.isdigit()
     }
-    products = Product.objects.all().select_related(
-        'category',
-        'supplier'
+    products = (
+        Product.objects
+        .select_related(
+            'category',
+            'supplier'
+        )
+        .all()
     )
     if query:
-        products = products.filter(name__icontains=query)
-    if category_id:
-        products = products.filter(category_id=category_id)
-    if supplier_id:
-        products = products.filter(supplier_id=supplier_id)
-    if request.method == "POST":
-        selected = request.POST.getlist('products')
-        all_products = []
-        # старые выбранные товары
-        all_products.extend(selected_existing)
-        # новые выбранные товары
-        all_products.extend(selected)
-        # убрать дубли
-        all_products = list(dict.fromkeys(all_products))
-        params = "&".join(
-            [
-                f"products={p}"
-                for p in all_products
-            ]
+        products = products.filter(
+            name__icontains=query
         )
+    if category_id:
+        products = products.filter(
+            category_id=category_id
+        )
+    if request.method == "POST":
+        # Товары, выбранные на текущей странице
+        selected = request.POST.getlist("products")
+        # Все ранее выбранные + новые
+        all_products = (
+                selected_existing
+                + selected_from_products
+                + selected
+        )
+        # Только ID
+        all_products = [
+            x for x in all_products
+            if x.isdigit()
+        ]
+        # Убираем дубли
+        all_products = list(
+            dict.fromkeys(all_products)
+        )
+        params = []
+        for product_id in all_products:
+            params.append(
+                f"products={product_id}"
+            )
+        if target:
+            params.append(
+                f"target={target}"
+            )
+        supplier_id = request.POST.get("supplier")
+        if supplier_id:
+            params.append(
+                f"supplier={supplier_id}"
+            )
+        customer_id = request.POST.get("customer")
+
         if customer_id:
-            params += f"&customer={customer_id}"
+            params.append(
+                f"customer={customer_id}"
+            )
         if target == "sale":
             url = reverse("sale_create")
         else:
             url = reverse("receipt_create")
-        return redirect(f"{url}?{params}")
+
+        if params:
+            url += "?" + "&".join(params)
+        return redirect(url)
     categories = Category.objects.all()
-    suppliers = Counterparty.objects.filter(type='supplier')
     warehouse = Warehouse.objects.first()
     if warehouse:
-        for product in products:
-            product.balance = product.get_balance(warehouse)
+        for selected_product in products:
+            selected_product.balance = (
+                selected_product.get_balance(
+                    warehouse
+                )
+            )
     else:
-        for product in products:
-            product.balance = 0
+        for selected_product in products:
+            selected_product.balance = 0
     return render(
         request,
         'inventory/product_picker.html',
@@ -587,8 +823,10 @@ def product_picker(request):
             'products': products,
             'query': query,
             'categories': categories,
-            'suppliers': suppliers,
             'selected_ids': selected_ids,
+            'target': target,
+            'customer_id': customer_id,
+            'supplier_id': supplier_id,
         }
     )
 

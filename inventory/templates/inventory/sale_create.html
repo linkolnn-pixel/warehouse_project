@@ -82,10 +82,11 @@
 
         <h5>Товары</h5>
         <a
-            href="{% url 'product_picker' %}?target=sale{% for f in formset %}{% if f.product.value %}&selected={{ f.product.value }}{% endif %}{% endfor %}{% if form.customer.value %}&customer={{ form.customer.value }}{% endif %}"
-            class="btn btn-primary mb-3"
+            id="add-products-link"
+            href="{% url 'product_picker' %}?target=sale"
+            class="btn btn-primary"
         >
-            📦 Добавить товары
+            Добавить товары
         </a>
         {{ formset.management_form }}
 
@@ -301,6 +302,74 @@ document.querySelectorAll(".delete-row").forEach(function(button) {
 
 calculateTotal();
 
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const customerField = document.getElementById(
+        "id_customer"
+    );
+
+    const addProductsLink = document.getElementById(
+        "add-products-link"
+    );
+
+    function updateAddProductsLink() {
+
+        const params = new URLSearchParams();
+
+        params.append(
+            "target",
+            "sale"
+        );
+
+        // ТЕКУЩИЙ клиент
+        if (
+            customerField &&
+            customerField.value
+        ) {
+            params.append(
+                "customer",
+                customerField.value
+            );
+        }
+
+        // ВСЕ выбранные товары
+        document
+            .querySelectorAll(
+                "input[name$='-product']"
+            )
+            .forEach(function (input) {
+
+                if (input.value) {
+
+                    params.append(
+                        "products",
+                        input.value
+                    );
+
+                }
+
+            });
+
+        addProductsLink.href =
+            "{% url 'product_picker' %}?" +
+            params.toString();
+    }
+
+    updateAddProductsLink();
+
+    if (customerField) {
+
+        customerField.addEventListener(
+            "change",
+            updateAddProductsLink
+        );
+
+    }
+
+});
 </script>
 
 {% endblock %}

@@ -650,17 +650,15 @@
 
         <div class="products-header-actions">
 
-            <a
-                href="{% url 'create_product' %}"
-                class="btn btn-primary btn-sm"
-            >
-
-                <i class="fa-solid fa-plus me-1"></i>
-
-                Добавить товар
-
-            </a>
-
+            {% if request.GET.target == 'receipt' %}
+                <a
+                    href="{% url 'create_product' %}?next=product_picker&target=receipt{% for id in selected_ids %}&products={{ id }}{% endfor %}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}"
+                    class="btn btn-primary btn-sm"
+                >
+                    <i class="fa-solid fa-plus me-1"></i>
+                    Добавить товар
+                </a>
+            {% endif %}
         </div>
 
 
@@ -701,6 +699,21 @@
 
         {% csrf_token %}
 
+        {% if request.GET.customer or customer_id %}
+            <input
+                type="hidden"
+                name="customer"
+                value="{% if request.GET.customer %}{{ request.GET.customer }}{% else %}{{ customer_id }}{% endif %}"
+            >
+        {% endif %}
+
+        {% if request.GET.supplier or supplier_id %}
+            <input
+                type="hidden"
+                name="supplier"
+                value="{% if request.GET.supplier %}{{ request.GET.supplier }}{% else %}{{ supplier_id }}{% endif %}"
+            >
+        {% endif %}
 
         <input
             type="hidden"

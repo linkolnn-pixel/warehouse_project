@@ -125,7 +125,21 @@
                         <button type="submit" class="btn btn-primary flex-grow-1">
                             <i class="fas fa-save me-2"></i>Сохранить товар
                         </button>
-                        <a href="{% url 'products_catalog' %}" class="btn btn-secondary">Отмена</a>
+                        {% if next_name == 'product_picker' %}
+                            <a
+                                href="{% url 'product_picker' %}?target={{ target }}{% for product_id in selected_products %}&selected={{ product_id }}{% endfor %}"
+                                class="btn btn-secondary"
+                            >
+                                Отмена
+                            </a>
+                        {% else %}
+    <a
+        href="{% url 'products_catalog' %}"
+        class="btn btn-secondary"
+    >
+        Отмена
+    </a>
+{% endif %}
                     </div>
                 </form>
             </div>
@@ -143,7 +157,11 @@
       </div>
 
 
-      <form action="{% url 'counterparty_create' %}?next=create_product" method="post" class="p-3">
+      <form
+          action="{% url 'counterparty_create' %}?next=create_product&return_url={{ return_url }}{% for product_id in selected_products %}&products={{ product_id }}{% endfor %}"
+          method="post"
+          class="p-3"
+      >
           {% csrf_token %}
 
         <div class="mb-3">
@@ -178,7 +196,11 @@
       </div>
 
       <!-- action ведет на category_create -->
-      <form action="{% url 'category_create' %}?next=create_product" method="post" class="p-3">
+      <form
+          action="{% url 'category_create' %}?next=create_product&return_url={{ return_url }}{% for product_id in selected_products %}&products={{ product_id }}{% endfor %}"
+          method="post"
+          class="p-3"
+      >
           {% csrf_token %}
 
         <div class="mb-3">

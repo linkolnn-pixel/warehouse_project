@@ -41,11 +41,12 @@
                 <h5>Товары</h5>
 
                     <a
-                    href="{% url 'product_picker' %}?target=receipt{% for f in formset %}{% if f.initial.product %}&selected={{ f.initial.product.id }}{% elif f.product.value %}&selected={{ f.product.value }}{% endif %}{% endfor %}"
-                    class="btn btn-primary mb-3">
-                    📦 Добавить товары
+                        id="add-products-link"
+                        href="{% url 'product_picker' %}?target=receipt"
+                        class="btn btn-primary"
+                    >
+                        Добавить товары
                     </a>
-
                 {{ formset.management_form }}
                     <table class="table table-bordered align-middle">
                         <thead class="table-light">
@@ -109,36 +110,6 @@
 
 document.addEventListener("DOMContentLoaded", function() {
     /* =====================================================
-       ПЕРЕДАЧА УЖЕ ВЫБРАННЫХ ТОВАРОВ В PRODUCT_PICKER
-       ===================================================== */
-    const addProducts = document.getElementById("add-products");
-    if (addProducts) {
-        addProducts.addEventListener(
-            "click",
-            function(e) {
-                let products = [];
-                document
-                    .querySelectorAll(
-                        "input[name$='-product']"
-                    )
-                    .forEach(function(input) {
-
-                        if (input.value) {
-                            products.push(
-                                input.value
-                            );
-                        }
-                    });
-                if (products.length) {
-                    this.href +=
-                        "&selected=" +
-                        products.join(",");
-                }
-            }
-        );
-    }
-
-    /* =====================================================
        УДАЛЕНИЕ СТРОКИ
        ===================================================== */
 
@@ -169,5 +140,74 @@ document.addEventListener("DOMContentLoaded", function() {
 
 </script>
 
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const supplierField = document.getElementById(
+        "id_supplier"
+    );
+
+    const addProductsLink = document.getElementById(
+        "add-products-link"
+    );
+
+    function updateAddProductsLink() {
+
+        const params = new URLSearchParams();
+
+        params.append(
+            "target",
+            "receipt"
+        );
+
+        // ТЕКУЩИЙ поставщик
+        if (
+            supplierField &&
+            supplierField.value
+        ) {
+            params.append(
+                "supplier",
+                supplierField.value
+            );
+        }
+
+        // ВСЕ уже выбранные товары
+        document
+            .querySelectorAll(
+                "input[name$='-product']"
+            )
+            .forEach(function (input) {
+
+                if (input.value) {
+
+                    params.append(
+                        "products",
+                        input.value
+                    );
+
+                }
+
+            });
+
+        addProductsLink.href =
+            "{% url 'product_picker' %}?" +
+            params.toString();
+    }
+
+    // При загрузке
+    updateAddProductsLink();
+
+    // Если пользователь сменил поставщика
+    if (supplierField) {
+
+        supplierField.addEventListener(
+            "change",
+            updateAddProductsLink
+        );
+
+    }
+
+});
+</script>
 
 {% endblock %}
