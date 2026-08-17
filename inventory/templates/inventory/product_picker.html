@@ -30,305 +30,174 @@
 .products-page {
     width: 100%;
 }
-
-
 /* =========================================================
    HEADER
    ========================================================= */
-
 .products-header {
-
     display: flex;
-
     justify-content: space-between;
-
     align-items: center;
-
     margin-bottom: 18px;
-
     padding: 15px 18px;
-
     background: #ffffff;
-
     border: 1px solid #dee2e6;
-
     border-radius: 7px;
-
 }
-
 
 .products-header-title {
-
     display: flex;
-
     align-items: center;
-
     gap: 9px;
-
     margin: 0;
-
     font-size: 20px;
-
     font-weight: 600;
-
     color: #343a40;
-
 }
-
 
 .products-header-title i {
-
     color: #0d6efd;
-
 }
-
 
 .products-header-actions {
-
     display: flex;
-
     align-items: center;
-
     gap: 8px;
-
 }
-
 
 /* =========================================================
    SELECTED BAR
    ========================================================= */
 
 .selected-bar {
-
     display: flex;
-
     justify-content: space-between;
-
     align-items: center;
-
     min-height: 44px;
-
     margin-bottom: 12px;
-
     padding: 7px 14px;
-
     background: #ffffff;
-
     border: 1px solid #dee2e6;
-
     border-radius: 6px;
-
 }
-
 
 .selected-count {
-
     font-size: 14px;
-
     color: #495057;
-
 }
-
 
 .selected-count strong {
-
     color: #0d6efd;
-
     font-size: 15px;
-
 }
-
 
 /* =========================================================
    TABLE CARD
    ========================================================= */
 
 .table-card {
-
     background: #ffffff;
-
     border: 1px solid #dee2e6;
-
     border-radius: 7px;
-
     overflow: hidden;
-
 }
-
 
 .table-wrapper {
-
     padding: 15px;
-
     overflow-x: auto;
-
 }
-
 
 /* =========================================================
    DATATABLE
    ========================================================= */
 
 #productsTable {
-
     width: 100% !important;
-
     margin: 0 !important;
-
     border-collapse: collapse !important;
-
 }
-
 
 #productsTable thead th {
-
     background: #f8f9fa;
-
     color: #495057;
-
     font-size: 12px;
-
     font-weight: 600;
-
     vertical-align: top;
-
     border-bottom: 1px solid #dee2e6;
-
     padding: 8px 7px;
-
     white-space: nowrap;
-
 }
-
 
 #productsTable thead th:hover {
-
     background: #f1f3f5;
-
 }
 
-
-/*
- * Название столбца
- */
+/* Название столбца */
 
 .column-title {
-
     display: block;
-
     margin-bottom: 6px;
-
     line-height: 18px;
-
 }
 
-
-/*
- * Фильтр внутри заголовка
- */
+/* Фильтр внутри заголовка */
 
 .column-filter {
-
     display: block;
-
     width: 100%;
-
     height: 30px;
-
     padding: 3px 7px;
-
     border: 1px solid #ced4da;
-
     border-radius: 4px;
-
     background: #ffffff;
-
     color: #495057;
-
     font-size: 12px;
-
     font-weight: 400;
-
     outline: none;
-
 }
-
 
 .column-filter:focus {
-
     border-color: #86b7fe;
-
     box-shadow:
         0 0 0 0.12rem rgba(13, 110, 253, .12);
-
 }
-
 
 .column-filter::placeholder {
-
     color: #adb5bd;
-
 }
-
 
 /* =========================================================
    SELECT ALL
    ========================================================= */
 
 .select-all-wrapper {
-
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     height: 30px;
-
 }
-
 
 #select-all {
-
     width: 16px;
-
     height: 16px;
-
     margin: 0;
-
     padding: 0;
-
     cursor: pointer;
-
     border: 1px solid #adb5bd;
-
     border-radius: 3px;
-
     background-color: #ffffff;
-
     box-shadow: none;
-
 }
-
 
 #select-all:focus {
-
     border-color: #86b7fe;
-
     outline: none;
-
     box-shadow:
         0 0 0 0.15rem rgba(13, 110, 253, .12);
-
 }
 
-
 #select-all:checked {
-
     background-color: #0d6efd;
-
     border-color: #0d6efd;
-
 }
 
 
@@ -337,288 +206,211 @@
    ========================================================= */
 
 #productsTable tbody td {
-
     padding: 8px 7px;
-
     font-size: 13px;
-
     vertical-align: middle;
-
     white-space: nowrap;
-
 }
-
 
 #productsTable tbody tr {
-
     cursor: pointer;
-
 }
-
 
 #productsTable tbody tr:hover {
-
     background-color: #f8fbff;
-
 }
-
 
 #productsTable tbody tr.product-selected {
-
     background-color: #e8f5e9;
-
 }
-
 
 #productsTable tbody tr.product-selected:hover {
-
     background-color: #dff0e2;
-
 }
-
 
 /* =========================================================
    CHECKBOXES
    ========================================================= */
 
 .product-check {
-
     width: 16px;
-
     height: 16px;
-
     margin: 0;
-
     cursor: pointer;
-
     vertical-align: middle;
-
     border: 1px solid #adb5bd;
-
     border-radius: 3px;
-
 }
-
 
 .product-check:checked {
-
     background-color: #0d6efd;
-
     border-color: #0d6efd;
-
 }
-
 
 .product-check:focus {
-
     box-shadow:
         0 0 0 0.15rem rgba(13, 110, 253, .12);
-
 }
-
 
 /* =========================================================
    FIRST COLUMN
    ========================================================= */
 
 .check-column {
-
     width: 45px !important;
-
     min-width: 45px !important;
-
     max-width: 45px !important;
-
     text-align: center !important;
-
 }
-
 
 /* =========================================================
    PRODUCT NAME
    ========================================================= */
 
 .product-name {
-
     color: #212529;
-
     font-weight: 600;
-
 }
-
 
 /* =========================================================
    PRICES
    ========================================================= */
 
 .price-buy {
-
     color: #6c757d;
-
     text-align: right;
-
 }
-
 
 .price-sale {
-
     color: #198754;
-
     font-weight: 700;
-
     text-align: right;
-
 }
-
 
 /* =========================================================
    NO SORT
    ========================================================= */
 
 .no-sort {
-
     cursor: default !important;
-
 }
-
 
 /* =========================================================
    DATATABLES CONTROLS
    ========================================================= */
 
 .dataTables_wrapper {
-
     width: 100%;
-
 }
 
 
 .dataTables_wrapper .dataTables_length {
-
     color: #6c757d;
-
     font-size: 13px;
-
     margin-bottom: 10px;
-
 }
-
 
 .dataTables_wrapper .dataTables_length select {
-
     height: 32px;
-
     margin: 0 5px;
-
     padding: 3px 25px 3px 8px;
-
     border: 1px solid #ced4da;
-
     border-radius: 4px;
-
     background: #ffffff;
-
 }
-
 
 .dataTables_wrapper .dataTables_filter {
-
     display: none;
-
 }
-
 
 .dataTables_wrapper .dataTables_info {
-
     padding-top: 12px !important;
-
     color: #6c757d;
-
     font-size: 13px;
-
 }
-
 
 .dataTables_wrapper .dataTables_paginate {
-
     padding-top: 8px !important;
-
 }
-
 
 .dataTables_wrapper
 .dataTables_paginate
 .paginate_button {
-
     padding: 4px 9px !important;
-
     border-radius: 4px !important;
-
 }
-
 
 /* =========================================================
    FOOTER
    ========================================================= */
 
 .table-footer {
-
     padding: 12px 15px;
-
     border-top: 1px solid #dee2e6;
-
     background: #ffffff;
-
 }
-
 
 .table-footer .btn {
-
     height: 42px;
-
     font-weight: 500;
-
 }
-
 
 /* =========================================================
    EMPTY
    ========================================================= */
 
 .empty-products {
-
     padding: 50px !important;
-
     text-align: center;
-
     color: #6c757d;
-
 }
-
 
 /* =========================================================
    MOBILE
    ========================================================= */
 
 @media (max-width: 768px) {
-
     .products-header {
-
         flex-direction: column;
-
         align-items: stretch;
-
         gap: 12px;
-
     }
-
 
     .products-header-actions {
-
         justify-content: flex-end;
-
     }
+}
 
+/* =========================================================
+   СТРЕЛКИ СОРТИРОВКИ ВНУТРИ ПОЛЯ ПОИСКА
+   ========================================================= */
+
+#productsTable thead th.sorting,
+#productsTable thead th.sorting_asc,
+#productsTable thead th.sorting_desc {
+    position: relative !important;
+}
+#productsTable thead th.sorting::before,
+#productsTable thead th.sorting_asc::before,
+#productsTable thead th.sorting_desc::before {
+    right: 13px !important;
+    top: 62% !important;
+    bottom: auto !important;
+    transform: translateY(-70%) !important;
+    font-size: 8px !important;
+    line-height: 8px !important;
+    margin: 0 !important;
+}
+#productsTable thead th.sorting::after,
+#productsTable thead th.sorting_asc::after,
+#productsTable thead th.sorting_desc::after {
+    right: 13px !important;
+    top: 62% !important;
+    bottom: auto !important;
+    transform: translateY(30%) !important;
+    font-size: 8px !important;
+    line-height: 8px !important;
+    margin: 0 !important;
 }
 
 </style>
@@ -626,30 +418,20 @@
 {% endblock %}
 
 
-
 {% block content %}
 
 <div class="products-page">
-
 
     <!-- =====================================================
          HEADER
          ===================================================== -->
 
     <div class="products-header">
-
-
         <h4 class="products-header-title">
-
             <i class="fa-solid fa-box"></i>
-
             Товары
-
         </h4>
-
-
         <div class="products-header-actions">
-
             {% if request.GET.target == 'receipt' %}
                 <a
                     href="{% url 'create_product' %}?next=product_picker&target=receipt{% for id in selected_ids %}&products={{ id }}{% endfor %}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}"
@@ -660,33 +442,21 @@
                 </a>
             {% endif %}
         </div>
-
-
     </div>
-
-
 
     <!-- =====================================================
          SELECTED
          ===================================================== -->
 
     <div class="selected-bar">
-
         <div class="selected-count">
-
             <i class="fa-solid fa-check-circle text-success me-1"></i>
-
             Выбрано:
-
             <strong id="selected-count">
                 {{ selected_ids|length }}
             </strong>
-
         </div>
-
     </div>
-
-
 
     <!-- =====================================================
          FORM
@@ -696,9 +466,7 @@
         method="post"
         id="products-form"
     >
-
         {% csrf_token %}
-
         {% if request.GET.customer or customer_id %}
             <input
                 type="hidden"
@@ -706,7 +474,6 @@
                 value="{% if request.GET.customer %}{{ request.GET.customer }}{% else %}{{ customer_id }}{% endif %}"
             >
         {% endif %}
-
         {% if request.GET.supplier or supplier_id %}
             <input
                 type="hidden"
@@ -714,466 +481,262 @@
                 value="{% if request.GET.supplier %}{{ request.GET.supplier }}{% else %}{{ supplier_id }}{% endif %}"
             >
         {% endif %}
-
         <input
             type="hidden"
             name="target"
             value="{{ request.GET.target }}"
         >
-
-
         <!--
             Сюда JavaScript положит
             все выбранные товары.
         -->
-
         <div id="selected-products"></div>
-
-
 
         <!-- =================================================
              TABLE CARD
              ================================================= -->
 
         <div class="table-card">
-
-
             <div class="table-wrapper">
-
-
                 <table
                     id="productsTable"
                     class="table table-hover align-middle"
                 >
-
-
                     <!-- =====================================
                          HEADER
                          ===================================== -->
-
                     <thead>
-
                         <tr>
-
-
                             <!-- =================================
                                  CHECKBOX
                                  ================================= -->
-
-                            <th
-                                class="check-column no-sort"
-                            >
-
-                                <span class="column-title">
-
-                                    &nbsp;
-
-                                </span>
-
-
-                                <div class="select-all-wrapper">
-
-                                    <input
-                                        type="checkbox"
-                                        id="select-all"
-                                        title="Выбрать все"
-                                    >
-
-                                </div>
-
+                            <th class="check-column no-sort">
+                                    <span class="column-title">
+                                        &nbsp;
+                                    </span>
+                                    <div class="select-all-wrapper">
+                                        <input
+                                            type="checkbox"
+                                            id="select-all"
+                                            title="Выбрать все"
+                                        >
+                                    </div>
                             </th>
-
-
-
                             <!-- =================================
                                  NAME
                                  ================================= -->
-
                             <th>
-
-                                <span class="column-title">
-                                    Наименование
-                                </span>
-
-
-                                <input
-                                    type="text"
-                                    class="column-filter"
-                                    data-column="1"
-                                    placeholder="Поиск..."
-                                >
-
+                                    <span class="column-title">
+                                        Наименование
+                                    </span>
+                                    <input
+                                        type="text"
+                                        class="column-filter"
+                                        data-column="1"
+                                        placeholder="Поиск..."
+                                    >
                             </th>
-
-
-
                             <!-- =================================
                                  CODE
                                  ================================= -->
-
                             <th>
-
-                                <span class="column-title">
-                                    Код
-                                </span>
-
-
-                                <input
-                                    type="text"
-                                    class="column-filter"
-                                    data-column="2"
-                                    placeholder="Поиск..."
-                                >
-
+                                    <span class="column-title">
+                                        Код
+                                    </span>
+                                    <input
+                                        type="text"
+                                        class="column-filter"
+                                        data-column="2"
+                                        placeholder="Поиск..."
+                                    >
                             </th>
-
-
-
                             <!-- =================================
                                  SKU
                                  ================================= -->
-
                             <th>
-
-                                <span class="column-title">
-                                    Артикул
-                                </span>
-
-
-                                <input
-                                    type="text"
-                                    class="column-filter"
-                                    data-column="3"
-                                    placeholder="Поиск..."
-                                >
-
+                                    <span class="column-title">
+                                        Артикул
+                                    </span>
+                                    <input
+                                        type="text"
+                                        class="column-filter"
+                                        data-column="3"
+                                        placeholder="Поиск..."
+                                    >
                             </th>
-
-
-
                             <!-- =================================
                                  CATEGORY
                                  ================================= -->
-
                             <th class="no-sort">
-
-                                <span class="column-title">
-                                    Категория
-                                </span>
-
-
-                                <select
-                                    class="column-filter"
-                                    data-column="4"
-                                >
-
-                                    <option value="">
-                                        Все
-                                    </option>
-
-
-                                    {% for c in categories %}
-
-                                        <option value="{{ c.name }}">
-                                            {{ c.name }}
+                                    <span class="column-title">
+                                        Категория
+                                    </span>
+                                    <select
+                                        class="column-filter"
+                                        data-column="4"
+                                    >
+                                        <option value="">
+                                            Все
                                         </option>
-
-                                    {% endfor %}
-
-                                </select>
-
+                                        {% for c in categories %}
+                                            <option value="{{ c.name }}">
+                                                {{ c.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
                             </th>
-
-
-
                             <!-- =================================
                                  BALANCE
                                  ================================= -->
-
                             <th>
-
-                                <span class="column-title">
-                                    Остаток
-                                </span>
-
-
-                                <input
-                                    type="text"
-                                    class="column-filter"
-                                    data-column="5"
-                                    placeholder="Поиск..."
-                                >
-
+                                    <span class="column-title">
+                                        Остаток
+                                    </span>
+                                    <input
+                                        type="text"
+                                        class="column-filter"
+                                        data-column="5"
+                                        placeholder="Поиск..."
+                                    >
                             </th>
-
-
-
                             <!-- =================================
                                  SUPPLIER
                                  ================================= -->
-
                             <th class="no-sort">
-
-                                <span class="column-title">
-                                    Поставщик
-                                </span>
-
-
-                                <select
-                                    class="column-filter"
-                                    data-column="6"
-                                >
-
-                                    <option value="">
-                                        Все
-                                    </option>
-
-
-                                    {% for s in suppliers %}
-
-                                        <option
-                                            value="{{ s.company_name }}"
-                                        >
-                                            {{ s.company_name }}
+                                    <span class="column-title">
+                                        Поставщик
+                                    </span>
+                                    <select
+                                        class="column-filter"
+                                        data-column="6"
+                                    >
+                                        <option value="">
+                                            Все
                                         </option>
-
-                                    {% endfor %}
-
-                                </select>
-
+                                        {% for s in suppliers %}
+                                            <option
+                                                value="{{ s.company_name }}"
+                                            >
+                                                {{ s.company_name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
                             </th>
-
-
-
                             <!-- =================================
                                  COST
                                  ================================= -->
-
                             <th>
-
-                                <span class="column-title">
-                                    Закупка
-                                </span>
-
-
-                                <input
-                                    type="text"
-                                    class="column-filter"
-                                    data-column="7"
-                                    placeholder="Поиск..."
-                                >
-
+                                    <span class="column-title">
+                                        Закупка
+                                    </span>
+                                    <input
+                                        type="text"
+                                        class="column-filter"
+                                        data-column="7"
+                                        placeholder="Поиск..."
+                                    >
                             </th>
-
-
-
                             <!-- =================================
                                  SALE
                                  ================================= -->
-
                             <th>
-
-                                <span class="column-title">
-                                    Продажа
-                                </span>
-
-
-                                <input
-                                    type="text"
-                                    class="column-filter"
-                                    data-column="8"
-                                    placeholder="Поиск..."
-                                >
-
+                                    <span class="column-title">
+                                        Продажа
+                                    </span>
+                                    <input
+                                        type="text"
+                                        class="column-filter"
+                                        data-column="8"
+                                        placeholder="Поиск..."
+                                    >
                             </th>
-
-
                         </tr>
-
                     </thead>
-
-
-
                     <!-- =================================================
                          BODY
                          ================================================= -->
-
                     <tbody>
-
-
                         {% for product in products %}
-
-
                             <tr
                                 data-product-id="{{ product.id }}"
                             >
-
-
                                 <!-- CHECKBOX -->
-
                                 <td class="check-column">
-
                                     <input
                                         type="checkbox"
                                         class="product-check"
                                         value="{{ product.id }}"
-
                                         {% if product.id in selected_ids %}
                                             checked
                                         {% endif %}
                                     >
-
                                 </td>
-
-
-
                                 <!-- NAME -->
-
                                 <td>
-
                                     <span class="product-name">
-
                                         {{ product.name }}
-
                                     </span>
-
                                 </td>
-
-
-
                                 <!-- CODE -->
-
                                 <td>
-
                                     {{ product.internal_code|default:"—" }}
-
                                 </td>
-
-
-
                                 <!-- SKU -->
-
                                 <td>
-
                                     {{ product.sku|default:"—" }}
-
                                 </td>
-
-
-
                                 <!-- CATEGORY -->
-
                                 <td>
-
                                     {% if product.category %}
-
                                         {{ product.category.name }}
-
                                     {% else %}
-
                                         —
-
                                     {% endif %}
-
                                 </td>
-
-
-
                                 <!-- BALANCE -->
-
                                 <td>
-
                                     {{ product.balance|default:0 }}
-
                                 </td>
-
-
-
                                 <!-- SUPPLIER -->
-
                                 <td>
-
                                     {% if product.supplier %}
-
                                         {{ product.supplier.company_name }}
-
                                     {% else %}
-
                                         <span class="text-danger">
                                             Нет
                                         </span>
-
                                     {% endif %}
-
                                 </td>
-
-
-
                                 <!-- COST -->
-
                                 <td class="price-buy">
-
                                     {{ product.cost_price|floatformat:2 }} ₽
-
                                 </td>
-
-
-
                                 <!-- SALE -->
-
                                 <td class="price-sale">
-
                                     {{ product.sale_price|floatformat:2 }} ₽
-
                                 </td>
-
-
                             </tr>
-
-
                         {% endfor %}
-
-
                     </tbody>
-
-
                 </table>
-
-
             </div>
-
-
-
             <!-- =================================================
                  FOOTER
                  ================================================= -->
-
             <div class="table-footer">
-
                 <button
                     type="submit"
                     class="btn btn-success w-100"
                 >
-
                     <i class="fa-solid fa-check-circle me-2"></i>
-
                     Добавить выбранные товары
-
                 </button>
-
             </div>
-
-
         </div>
-
-
     </form>
-
-
 </div>
 
 {% endblock %}
-
 
 
 {% block extra_body %}
@@ -1308,11 +871,7 @@ $(function () {
         'click',
         function (event) {
 
-            /*
-             * Очень важно:
-             * клик по фильтру НЕ должен запускать
-             * сортировку заголовка.
-             */
+
 
             event.stopPropagation();
 
@@ -1360,11 +919,7 @@ $(function () {
                 $(this).val();
 
 
-            /*
-             * DataTables перерисует таблицу.
-             *
-             * Это нормально для фильтра.
-             */
+
 
             table
                 .column(column)
@@ -1869,10 +1424,6 @@ $(function () {
         function (event) {
 
 
-            /*
-             * Если нажали на checkbox —
-             * ничего дополнительно не делаем.
-             */
 
             if (
                 $(event.target).closest(
