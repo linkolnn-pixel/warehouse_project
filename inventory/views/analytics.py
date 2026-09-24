@@ -14,7 +14,8 @@ def dashboard_view(request):
 
     total_stock_cost = sum((p.balance or 0) * p.cost_price for p in products)
     total_expected_profit = sum((p.stock_profit or 0) for p in products)
-    out_of_stock_count = sum(1 for p in products if (p.balance or 0) <= 0)
+    out_of_stock_products = [p for p in products if (p.balance or 0) <= 0]
+    out_of_stock_count = len(out_of_stock_products)
 
     # --- 2. ВЫРУЧКА И ТОП ТОВАРОВ ЗА ПЕРИОДЫ ---
     now = timezone.now()
@@ -62,6 +63,7 @@ def dashboard_view(request):
         'total_stock_cost': total_stock_cost,
         'total_expected_profit': total_expected_profit,
         'out_of_stock_count': out_of_stock_count,
+        'out_of_stock_products': out_of_stock_products,
         'recent_transactions': recent_transactions,
 
         'revenue_1m': revenue_1m,
