@@ -1,17 +1,22 @@
-import pandas as pd
 from decimal import Decimal, InvalidOperation
-from django.db import transaction
-from rest_framework.viewsets import ModelViewSet
 
-from .models import Product, Category, Counterparty, Receipt, Sale, Transaction
-from .exceptions import ExcelImportError, DocumentAlreadyPostedError, InvalidQuantityError, InsufficientStockError
+import pandas as pd
+from django.db import transaction
+
+from .exceptions import (
+    DocumentAlreadyPostedError,
+    ExcelImportError,
+    InsufficientStockError,
+    InvalidQuantityError,
+)
+from .models import Category, Counterparty, Product, Receipt, Sale, Transaction
 
 
 @transaction.atomic
 def import_products_from_excel(file_obj) -> tuple[int, int]:
     """
     Парсинг Excel-файла и создание товары, категории и поставщиков.
-    Обернуто в @transaction.atomic: если произойдет сбой, ни один товар 
+    Обернуто в @transaction.atomic: если произойдет сбой, ни один товар
     не будет создан (база данных откатится к исходному состоянию).
     Возвращает кортеж: (количество_созданных, количество_пропущенных)
     """
@@ -22,30 +27,30 @@ def import_products_from_excel(file_obj) -> tuple[int, int]:
 
     # Нормализация заголовков
     df.columns = df.columns.str.strip().str.lower()
-    required_cols = ['наименование', 'закупочная цена', 'цена продажи']
+    required_cols = ["наименование", "закупочная цена", "цена продажи"]
     missing = [col for col in required_cols if col not in df.columns]
 
     if missing:
         raise ExcelImportError(f"В файле не найдены колонки: {', '.join(missing)}")
 
     categories_cache = {c.name: c for c in Category.objects.all()}
-    suppliers_cache = {s.company_name: s for s in Counterparty.objects.filter(type='supplier')}
+    suppliers_cache = {s.company_name: s for s in Counterparty.objects.filter(type="supplier")}
 
-    existing_skus = set(Product.objects.exclude(sku='').values_list('sku', flat=True))
-    existing_names = set(Product.objects.values_list('name', flat=True))
+    existing_skus = set(Product.objects.exclude(sku="").values_list("sku", flat=True))
+    existing_names = set(Product.objects.values_list("name", flat=True))
 
     products_to_create = []
     skip_count = 0
 
     for index, row in df.iterrows():
         # 1. Наименование
-        name = str(row['наименование']).strip()
-        if not name or name.lower() == 'nan':
+        name = str(row["наименование"]).strip()
+        if not name or name.lower() == "nan":
             continue
 
         # 2. Артикул (SKU)
-        sku_raw = row.get('артикул', '')
-        sku = str(sku_raw).strip() if pd.notna(sku_raw) else ''
+        sku_raw = row.get("артикул", "")
+        sku = str(sku_raw).strip() if pd.notna(sku_raw) else ""
 
         # Проверка на дубликат через кэш
         if sku and sku in existing_skus:
@@ -56,8 +61,8 @@ def import_products_from_excel(file_obj) -> tuple[int, int]:
             continue
 
         # 3. БРЕНД (КАТЕГОРИЯ)
-        brand_val = row.get('бренд', '') or row.get('category_name', '')
-        brand_name = str(brand_val).strip() if pd.notna(brand_val) else ''
+        brand_val = row.get("бренд", "") or row.get("category_name", "")
+        brand_name = str(brand_val).strip() if pd.notna(brand_val) else ""
 
         category_obj = None
         if brand_name:
@@ -69,8 +74,8 @@ def import_products_from_excel(file_obj) -> tuple[int, int]:
 
         # 4. Цены
         try:
-            cost_str = str(row['закупочная цена']).replace(',', '.')
-            sale_str = str(row['цена продажи']).replace(',', '.')
+            cost_str = str(row["закупочная цена"]).replace(",", ".")
+            sale_str = str(row["цена продажи"]).replace(",", ".")
             cost_price = Decimal(cost_str)
             sale_price = Decimal(sale_str)
         except (InvalidOperation, ValueError, TypeError):
@@ -78,36 +83,39 @@ def import_products_from_excel(file_obj) -> tuple[int, int]:
             continue  # Пропускаем строку с кривыми ценами
 
         # 5. Вес, объем, ед. изм.
-        vol_raw = row.get('объем', 0)
-        weight_raw = row.get('вес', 0)
-        final_quantity = Decimal('0')
-        final_measure = 'мл'
-        final_unit = str(row.get('ед. изм.', 'шт')).strip().lower()
+        vol_raw = row.get("объем", 0)
+        weight_raw = row.get("вес", 0)
+        final_quantity = Decimal("0")
+        final_measure = "мл"
+        final_unit = str(row.get("ед. изм.", "шт")).strip().lower()
 
-        if pd.notna(vol_raw) and str(vol_raw).lower() != 'nan':
+        if pd.notna(vol_raw) and str(vol_raw).lower() != "nan":
             try:
-                val = Decimal(str(vol_raw).replace(',', '.'))
+                val = Decimal(str(vol_raw).replace(",", "."))
                 if val > 0:
-                    final_quantity, final_measure = val, 'мл'
-            except:
+                    final_quantity, final_measure = val, "мл"
+            except Exception:
                 pass
-        elif pd.notna(weight_raw) and str(weight_raw).lower() != 'nan':
+        elif pd.notna(weight_raw) and str(weight_raw).lower() != "nan":
             try:
-                val = Decimal(str(weight_raw).replace(',', '.'))
+                val = Decimal(str(weight_raw).replace(",", "."))
                 if val > 0:
-                    final_quantity, final_measure = val, 'г'
-            except:
+                    final_quantity, final_measure = val, "г"
+            except Exception:
                 pass
 
         # 6. Поставщик
-        supplier_name_raw = row.get('поставщик', '') or row.get('supplier', '')
-        supplier_name = str(supplier_name_raw).strip() if pd.notna(supplier_name_raw) and str(
-            supplier_name_raw).lower() != 'nan' else ''
+        supplier_name_raw = row.get("поставщик", "") or row.get("supplier", "")
+        supplier_name = (
+            str(supplier_name_raw).strip()
+            if pd.notna(supplier_name_raw) and str(supplier_name_raw).lower() != "nan"
+            else ""
+        )
 
         supplier_obj = None
         if supplier_name:
             if supplier_name not in suppliers_cache:
-                sup = Counterparty.objects.create(company_name=supplier_name, type='supplier')
+                sup = Counterparty.objects.create(company_name=supplier_name, type="supplier")
                 suppliers_cache[supplier_name] = sup
             supplier_obj = suppliers_cache[supplier_name]
 
@@ -121,7 +129,7 @@ def import_products_from_excel(file_obj) -> tuple[int, int]:
             cost_price=cost_price,
             sale_price=sale_price,
             quantity_value=final_quantity,
-            measure_unit=final_measure
+            measure_unit=final_measure,
         )
         products_to_create.append(product)
 
@@ -153,16 +161,16 @@ def post_receipt_document(receipt: Receipt):
             type="IN",
             quantity=item.quantity,
             receipt=receipt,
-            comment=f"Приход №{receipt.number}"
+            comment=f"Приход №{receipt.number}",
         )
 
         # 2. Обновляем цены товара
         item.product.cost_price = item.cost_price
         item.product.sale_price = item.sale_price
-        item.product.save(update_fields=['cost_price', 'sale_price'])
+        item.product.save(update_fields=["cost_price", "sale_price"])
 
     receipt.posted = True
-    receipt.save(update_fields=['posted'])
+    receipt.save(update_fields=["posted"])
 
 
 @transaction.atomic
@@ -173,7 +181,7 @@ def post_sale_document(sale: Sale):
     if sale.posted:
         raise DocumentAlreadyPostedError("Продажа", sale.number)
 
-    quantities = {}
+    quantities: dict = {}
     for item in sale.items.all():
         if item.quantity <= 0:
             raise InvalidQuantityError(item.product.name)
@@ -197,11 +205,8 @@ def post_sale_document(sale: Sale):
             type="OUT",
             quantity=quantity,
             sale=sale,
-            comment=f"Продажа №{sale.number}"
+            comment=f"Продажа №{sale.number}",
         )
 
     sale.posted = True
     sale.save(update_fields=["posted"])
-
-
-

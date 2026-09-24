@@ -1,13 +1,13 @@
-from django.db import transaction
 from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.forms import inlineformset_factory
 from django.shortcuts import redirect, render
-from django.core.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 
 from inventory.decorators import test_mode_login_required
-from inventory.forms import ReceiptItemForm, ReceiptForm, SaleItemForm, SaleForm
-from inventory.models import Warehouse, Product, Receipt, ReceiptItem, Sale, SaleItem
+from inventory.forms import ReceiptForm, ReceiptItemForm, SaleForm, SaleItemForm
+from inventory.models import Product, Receipt, ReceiptItem, Sale, SaleItem, Warehouse
 
 
 @test_mode_login_required
@@ -25,8 +25,11 @@ def receipt_create(request):
     products = Product.objects.filter(id__in=product_ids).select_related("category")
 
     ReceiptItemFormSetDynamic = inlineformset_factory(
-        Receipt, ReceiptItem, form=ReceiptItemForm,
-        extra=len(products) if products else 1, can_delete=True,
+        Receipt,
+        ReceiptItem,
+        form=ReceiptItemForm,
+        extra=len(products) if products else 1,
+        can_delete=True,
     )
 
     if request.method == "POST":
@@ -53,7 +56,10 @@ def receipt_create(request):
                     receipt.post()  # Автоматически проводим документ
                     messages.success(request, f"Приход №{receipt.number} успешно создан и проведен!")
                 except Exception as e:
-                    messages.warning(request, f"Приход сохранен как черновик, но провести не удалось: {e}")
+                    messages.warning(
+                        request,
+                        f"Приход сохранен как черновик, но провести не удалось: {e}",
+                    )
 
                 return redirect("receipt_detail", pk=receipt.pk)
     else:
@@ -67,7 +73,7 @@ def receipt_create(request):
                 "product": p,
                 "quantity": 1,
                 "cost_price": p.cost_price,
-                "sale_price": p.sale_price
+                "sale_price": p.sale_price,
             }
             for p in products
         ]
@@ -76,8 +82,9 @@ def receipt_create(request):
         formset = ReceiptItemFormSetDynamic(instance=receipt, initial=initial)
 
     return render(
-        request, "inventory/receipt_create.html",
-        {"form": form, "formset": formset, "supplier_id": supplier_id}
+        request,
+        "inventory/receipt_create.html",
+        {"form": form, "formset": formset, "supplier_id": supplier_id},
     )
 
 
@@ -89,13 +96,13 @@ def receipt_post(request, pk):
         messages.success(request, "Приход проведен")
     except Exception as e:
         messages.error(request, str(e))
-    return redirect('receipt_detail', pk=pk)
+    return redirect("receipt_detail", pk=pk)
 
 
 @test_mode_login_required
 def receipt_detail(request, pk):
     receipt = get_object_or_404(Receipt, pk=pk)
-    return render(request, 'inventory/receipt_detail.html', {'receipt': receipt})
+    return render(request, "inventory/receipt_detail.html", {"receipt": receipt})
 
 
 @test_mode_login_required
@@ -113,8 +120,11 @@ def sale_create(request):
     products = Product.objects.filter(id__in=product_ids).select_related("category")
 
     SaleItemFormSetDynamic = inlineformset_factory(
-        Sale, SaleItem, form=SaleItemForm,
-        extra=len(products) if products else 1, can_delete=True,
+        Sale,
+        SaleItem,
+        form=SaleItemForm,
+        extra=len(products) if products else 1,
+        can_delete=True,
     )
 
     if request.method == "POST":
@@ -132,7 +142,7 @@ def sale_create(request):
 
             products_with_balances = Product.objects.with_balances(warehouse.id).filter(id__in=submitted_product_ids)
             # Делаем удобный словарь {id_товара: остаток}
-            balances_dict = {p.id: getattr(p, 'balance', 0) for p in products_with_balances}
+            balances_dict = {p.id: getattr(p, "balance", 0) for p in products_with_balances}
 
             stock_error = False
             for item_form in formset:
@@ -150,16 +160,16 @@ def sale_create(request):
                 if quantity > current_stock:
                     messages.error(
                         request,
-                        f"Недостаточно товара: {product.name}. "
-                        f"Доступно: {current_stock}, запрошено: {quantity}."
+                        f"Недостаточно товара: {product.name}. " f"Доступно: {current_stock}, запрошено: {quantity}.",
                     )
                     stock_error = True
 
             if stock_error:
                 # Если была ошибка остатков, откатываем транзакцию неявным образом
                 return render(
-                    request, "inventory/sale_create.html",
-                    {"form": form, "formset": formset}
+                    request,
+                    "inventory/sale_create.html",
+                    {"form": form, "formset": formset},
                 )
 
             sale = form.save()
@@ -194,16 +204,17 @@ def sale_create(request):
             prod = None
             if form_item.instance.pk and form_item.instance.product:
                 prod = form_item.instance.product
-            elif form_item.initial.get('product'):
-                prod = form_item.initial.get('product')
+            elif form_item.initial.get("product"):
+                prod = form_item.initial.get("product")
 
             if prod:
                 balance_value = prod.get_balance(warehouse)
-                form_item.initial['balance'] = balance_value
+                form_item.initial["balance"] = balance_value
 
     return render(
-        request, "inventory/sale_create.html",
-        {"form": form, "formset": formset, "customer_id": customer_id}
+        request,
+        "inventory/sale_create.html",
+        {"form": form, "formset": formset, "customer_id": customer_id},
     )
 
 
@@ -215,20 +226,20 @@ def sale_post(request, pk):
         messages.success(request, "Продажа проведена")
 
     except ValidationError as e:
-        error_msg = ", ".join(e.messages) if hasattr(e, 'messages') else str(e)
+        error_msg = ", ".join(e.messages) if hasattr(e, "messages") else str(e)
         messages.error(request, error_msg)
 
     except Exception as e:
         # Отлов любых других непредвиденных ошибок
         messages.error(request, f"Ошибка при проведении: {str(e)}")
 
-    return redirect('sale_detail', pk=pk)
+    return redirect("sale_detail", pk=pk)
 
 
 @test_mode_login_required
 def sale_detail(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
-    return render(request, 'inventory/sale_detail.html', {'sale': sale})
+    return render(request, "inventory/sale_detail.html", {"sale": sale})
 
 
 @test_mode_login_required
@@ -236,10 +247,13 @@ def sale_unpost(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     try:
         sale.unpost()
-        messages.success(request, f"Проведение продажи №{sale.number} отменено. Документ доступен для редактирования.")
+        messages.success(
+            request,
+            f"Проведение продажи №{sale.number} отменено. Документ доступен для редактирования.",
+        )
     except Exception as e:
         messages.error(request, f"Ошибка отмены: {str(e)}")
-    return redirect('sale_detail', pk=pk)
+    return redirect("sale_detail", pk=pk)
 
 
 @test_mode_login_required
@@ -247,10 +261,13 @@ def receipt_unpost(request, pk):
     receipt = get_object_or_404(Receipt, pk=pk)
     try:
         receipt.unpost()
-        messages.success(request, f"Проведение прихода №{receipt.number} отменено. Документ доступен для редактирования.")
+        messages.success(
+            request,
+            f"Проведение прихода №{receipt.number} отменено. Документ доступен для редактирования.",
+        )
     except Exception as e:
         messages.error(request, f"Ошибка отмены: {str(e)}")
-    return redirect('receipt_detail', pk=pk)
+    return redirect("receipt_detail", pk=pk)
 
 
 @test_mode_login_required
@@ -259,13 +276,14 @@ def sale_edit(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
 
     if sale.posted:
-        messages.error(request, "Нельзя редактировать проведенный документ. Сначала отмените проведение.")
-        return redirect('sale_detail', pk=sale.pk)
+        messages.error(
+            request,
+            "Нельзя редактировать проведенный документ. Сначала отмените проведение.",
+        )
+        return redirect("sale_detail", pk=sale.pk)
 
     warehouse = sale.warehouse
-    SaleItemFormSetDynamic = inlineformset_factory(
-        Sale, SaleItem, form=SaleItemForm, extra=0, can_delete=True
-    )
+    SaleItemFormSetDynamic = inlineformset_factory(Sale, SaleItem, form=SaleItemForm, extra=0, can_delete=True)
 
     if request.method == "POST":
         form = SaleForm(request.POST, instance=sale)
@@ -275,14 +293,17 @@ def sale_edit(request, pk):
             sale = form.save()
             formset.save()
             messages.success(request, f"Продажа №{sale.id} успешно обновлена.")
-            return redirect('sale_detail', pk=sale.pk)
+            return redirect("sale_detail", pk=sale.pk)
         else:
             # === ОТЛАДКА: ВЫВОД ОШИБОК ===
             print("--- ОШИБКИ ПРОДАЖИ ---")
             print("Ошибки шапки:", form.errors)
             print("Ошибки товаров:", formset.errors)
             print("Общие ошибки:", formset.non_form_errors())
-            messages.error(request, "Ошибка сохранения! Проверьте данные. Подробности в консоли сервера.")
+            messages.error(
+                request,
+                "Ошибка сохранения! Проверьте данные. Подробности в консоли сервера.",
+            )
     else:
         form = SaleForm(instance=sale)
         formset = SaleItemFormSetDynamic(instance=sale)
@@ -291,19 +312,18 @@ def sale_edit(request, pk):
             prod = None
             if form_item.instance.pk and form_item.instance.product:
                 prod = form_item.instance.product
-            elif form_item.initial.get('product'):
-                prod = form_item.initial.get('product')
+            elif form_item.initial.get("product"):
+                prod = form_item.initial.get("product")
 
             if prod:
                 balance_value = prod.get_balance(warehouse)
-                form_item.initial['balance'] = balance_value
+                form_item.initial["balance"] = balance_value
 
-    return render(request, "inventory/sale_create.html", {
-        "form": form,
-        "formset": formset,
-        "is_edit": True,
-        "sale": sale
-    })
+    return render(
+        request,
+        "inventory/sale_create.html",
+        {"form": form, "formset": formset, "is_edit": True, "sale": sale},
+    )
 
 
 @test_mode_login_required
@@ -312,8 +332,11 @@ def receipt_edit(request, pk):
     receipt = get_object_or_404(Receipt, pk=pk)
 
     if receipt.posted:
-        messages.error(request, "Нельзя редактировать проведенный документ. Сначала отмените проведение.")
-        return redirect('receipt_detail', pk=receipt.pk)
+        messages.error(
+            request,
+            "Нельзя редактировать проведенный документ. Сначала отмените проведение.",
+        )
+        return redirect("receipt_detail", pk=receipt.pk)
 
     warehouse = receipt.warehouse
     ReceiptItemFormSetDynamic = inlineformset_factory(
@@ -328,14 +351,17 @@ def receipt_edit(request, pk):
             receipt = form.save()
             formset.save()
             messages.success(request, f"Приход №{receipt.id} успешно обновлен.")
-            return redirect('receipt_detail', pk=receipt.pk)
+            return redirect("receipt_detail", pk=receipt.pk)
         else:
             # === ОТЛАДКА: ВЫВОД ОШИБОК ===
             print("--- ОШИБКИ ПРИХОДА ---")
             print("Ошибки шапки:", form.errors)
             print("Ошибки товаров:", formset.errors)
             print("Общие ошибки:", formset.non_form_errors())
-            messages.error(request, "Ошибка сохранения! Проверьте данные. Подробности в консоли сервера.")
+            messages.error(
+                request,
+                "Ошибка сохранения! Проверьте данные. Подробности в консоли сервера.",
+            )
     else:
         form = ReceiptForm(instance=receipt)
         formset = ReceiptItemFormSetDynamic(instance=receipt)
@@ -344,9 +370,8 @@ def receipt_edit(request, pk):
             if form_item.instance.product_id:
                 form_item.balance = form_item.instance.product.get_balance(warehouse)
 
-    return render(request, "inventory/receipt_create.html", {
-        "form": form,
-        "formset": formset,
-        "is_edit": True,
-        "receipt": receipt
-    })
+    return render(
+        request,
+        "inventory/receipt_create.html",
+        {"form": form, "formset": formset, "is_edit": True, "receipt": receipt},
+    )

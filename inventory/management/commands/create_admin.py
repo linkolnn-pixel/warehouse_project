@@ -15,19 +15,11 @@ class Command(BaseCommand):
         email = os.environ.get("DJANGO_ADMIN_EMAIL", "")
 
         if not username or not password:
-            self.stdout.write(
-                self.style.WARNING(
-                    "DJANGO_ADMIN_USERNAME или DJANGO_ADMIN_PASSWORD не заданы"
-                )
-            )
+            self.stdout.write(self.style.WARNING("DJANGO_ADMIN_USERNAME или DJANGO_ADMIN_PASSWORD не заданы"))
             return
 
         if User.objects.filter(username=username).exists():
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"Администратор {username} уже существует"
-                )
-            )
+            self.stdout.write(self.style.SUCCESS(f"Администратор {username} уже существует"))
             return
 
         User.objects.create_superuser(
@@ -36,8 +28,4 @@ class Command(BaseCommand):
             password=password,
         )
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Администратор {username} успешно создан"
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"Администратор {username} успешно создан"))

@@ -1,0 +1,27 @@
+repos:
+  # Стандартные хуки для чистоты текста
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace # удаляет пробелы в конце строк
+      - id: end-of-file-fixer   # добавляет пустую строку в конец файлов
+      - id: check-yaml          # проверяет валидность YAML
+      - id: check-added-large-files # запрещает коммитить гигантские файлы
+
+  # Ruff (линтер и форматер)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.5
+    hooks:
+      - id: ruff
+        args: [ --fix ] # Автоматически чинит мелкие ошибки (например, неиспользуемые импорты)
+      - id: ruff-format # Автоматически форматирует код
+
+  # Mypy (проверка типов)
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: mypy
+        language: system
+        types: [ python ]
+        args: [ --config-file=pyproject.toml ]

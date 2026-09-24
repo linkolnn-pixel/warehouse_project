@@ -1,0 +1,25 @@
+[tool.ruff]
+# Исключаем папки, которые проверять не нужно
+exclude = [
+    ".git",
+    ".venv",
+    "migrations",
+    "manage.py",
+]
+line-length = 120
+
+[tool.ruff.lint]
+# Включаем базовые правила (ошибки, код-стайл и сортировку импортов)
+select = ["E", "F", "I"]
+
+[tool.mypy]
+# Подключаем плагин для Django
+plugins = ["mypy_django_plugin.main"]
+exclude = ["migrations/", "manage.py", ".venv/"]
+# Игнорируем ошибки отсутствия типов у сторонних библиотек
+ignore_missing_imports = true
+# Не требуем строгой типизации везде сразу (иначе проект не соберется)
+check_untyped_defs = false
+
+[tool.django-stubs]
+django_settings_module = "warehouse_project.settings"
