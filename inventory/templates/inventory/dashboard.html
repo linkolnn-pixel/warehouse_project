@@ -5,7 +5,7 @@
 <div class="container mt-4">
     <h2 class="mb-4">Обзор склада</h2>
 
-    <!-- Карточки KPI -->
+    <!-- ВЕРХНИЙ РЯД: Карточки текущих остатков -->
     <div class="row mb-4">
         <div class="col-md-4">
             <div class="card text-white bg-primary shadow-sm h-100">
@@ -33,28 +33,97 @@
         </div>
     </div>
 
-    <!-- График и Последние действия -->
-    <div class="row">
-        <!-- Блок графика -->
-        <div class="col-md-8 mb-4">
-            <div class="card shadow-sm p-3 h-100">
-                <h5 class="mb-3">Выручка за последние 7 дней</h5>
-                <canvas id="salesChart" height="120"></canvas>
+    <!-- СРЕДНИЙ РЯД: Выручка и Топ-3 товара за периоды -->
+    <div class="row mb-4">
+        <!-- Блок за месяц -->
+        <div class="col-md-4 mb-3">
+            <div class="card bg-light border-primary shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-center text-primary mb-3">За 30 дней</h5>
+                    <h4 class="card-text text-center mb-4">
+                        <small class="text-muted d-block fs-6 mb-1">Выручка</small>
+                        {{ revenue_1m|floatformat:2 }} ₽
+                    </h4>
+
+                    <h6 class="text-secondary small fw-bold">Топ-3 продаваемых товаров:</h6>
+                    <ul class="list-group list-group-flush small">
+                        {% for item in top_1m %}
+                            <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between align-items-center">
+                                {{ item.product_name }}
+                                <span class="badge bg-primary rounded-pill">{{ item.total_sold }} шт.</span>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item bg-transparent px-0 py-1 text-muted">Нет продаж</li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
         </div>
 
-        <!-- Блок активности -->
-        <div class="col-md-4 mb-4">
-            <div class="card shadow-sm p-3 h-100">
-                <h5 class="mb-3">Последние операции</h5>
+        <!-- Блок за полгода -->
+        <div class="col-md-4 mb-3">
+            <div class="card bg-light border-warning shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-center text-warning mb-3">За полгода</h5>
+                    <h4 class="card-text text-center mb-4">
+                        <small class="text-muted d-block fs-6 mb-1">Выручка</small>
+                        {{ revenue_6m|floatformat:2 }} ₽
+                    </h4>
+
+                    <h6 class="text-secondary small fw-bold">Топ-3 продаваемых товаров:</h6>
+                    <ul class="list-group list-group-flush small">
+                        {% for item in top_6m %}
+                            <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between align-items-center">
+                                {{ item.product_name }}
+                                <span class="badge bg-warning text-dark rounded-pill">{{ item.total_sold }} шт.</span>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item bg-transparent px-0 py-1 text-muted">Нет продаж</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Блок за год -->
+        <div class="col-md-4 mb-3">
+            <div class="card bg-light border-danger shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title text-center text-danger mb-3">За год</h5>
+                    <h4 class="card-text text-center mb-4">
+                        <small class="text-muted d-block fs-6 mb-1">Выручка</small>
+                        {{ revenue_1y|floatformat:2 }} ₽
+                    </h4>
+
+                    <h6 class="text-secondary small fw-bold">Топ-3 продаваемых товаров:</h6>
+                    <ul class="list-group list-group-flush small">
+                        {% for item in top_1y %}
+                            <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between align-items-center">
+                                {{ item.product_name }}
+                                <span class="badge bg-danger rounded-pill">{{ item.total_sold }} шт.</span>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item bg-transparent px-0 py-1 text-muted">Нет продаж</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- НИЖНИЙ РЯД: Последние операции (на всю ширину) -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm p-3">
+                <h5 class="mb-3">Последние операции склада</h5>
                 <ul class="list-group list-group-flush">
                     {% for txn in recent_transactions %}
                         <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
                             <div>
-                                <small class="text-muted d-block">{{ txn.date|date:"d.m.Y H:i" }}</small>
-                                {{ txn.product.name }}
+                                <small class="text-muted me-3">{{ txn.date|date:"d.m.Y H:i" }}</small>
+                                <strong>{{ txn.product.name }}</strong>
                             </div>
-                            <span class="badge {% if txn.type == 'IN' %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                            <span class="badge {% if txn.type == 'IN' %}bg-success{% else %}bg-danger{% endif %} rounded-pill fs-6">
                                 {% if txn.type == 'IN' %}+{% else %}-{% endif %}{{ txn.quantity }}
                             </span>
                         </li>
@@ -65,55 +134,6 @@
             </div>
         </div>
     </div>
+
 </div>
-
-<!-- Подключаем библиотеку графиков -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const ctx = document.getElementById('salesChart').getContext('2d');
-
-        // Получаем реальные данные из Django
-        const labels = {{ chart_labels|safe }};
-        const data = {{ chart_data|safe }};
-
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Выручка (₽)',
-                    data: data,
-                    backgroundColor: 'rgba(13, 110, 253, 0.7)', // Синий цвет Bootstrap (primary)
-                    borderColor: 'rgba(13, 110, 253, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4 // Слегка закругляем верхушки колонок
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { display: false }, // Прячем легенду, так как у нас один показатель
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.parsed.y + ' ₽';
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return value + ' ₽'; // Добавляем значок рубля к оси
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    });
-</script>
 {% endblock %}

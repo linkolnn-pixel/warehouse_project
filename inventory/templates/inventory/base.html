@@ -207,6 +207,21 @@
                         Движения
                     </a>
 
+                <!-- Дашборд -->
+
+                <li class="nav-item">
+
+                    <a
+                        href="{% url 'dashboard' %}"
+                        class="nav-link
+                        {% if request.resolver_match.url_name == 'dashboard' %}
+                            active
+                        {% endif %}"
+                    >
+                        <i class="fa-solid fa-list"></i>
+                        Аналитика
+                    </a>
+
                 </li>
 
             </ul>

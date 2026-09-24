@@ -1,54 +1,57 @@
-import json
 from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Sum, F, DecimalField
-from django.db.models.functions import TruncDate
 from django.shortcuts import render
 
-from inventory.models import Product, Sale, Transaction
+from inventory.models import Product, Sale, Transaction, Warehouse
 
 
 def dashboard_view(request):
     # --- 1. КАРТОЧКИ: Считаем текущие остатки ---
-    products = Product.objects.with_balances()
+    warehouse = Warehouse.objects.first()
+    warehouse_id = warehouse.id if warehouse else None
+    products = Product.objects.with_balances(warehouse_id)
 
     total_stock_cost = sum((p.balance or 0) * p.cost_price for p in products)
     total_expected_profit = sum((p.stock_profit or 0) for p in products)
     out_of_stock_count = sum(1 for p in products if (p.balance or 0) <= 0)
 
-    # --- 2. ГРАФИК: Выручка за последние 7 дней ---
-    today = timezone.now().date()
-    # Генерируем список дат от (сегодня - 6 дней) до сегодня
-    last_7_days = [(today - timedelta(days=i)) for i in range(6, -1, -1)]
+    # --- 2. ВЫРУЧКА И ТОП ТОВАРОВ ЗА ПЕРИОДЫ ---
+    now = timezone.now()
 
-    # Подготавливаем словари для графика (по умолчанию везде нули)
-    # Форматируем даты как 'ДД.ММ', например '24.09'
-    labels = [day.strftime('%d.%m') for day in last_7_days]
-    revenue_by_date = {day: 0 for day in last_7_days}
+    def get_stats_since(days):
+        start_date = now - timedelta(days=days)
 
-    # Делаем ОДИН запрос к БД:
-    # Берем проведенные продажи за последние 7 дней, группируем по дате
-    # и считаем сумму: количество * цена_продажи
-    sales_data = (
-        Sale.objects.filter(posted=True, date__date__gte=last_7_days[0])
-        .annotate(day=TruncDate('date'))
-        .values('day')
-        .annotate(
-            total_revenue=Sum(
+        # 2.1 Считаем общую выручку за период
+        revenue_agg = Sale.objects.filter(
+            posted=True,
+            date__gte=start_date
+        ).aggregate(
+            total=Sum(
                 F('items__quantity') * F('items__sale_price'),
                 output_field=DecimalField()
             )
         )
-    )
+        revenue = float(revenue_agg['total'] or 0)
 
-    # Заполняем наш словарь реальными данными из БД
-    for item in sales_data:
-        day = item['day']
-        if day in revenue_by_date:
-            revenue_by_date[day] = float(item['total_revenue'] or 0)
+        # 2.2 Определяем топ-3 товара по количеству проданных единиц
+        top_products = Sale.objects.filter(
+            posted=True,
+            date__gte=start_date
+        ).values(
+            product_name=F('items__product__name')
+        ).annotate(
+            total_sold=Sum('items__quantity')
+        ).exclude(
+            product_name__isnull=True
+        ).order_by('-total_sold')[:3]
 
-    # Превращаем словарь в список значений, чтобы отдать в график
-    data_values = [revenue_by_date[day] for day in last_7_days]
+        return revenue, list(top_products)
+
+    # Получаем данные за 30, 180 и 365 дней
+    revenue_1m, top_1m = get_stats_since(30)
+    revenue_6m, top_6m = get_stats_since(180)
+    revenue_1y, top_1y = get_stats_since(365)
 
     # --- 3. ПОСЛЕДНИЕ СОБЫТИЯ ---
     recent_transactions = Transaction.objects.select_related(
@@ -61,9 +64,13 @@ def dashboard_view(request):
         'out_of_stock_count': out_of_stock_count,
         'recent_transactions': recent_transactions,
 
-        # Передаем данные для графика в формате JSON (чтобы JS их понял)
-        'chart_labels': json.dumps(labels),
-        'chart_data': json.dumps(data_values),
+        'revenue_1m': revenue_1m,
+        'revenue_6m': revenue_6m,
+        'revenue_1y': revenue_1y,
+
+        'top_1m': top_1m,
+        'top_6m': top_6m,
+        'top_1y': top_1y,
     }
 
     return render(request, 'inventory/dashboard.html', context)
