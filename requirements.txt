@@ -1,6 +1,7 @@
 asgiref==3.12.1
 Django==6.0.7
 django-appconf==1.2.0
+django-mptt==0.18.0
 django-select2==8.4.8
 django-stubs==6.0.9
 django-stubs-ext==6.0.9

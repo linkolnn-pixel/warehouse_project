@@ -1,0 +1,119 @@
+{% extends 'inventory/base.html' %}
+{% block title %}Дашборд{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Обзор склада</h2>
+
+    <!-- Карточки KPI -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-primary shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-boxes me-2"></i>В товарах заморожено</h5>
+                    <h3 class="card-text">{{ total_stock_cost|floatformat:2 }} ₽</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-success shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-chart-line me-2"></i>Ожидаемая прибыль</h5>
+                    <h3 class="card-text">{{ total_expected_profit|floatformat:2 }} ₽</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-danger shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="fas fa-exclamation-triangle me-2"></i>Товар закончился</h5>
+                    <h3 class="card-text">{{ out_of_stock_count }} позиций</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- График и Последние действия -->
+    <div class="row">
+        <!-- Блок графика -->
+        <div class="col-md-8 mb-4">
+            <div class="card shadow-sm p-3 h-100">
+                <h5 class="mb-3">Выручка за последние 7 дней</h5>
+                <canvas id="salesChart" height="120"></canvas>
+            </div>
+        </div>
+
+        <!-- Блок активности -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm p-3 h-100">
+                <h5 class="mb-3">Последние операции</h5>
+                <ul class="list-group list-group-flush">
+                    {% for txn in recent_transactions %}
+                        <li class="list-group-item px-0 d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted d-block">{{ txn.date|date:"d.m.Y H:i" }}</small>
+                                {{ txn.product.name }}
+                            </div>
+                            <span class="badge {% if txn.type == 'IN' %}bg-success{% else %}bg-danger{% endif %} rounded-pill">
+                                {% if txn.type == 'IN' %}+{% else %}-{% endif %}{{ txn.quantity }}
+                            </span>
+                        </li>
+                    {% empty %}
+                        <li class="list-group-item px-0 text-muted">Движений пока нет</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Подключаем библиотеку графиков -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('salesChart').getContext('2d');
+
+        // Получаем реальные данные из Django
+        const labels = {{ chart_labels|safe }};
+        const data = {{ chart_data|safe }};
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Выручка (₽)',
+                    data: data,
+                    backgroundColor: 'rgba(13, 110, 253, 0.7)', // Синий цвет Bootstrap (primary)
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4 // Слегка закругляем верхушки колонок
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }, // Прячем легенду, так как у нас один показатель
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + ' ₽';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' ₽'; // Добавляем значок рубля к оси
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

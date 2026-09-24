@@ -26,9 +26,10 @@
                         {{ form.warehouse }}
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Поставщик</label>
+                    <label class="form-label">Поставщик <span class="text-danger">*</span></label>
+                    <div class="input-group">
                         {{ form.supplier }}
+                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addSupplierModal">+</button>
                     </div>
 
                     <div class="mb-3">
@@ -62,6 +63,7 @@
                         <tbody>
                             {% for f in formset %}
                                 <tr>
+                                    {{ f.id }}
                                     <td>
                                     {% if f.instance.pk %}
                                         {{ f.instance.product.name }}
@@ -70,7 +72,7 @@
                                         {{ f.initial.product.name }}
                                         {{ f.product.as_hidden }}
                                     {% else %}
-                                        {{ f.product }}
+                                        {{ f.product.as_hidden }}
                                     {% endif %}
                                     </td>
                                     <td>
@@ -95,16 +97,69 @@
                         </tbody>
 
                     </table>
-                    <button
-                        type="submit"
-                        class="btn btn-success w-100">
-                        ✅ Создать приход
+                    <button type="submit" class="btn btn-success w-100">
+                        {% if is_edit %}
+                            💾 Сохранить изменения
+                        {% else %}
+                            ✅ Создать приход
+                        {% endif %}
                     </button>
                 </div>
         </form>
 </div>
 
+<!-- Модальное окно Поставщика -->
+<div class="modal fade" id="addSupplierModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Новый поставщик</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="ajaxSupplierForm" class="p-3">
+        {% csrf_token %}
+        <input type="hidden" name="type" value="supplier">
+        <div class="mb-3">
+          <label>Название компании <span class="text-danger">*</span></label>
+          <input type="text" name="company_name" class="form-control" required>
+        </div>
+        <div class="mb-3">
+          <label>ИНН</label>
+          <input type="text" name="inn" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-success w-100">Создать и выбрать</button>
+      </form>
+    </div>
+  </div>
+</div>
 
+<script>
+document.getElementById('ajaxSupplierForm').addEventListener('submit', function(e) {
+    e.preventDefault(); // Останавливаем перезагрузку страницы
+    let formData = new FormData(this);
+
+    fetch("{% url 'api_counterparty_create' %}", {
+        method: "POST",
+        body: formData,
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            // 1. Добавляем созданного поставщика в селект
+            let select = document.getElementById('id_supplier'); // Django по умолчанию дает ID "id_названиеполя"
+            let option = new Option(data.name, data.id, true, true);
+            select.add(option);
+
+            // 2. Закрываем окно
+            bootstrap.Modal.getInstance(document.getElementById('addSupplierModal')).hide();
+
+            // 3. Очищаем форму для следующего раза
+            this.reset();
+        }
+    });
+});
+</script>
 
 <script>
 

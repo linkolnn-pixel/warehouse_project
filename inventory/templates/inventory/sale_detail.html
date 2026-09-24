@@ -21,8 +21,8 @@
                 <p>
                 <strong>Клиент:</strong><br>
                 {% if sale.customer %}
-                    {{ sale.customer.last_name }}
                     {{ sale.customer.first_name }}
+                    {{ sale.customer.last_name }}
                 {% else %}
                 —
                 {% endif %}
@@ -36,14 +36,29 @@
                 </div>
                 <div class="col-md-6 text-end">
                     {% if sale.posted %}
-                        <div class="alert alert-success">✅ Продажа проведена</div>
-                        {% else %}
+                    <div class="alert alert-success d-inline-block py-2 mb-2 px-3">
+                        ✅ Продажа проведена
+                    </div>
+                    <br>
+                    <form action="{% url 'sale_unpost' sale.pk %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning">
+                            ⏪ Отменить проведение
+                        </button>
+                    </form>
+                    {% else %}
+                        <div class="mb-3">
+                            <span class="badge bg-secondary fs-6">Черновик (не проведено)</span>
+                        </div>
 
-                        <form method="post" action="{% url 'sale_post' sale.pk %}">
+                        <a href="{% url 'sale_edit' sale.pk %}" class="btn btn-primary me-2">
+                            ✏️ Редактировать
+                        </a>
+
+                        <form method="post" action="{% url 'sale_post' sale.pk %}" class="d-inline">
                             {% csrf_token %}
-                            <button type="submit"
-                            class="btn btn-success btn-lg">
-                            ✅ Провести продажу
+                            <button type="submit" class="btn btn-success">
+                                ✅ Провести продажу
                             </button>
                         </form>
                     {% endif %}
@@ -83,6 +98,10 @@
             </tbody>
 
         </table>
+
+        <div class="text-end mb-3">
+            <h5 class="fw-bold">Итого: {{ sale.calculated_total|default:"0.00" }} ₽</h5>
+        </div>
 
         <hr>
 

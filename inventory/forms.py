@@ -134,6 +134,9 @@ class CounterpartyForm(forms.ModelForm):
             self.fields.pop('last_name')
             self.fields.pop('type')
 
+        if 'inn' in self.fields:
+            self.fields['inn'].required = False
+
     def clean(self):
         cleaned_data = super().clean()
 
@@ -172,12 +175,6 @@ class CounterpartyForm(forms.ModelForm):
                 self.add_error(
                     'company_name',
                     'Введите название компании'
-                )
-
-            if not cleaned_data.get('inn'):
-                self.add_error(
-                    'inn',
-                    'Введите ИНН'
                 )
 
         return cleaned_data
@@ -304,6 +301,17 @@ class SaleForm(forms.ModelForm):
             'comment'
         ]
         widgets = {
+            'warehouse': forms.Select(
+                attrs={
+                    'class': 'form-select'
+                }
+            ),
+            'customer': forms.Select(
+                attrs={
+                    'class': 'form-select',
+                    'required': 'required',
+                }
+            ),
             'comment': forms.Textarea(
                 attrs={
                     'rows': 3,
@@ -320,6 +328,12 @@ class SaleForm(forms.ModelForm):
 
             if warehouse:
                 self.initial['warehouse'] = warehouse.pk
+
+        self.fields['customer'].required = True
+        self.fields['customer'].error_messages = {
+            'required': 'Пожалуйста, выберите клиента для совершения продажи.'
+        }
+
 
 class SaleItemForm(forms.ModelForm):
     balance = forms.DecimalField(

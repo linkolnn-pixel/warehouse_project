@@ -2,6 +2,11 @@ from django.db import models, transaction
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.utils.text import slugify
+from mptt.fields import TreeForeignKey
+from mptt.models import MPTTModel
+
+from inventory.managers import ProductManager
+
 
 class Warehouse(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -9,6 +14,7 @@ class Warehouse(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class Counterparty(models.Model):
     TYPE_CHOICES = (
@@ -29,6 +35,7 @@ class Counterparty(models.Model):
     inn = models.CharField(
         max_length=20,
         blank=True,
+        null=True,
         verbose_name="ИНН"
     )
 
@@ -78,29 +85,35 @@ class Counterparty(models.Model):
 
         return self.company_name
 
-class Category(models.Model):
+
+class Category(MPTTModel):
     name = models.CharField(max_length=200, verbose_name="Название")
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children',
-                               verbose_name="Родительская категория")
+    parent = TreeForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='children',
+        verbose_name="Родительская категория"
+    )
     slug = models.SlugField(unique=True, blank=True)
+
+    class MPTTMetta:
+        order_insertion_by = ['name']
 
     class Meta:
         verbose_name = "Категория"
         verbose_name_plural = "Категории"
-        ordering = ['name']
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            self.slug = slugify(self.name, allow_unicode=True)
         super().save(*args, **kwargs)
 
     def __str__(self):
-        full_path = [self.name]
-        k = self.parent
-        while k is not None:
-            full_path.append(k.name)
-            k = k.parent
-        return ' > '.join(full_path[::-1])
+        ancestors = self.get_ancestors(include_self=True)
+        return ' > '.join([a.name for a in ancestors])
+
 
 class ProductCodeSequence(models.Model):
 
@@ -120,7 +133,6 @@ class ProductCodeSequence(models.Model):
         sequence.save(update_fields=['next_code'])
         return current_code
 
-# -----------------------------
 
 class Product(models.Model):
     sku = models.CharField(max_length=50, blank=True, null=True, default='', verbose_name="Артикул")
@@ -142,6 +154,7 @@ class Product(models.Model):
                                     verbose_name="Ед. изм. (вес/объем)")
     supplier = models.ForeignKey(Counterparty, on_delete=models.SET_NULL, null=True, blank=True,
                                  related_name='supplied_products', verbose_name="Поставщик")
+    objects = ProductManager()
 
     class Meta:
         verbose_name = "Товар"
@@ -151,7 +164,6 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-    @property
     def profit(self):
         # Прибыль с одной единицы товара
         return self.sale_price - self.cost_price
@@ -189,6 +201,7 @@ class Product(models.Model):
             code_number = ProductCodeSequence.get_next_code()
             self.internal_code = f"{code_number:04d}"
         super().save(*args, **kwargs)
+
 
 class Transaction(models.Model):
     TYPE_CHOICES = (
@@ -233,6 +246,7 @@ class Transaction(models.Model):
     def __str__(self):
         return f"{self.get_type_display()} {self.product.name} ({self.quantity} {self.product.unit})"
 
+
 class Receipt(models.Model):
     number = models.PositiveIntegerField(
         unique=True,
@@ -267,30 +281,62 @@ class Receipt(models.Model):
 
     @transaction.atomic
     def post(self):
-        if self.posted:
+        receipt = Receipt.objects.select_for_update().get(pk=self.pk)
+
+        if receipt.posted:
             return
-        for item in self.items.all():
-            Transaction.objects.create(
-                product=item.product,
-                warehouse=self.warehouse,
-                counterparty=self.supplier,
-                type="IN",
-                quantity=item.quantity,
-                receipt=self,
-                comment=f"Приход №{self.number}"
+
+        items = receipt.items.select_related('product').all()
+
+        transactions_to_create = []
+        products_to_update = []
+
+        for item in items:
+            # Подготавливаем транзакции в памяти (без отправки в БД)
+            transactions_to_create.append(
+                Transaction(
+                    product=item.product,
+                    warehouse=receipt.warehouse,
+                    counterparty=receipt.supplier,
+                    type="IN",
+                    quantity=item.quantity,
+                    receipt=receipt,
+                    comment=f"Приход №{receipt.number}"
+                )
             )
-            # обновляем закупочную цену
-            # обновляем цены товара после прихода
+            # Обновляем цены товара в оперативной памяти
             item.product.cost_price = item.cost_price
             item.product.sale_price = item.sale_price
-            item.product.save(
-                update_fields=[
-                    'cost_price',
-                    'sale_price'
-                ]
+            products_to_update.append(item.product)
+
+        # Сохраняем все транзакции ОДНИМ запросом
+        if transactions_to_create:
+            Transaction.objects.bulk_create(transactions_to_create)
+
+        # Сохраняем новые цены для всех товаров ОДНИМ запросом
+        if products_to_update:
+            Product.objects.bulk_update(
+                products_to_update,
+                fields=['cost_price', 'sale_price']
             )
+        # Помечаем документ как проведенный
+        receipt.posted = True
+        receipt.save(update_fields=['posted'])
+
+        # Обновляем состояние текущего инстанса, с которым мы работаем
         self.posted = True
+
+    @transaction.atomic
+    def unpost(self):
+        if not self.posted:
+            return
+
+        # Удаляем все приходы по этому документу
+        Transaction.objects.filter(receipt=self).delete()
+
+        self.posted = False
         self.save(update_fields=['posted'])
+
 
 class ReceiptItem(models.Model):
     receipt = models.ForeignKey(
@@ -319,6 +365,7 @@ class ReceiptItem(models.Model):
     @property
     def total_sale(self):
         return self.quantity * self.sale_price
+
 
 class Sale(models.Model):
     number = models.PositiveIntegerField(
@@ -356,71 +403,65 @@ class Sale(models.Model):
         if self.posted:
             return
 
-        # Блокируем саму продажу
-        sale = (
-            Sale.objects
-            .select_for_update()
-            .get(pk=self.pk)
-        )
-
+        sale = Sale.objects.select_for_update().get(pk=self.pk)
         if sale.posted:
             return
 
-        # Собираем количество по товарам.
-        # Если один товар случайно указан несколько раз,
-        # его количества суммируются.
         quantities = {}
-
         for item in sale.items.all():
             if item.quantity <= 0:
-                raise ValidationError(
-                    f"Количество товара «{item.product.name}» "
-                    f"должно быть больше 0."
-                )
+                raise ValidationError(f"Количество товара «{item.product.name}» должно быть больше 0.")
+            quantities[item.product_id] = quantities.get(item.product_id, 0) + item.quantity
 
-            quantities[item.product_id] = (
-                    quantities.get(item.product_id, 0)
-                    + item.quantity
-            )
+        # 1. Забираем ВСЕ нужные товары и блокируем их разом (один запрос в БД)
+        locked_products = {
+            p.id: p for p in Product.objects.select_for_update().filter(id__in=quantities.keys())
+        }
 
-        # Проверяем остатки
+        # 2. Проверяем остатки
         for product_id, quantity in quantities.items():
-
-            product = (
-                Product.objects
-                .select_for_update()
-                .get(pk=product_id)
-            )
-
+            product = locked_products[product_id]
             balance = product.get_balance(sale.warehouse)
 
             if quantity > balance:
                 raise ValidationError(
                     f"Недостаточно товара: {product.name}. "
-                    f"Доступно: {balance} шт., "
-                    f"запрошено: {quantity} шт."
+                    f"Доступно: {balance} шт., запрошено: {quantity} шт."
                 )
 
-        # Создаём расходные операции
+        # 3. Подготавливаем транзакции в памяти
+        new_transactions = []
         for product_id, quantity in quantities.items():
-            product = Product.objects.get(pk=product_id)
-
-            Transaction.objects.create(
-                product=product,
-                warehouse=sale.warehouse,
-                counterparty=sale.customer,
-                type="OUT",
-                quantity=quantity,
-                sale=sale,
-                comment=f"Продажа №{sale.number}"
+            new_transactions.append(
+                Transaction(
+                    product=locked_products[product_id],
+                    warehouse=sale.warehouse,
+                    counterparty=sale.customer,
+                    type="OUT",
+                    quantity=quantity,
+                    sale=sale,
+                    comment=f"Продажа №{sale.number}"
+                )
             )
 
-        # Проведение продажи
+        # 4. Сохраняем все транзакции ОДНИМ запросом в БД
+        Transaction.objects.bulk_create(new_transactions)
+
         sale.posted = True
         sale.save(update_fields=["posted"])
-
-        # Обновляем текущий объект
         self.posted = True
+
+    @transaction.atomic
+    def unpost(self):
+        if not self.posted:
+            return
+
+        # Удаляем все движения по складу, связанные с этой продажей
+        Transaction.objects.filter(sale=self).delete()
+
+        self.posted = False
+        self.save(update_fields=["posted"])
+
 
 class SaleItem(models.Model):
     sale = models.ForeignKey(

@@ -31,8 +31,28 @@
   </table>
 
   {% if receipt.posted %}
-    <div class="alert alert-success">✅ Документ проведён</div>
+    <div class="alert alert-success d-inline-block py-2 mb-2 px-3">
+      ✅ Приход проведен
+    </div>
+    <br>
+    <form action="{% url 'receipt_unpost' receipt.pk %}" method="post" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-warning">
+        ⏪ Отменить проведение
+      </button>
+    </form>
   {% else %}
-    <a href="{% url 'receipt_post' receipt.id %}" class="btn btn-success">✅ Провести приход</a>
+    <div class="mb-3">
+        <span class="badge bg-secondary fs-6">Черновик (не проведено)</span>
+    </div>
+        <a href="{% url 'receipt_edit' receipt.pk %}" class="btn btn-primary me-2">
+            ✏️ Редактировать
+        </a>
+    <form method="post" action="{% url 'receipt_post' receipt.pk %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">
+            ✅ Провести приход
+        </button>
+    </form>
   {% endif %}
 {% endblock %}

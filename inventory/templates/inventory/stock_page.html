@@ -98,25 +98,66 @@
 
         <tbody>
 
-        {% for row in rows %}
+        {% for product in products %}
             <tr>
-                <td>{{ row.product.name }}</td>
-                <td>{{ row.product.category }}</td>
-                <td>{{ row.balance }} шт.</td>
-                <td>{{ row.product.cost_price }}</td>
-                <td>{{ row.product.sale_price }}</td>
-                <td>{{ row.product.profit }}</td>
-                <td>{{ row.stock_profit }}</td>
-                <td>{{ row.product.internal_code }}</td>
-                <td>{{ row.product.sku|default:"-" }}</td>
-                <td>{{ row.warehouse_name }}</td>
+                <td>{{ product.name }}</td>
+                <td>{{ product.category|default:"-" }}</td>
+                <td>{{ product.balance|default:"0" }} шт.</td>
+                <td>{{ product.cost_price }}</td>
+                <td>{{ product.sale_price }}</td>
+                <td>{{ product.profit }}</td>
+                <td>{{ product.stock_profit|default:"0.00" }}</td>
+                <td>{{ product.internal_code }}</td>
+                <td>{{ product.sku|default:"-" }}</td>
+                <td>{{ warehouse.name|default:"Нет складов" }}</td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="10" style="text-align: center;">Товары не найдены</td>
             </tr>
         {% endfor %}
 
         </tbody>
 
     </table>
+        <!-- Сводная статистика склада -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card bg-white shadow-sm h-100 border-0 border-start border-4 border-secondary">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-1"><i class="fas fa-boxes me-2"></i>Общий остаток</h6>
+                    <h4 class="mb-0">{{ total_quantity }} <small class="text-muted fs-6">шт</small></h4>
+                </div>
+            </div>
+        </div>
 
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card bg-white shadow-sm h-100 border-0 border-start border-4 border-primary">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-1"><i class="fas fa-shopping-cart me-2"></i>В закупке</h6>
+                    <h4 class="mb-0 text-primary">{{ total_cost|floatformat:2 }} ₽</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card bg-white shadow-sm h-100 border-0 border-start border-4 border-info">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-1"><i class="fas fa-tag me-2"></i>В рознице</h6>
+                    <h4 class="mb-0 text-info">{{ total_retail|floatformat:2 }} ₽</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card bg-white shadow-sm h-100 border-0 border-start border-4 border-success">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-1"><i class="fas fa-wallet me-2"></i>Прибыль</h6>
+                    <h4 class="mb-0 text-success">{{ total_profit|floatformat:2 }} ₽</h4>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>

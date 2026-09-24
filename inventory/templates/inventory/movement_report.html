@@ -9,143 +9,137 @@
 <div class="container-fluid mt-4">
 
     <div class="d-flex justify-content-between align-items-center mb-4">
-
         <div>
             <h2>
                 <i class="fa-solid fa-arrow-right-arrow-left"></i>
                 Операции
             </h2>
-
             <p class="text-muted">
-                История движения товаров
+                История движения по документам
             </p>
         </div>
-
     </div>
 
     <div class="card shadow-sm">
-
-        <div class="card-body">
-
+        <div class="card-body p-0"> <!-- Убрали padding, чтобы таблица была на всю ширину карточки -->
             <div class="table-responsive">
-
-                <table class="table table-bordered table-hover align-middle">
-
+                <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
+                            <!-- Убрали колонки "Товар" и "Количество", оставили только суть документа -->
+                            <th width="40"></th> <!-- Для иконки раскрытия -->
                             <th>Дата</th>
                             <th>Тип</th>
-                            <th>Товар</th>
-                            <th>Склад</th>
-                            <th>Количество</th>
-                            <th>Контрагент</th>
                             <th>Документ</th>
+                            <th>Склад</th>
+                            <th>Контрагент</th>
                             <th>Комментарий</th>
                         </tr>
                     </thead>
-
                     <tbody>
 
-                    {% for tx in transactions %}
+                    {% for doc in documents %}
 
-                    <tr>
+                    <!-- Главная строка документа (кликабельная) -->
+                    <tr data-bs-toggle="collapse" data-bs-target="#doc-{{ doc.key }}" style="cursor: pointer;">
 
-                        <td>
-                            {{ tx.date|date:"d.m.Y H:i" }}
+                        <td class="text-center text-muted">
+                            <i class="fa-solid fa-chevron-down"></i>
                         </td>
 
                         <td>
-                            {% if tx.type == 'IN' %}
-                                <span class="badge bg-success">
-                                    Приход
-                                </span>
-                            {% elif tx.type == 'OUT' %}
-                                <span class="badge bg-danger">
-                                    Отгрузка
-                                </span>
+                            {{ doc.date|date:"d.m.Y H:i" }}
+                        </td>
+
+                        <td>
+                            {% if doc.type == 'IN' %}
+                                <span class="badge bg-success">Приход</span>
+                            {% elif doc.type == 'OUT' %}
+                                <span class="badge bg-danger">Отгрузка</span>
                             {% else %}
-                                <span class="badge bg-secondary">
-                                    {{ tx.type }}
-                                </span>
+                                <span class="badge bg-secondary">{{ doc.type }}</span>
                             {% endif %}
                         </td>
 
                         <td>
-                            {% if tx.product %}
-                                <a href="{% url 'product_detail' tx.product.pk %}">
-                                    {{ tx.product.name }}
+                            {% if doc.type == 'IN' and doc.document %}
+                                <!-- Принудительный переход через window.location.href -->
+                                <a href="{% url 'receipt_detail' doc.document.id %}"
+                                   onclick="event.stopPropagation(); window.location.href=this.href; return false;"
+                                   class="fw-bold text-decoration-none text-primary">
+                                    Приход №{{ doc.doc_number }}
                                 </a>
-                            {% else %}
-                                —
-                            {% endif %}
-                        </td>
 
-                        <td>
-                            {{ tx.warehouse|default:"—" }}
-                        </td>
+                            {% elif doc.type == 'OUT' and doc.document %}
+                                <!-- Принудительный переход через window.location.href -->
+                                <a href="{% url 'sale_detail' doc.document.id %}"
+                                   onclick="event.stopPropagation(); window.location.href=this.href; return false;"
+                                   class="fw-bold text-decoration-none text-primary">
+                                    Продажа №{{ doc.doc_number }}
+                                </a>
 
-                        <td>
-                            {% if tx.type == 'IN' %}
-                                <span class="text-success fw-bold">
-                                    +{{ tx.quantity }}
-                                </span>
-                            {% elif tx.type == 'OUT' %}
-                                <span class="text-danger fw-bold">
-                                    -{{ tx.quantity }}
-                                </span>
-                            {% else %}
-                                {{ tx.quantity }}
-                            {% endif %}
-                        </td>
-
-                        <td>
-                            {% if tx.counterparty %}
-                                {{ tx.counterparty }}
-                            {% elif tx.receipt and tx.receipt.supplier %}
-                                {{ tx.receipt.supplier }}
-                            {% elif tx.sale and tx.sale.customer %}
-                                {{ tx.sale.customer }}
-                            {% else %}
-                                —
-                            {% endif %}
-                        </td>
-
-                        <td>
-                            {% if tx.receipt %}
-                                Приход №{{ tx.receipt.number }}
-                            {% elif tx.sale %}
-                                Продажа №{{ tx.sale.number }}
                             {% else %}
                                 Ручное движение
                             {% endif %}
                         </td>
 
-                        <td>
-                            {{ tx.reference|default:"—" }}
-                        </td>
+                        <td>{{ doc.warehouse|default:"—" }}</td>
+                        <td>{{ doc.counterparty|default:"—" }}</td>
+                        <td>{{ doc.reference|default:"—" }}</td>
+                    </tr>
 
+                    <!-- Скрытая строка с товарами (раскрывается при клике) -->
+                    <tr>
+                        <td colspan="7" class="p-0 border-0">
+                            <div class="collapse" id="doc-{{ doc.key }}">
+                                <div class="bg-light p-3 border-bottom">
+                                    <h6 class="mb-2 text-muted">Состав документа:</h6>
+                                    <table class="table table-sm table-bordered bg-white mb-0" style="width: auto; min-width: 50%;">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Товар</th>
+                                                <th>Количество</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in doc.items %}
+                                            <tr>
+                                                <td>
+                                                    <a href="{% url 'product_detail' item.product.pk %}" class="text-decoration-none">
+                                                        {{ item.product.name }}
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    {% if doc.type == 'IN' %}
+                                                        <span class="text-success fw-bold">+{{ item.quantity }}</span>
+                                                    {% elif doc.type == 'OUT' %}
+                                                        <span class="text-danger fw-bold">-{{ item.quantity }}</span>
+                                                    {% else %}
+                                                        {{ item.quantity }}
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
 
                     {% empty %}
-
                     <tr>
-                        <td colspan="8" class="text-center text-muted py-5">
+                        <td colspan="7" class="text-center text-muted py-5">
                             Операций пока нет
                         </td>
                     </tr>
-
                     {% endfor %}
 
                     </tbody>
-
                 </table>
-
             </div>
-
         </div>
-
     </div>
-
 </div>
 
 {% endblock %}

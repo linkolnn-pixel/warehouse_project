@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from .models import (
@@ -52,31 +53,14 @@ class WarehouseSerializer(serializers.ModelSerializer):
         ]
 
 class WarehouseStockSerializer(serializers.ModelSerializer):
-    product_id = serializers.IntegerField(
-        source='id',
-        read_only=True
-    )
+    balance = serializers.IntegerField(read_only=True)
+    profit = serializers.DecimalField(max_digits=12, decimal_places=2,read_only=True)
+    stock_profit = serializers.DecimalField(max_digits=12, decimal_places=2,read_only=True)
 
-    product_name = serializers.CharField(
-        source='name',
-        read_only=True
-    )
-
-    category_name = serializers.CharField(
-        source='category.name',
-        read_only=True,
-        allow_null=True
-    )
-
-    supplier_name = serializers.CharField(
-        source='supplier.company_name',
-        read_only=True,
-        allow_null=True
-    )
-
-    balance = serializers.SerializerMethodField()
-    profit = serializers.SerializerMethodField()
-    stock_profit = serializers.SerializerMethodField()
+    product_id = serializers.IntegerField(source='id', read_only=True)
+    product_name = serializers.CharField(source='name', read_only=True)
+    category_name = serializers.CharField(source='category.name', read_only=True, allow_null=True)
+    supplier_name = serializers.CharField(source='supplier.company_name', read_only=True, allow_null=True)
 
     class Meta:
         model = Product
@@ -94,23 +78,6 @@ class WarehouseStockSerializer(serializers.ModelSerializer):
             'profit',
             'stock_profit',
         ]
-
-    def get_balance(self, obj):
-        warehouse = self.context.get('warehouse')
-        if not warehouse:
-            return 0
-        return obj.get_balance(warehouse)
-
-    def get_profit(self, obj):
-        return f"{obj.profit:.2f}"
-
-    def get_stock_profit(self, obj):
-        warehouse = self.context.get('warehouse')
-        if not warehouse:
-            return "0.00"
-        value = obj.get_stock_profit(warehouse)
-        return f"{value:.2f}"
-
 
 class ReceiptItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(
@@ -146,16 +113,8 @@ class ReceiptItemSerializer(serializers.ModelSerializer):
 
 class ReceiptSerializer(serializers.ModelSerializer):
     items = ReceiptItemSerializer(many=True)
-
-    supplier_name = serializers.CharField(
-        source='supplier.company_name',
-        read_only=True
-    )
-
-    warehouse_name = serializers.CharField(
-        source='warehouse.name',
-        read_only=True
-    )
+    supplier_name = serializers.CharField(source='supplier.company_name', read_only=True)
+    warehouse_name = serializers.CharField(source='warehouse.name', read_only=True)
 
     class Meta:
         model = Receipt
@@ -178,21 +137,16 @@ class ReceiptSerializer(serializers.ModelSerializer):
             'posted',
         ]
 
+    @transaction.atomic
     def create(self, validated_data):
-        items_data = validated_data.pop('items')
+        items_data = validated_data.pop('items', [])
+        receipt = Receipt.objects.create(**validated_data)
 
-        receipt = Receipt.objects.create(
-            **validated_data
-        )
-
-        ReceiptItem.objects.bulk_create([
-            ReceiptItem(
-                receipt=receipt,
-                **item_data
-            )
-            for item_data in items_data
-        ])
-
+        if items_data:
+            ReceiptItem.objects.bulk_create([
+                ReceiptItem(receipt=receipt, **item_data)
+                for item_data in items_data
+            ])
         return receipt
 
 class SaleItemSerializer(serializers.ModelSerializer):
@@ -221,13 +175,8 @@ class SaleItemSerializer(serializers.ModelSerializer):
 
 class SaleSerializer(serializers.ModelSerializer):
     items = SaleItemSerializer(many=True)
-
-    customer_name = serializers.SerializerMethodField()
-
-    warehouse_name = serializers.CharField(
-        source='warehouse.name',
-        read_only=True
-    )
+    customer_name = serializers.CharField(source='customer.name', read_only=True, allow_null=True)
+    warehouse_name = serializers.CharField(source='warehouse.name', read_only=True)
 
     class Meta:
         model = Sale
@@ -251,26 +200,14 @@ class SaleSerializer(serializers.ModelSerializer):
             'posted',
         ]
 
-    def get_customer_name(self, obj):
-        if not obj.customer:
-            return None
-
-        return str(obj.customer)
-
     def create(self, validated_data):
         items_data = validated_data.pop('items')
 
-        sale = Sale.objects.create(
-            **validated_data
-        )
+        sale = Sale.objects.create(**validated_data)
 
         SaleItem.objects.bulk_create([
-            SaleItem(
-                sale=sale,
-                **item_data
-            )
+            SaleItem(sale=sale, **item_data)
             for item_data in items_data
         ])
-
         return sale
 
