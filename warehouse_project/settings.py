@@ -62,6 +62,16 @@ ALLOWED_HOSTS = [
     "workhouse-test-mkhiln.amvera.io",
 ]
 
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "unique-snowflake",
+    }
+}
+
+CACHALOT_ENABLED = True
+CACHALOT_TIMEOUT = 60 * 15
+
 CSRF_TRUSTED_ORIGINS = [
     "https://warehouse-mkhiln.amvera.io",
     "https://workhouse-test-mkhiln.amvera.io",
@@ -77,6 +87,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "cachalot",
     "rest_framework",
     "mptt",
     "inventory",
