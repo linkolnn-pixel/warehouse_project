@@ -120,13 +120,11 @@
 
                             <!-- ОСТАТОК -->
                             <td class="text-center align-middle">
-                                <div class="balance-field fw-bold text-secondary">
-                                    {{ f.balance.value|default:"0" }}
+                                <div class="balance-field fw-bold text-primary">
+                                    <!-- Обращаемся к словарю initial -->
+                                    {{ f.initial.balance|default:"0" }}
                                 </div>
-                                <input type="hidden"
-                                       name="{{ f.prefix }}-balance"
-                                       value="{{ f.balance.value|default:'0' }}"
-                                >
+                                <input type="hidden" name="{{ f.prefix }}-balance" value="{{ f.initial.balance|default:'0' }}">
                             </td>
 
                             <!-- КОЛИЧЕСТВО -->
@@ -376,7 +374,28 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         });
     }
+    /*
+     * ПРИВЯЗКА КЛИЕНТА К КНОПКЕ "ДОБАВИТЬ ТОВАРЫ"
+     */
+    const customerSelect = document.querySelector('select[name="customer"]');
+    const addProductsBtn = document.querySelector('a.btn-primary[href*="target=sale"]');
 
+    if (customerSelect && addProductsBtn) {
+        customerSelect.addEventListener("change", function () {
+            // Берем текущую ссылку с кнопки
+            let url = new URL(addProductsBtn.href, window.location.origin);
+
+            // Если клиент выбран - добавляем его в параметры URL, если нет - удаляем
+            if (this.value) {
+                url.searchParams.set("customer", this.value);
+            } else {
+                url.searchParams.delete("customer");
+            }
+
+            // Сохраняем обновленную ссылку обратно в кнопку
+            addProductsBtn.href = url.toString();
+        });
+    }
     /* Первичный расчет при загрузке */
     updateTotal();
 });

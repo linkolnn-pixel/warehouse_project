@@ -11,9 +11,9 @@ class WarehouseAdmin(admin.ModelAdmin):
 
 @admin.register(Counterparty)
 class CounterpartyAdmin(admin.ModelAdmin):
-    list_display = ("company_name", "first_name", "last_name", "type", "inn")
+    list_display = ("company_name", "first_name", "last_name", "type", "inn", "is_deleted")
 
-    list_filter = ("type",)
+    list_filter = ("type", "is_deleted")
 
     search_fields = (
         "company_name",
@@ -60,9 +60,10 @@ class ProductAdmin(admin.ModelAdmin):
         "sale_price",
         "quantity_value",
         "measure_unit",
+        "is_deleted",
     )
 
-    list_filter = ("category", "unit")
+    list_filter = ("category", "unit", "is_deleted")
     search_fields = ("sku", "name")
     ordering = ("name",)
 

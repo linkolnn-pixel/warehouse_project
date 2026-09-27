@@ -11,7 +11,18 @@ from django.db.models import (
 from django.db.models.functions import Coalesce
 
 
+class ActiveManager(models.Manager):
+    """Возвращает только не удаленные записи."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+
 class ProductManager(models.Manager):
+    def get_queryset(self):
+        """Гарантирует, что ProductManager тоже скрывает удаленные товары"""
+        return super().get_queryset().filter(is_deleted=False)
+
     def with_balances(self, warehouse_id=None):
         """
         Возвращает QuerySet товаров, к каждому из которых добавлены поля:

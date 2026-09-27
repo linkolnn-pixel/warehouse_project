@@ -1,10 +1,11 @@
 from datetime import timedelta
+from decimal import Decimal
 
 from django.db.models import DecimalField, F, Sum
 from django.shortcuts import render
 from django.utils import timezone
 
-from inventory.models import Product, Sale, Transaction, Warehouse
+from inventory.models import Product, Sale, SaleItem, Transaction, Warehouse
 
 
 def dashboard_view(request):
@@ -67,3 +68,56 @@ def dashboard_view(request):
     }
 
     return render(request, "inventory/dashboard.html", context)
+
+
+def abc_analysis_view(request):
+    """
+    Рассчитывает ABC-анализ на основе выручки по проведенным продажам.
+    """
+    # 1. Получаем выручку по каждому товару (только проведенные продажи)
+    sales_data = (
+        SaleItem.objects.filter(sale__posted=True)
+        .values("product__id", "product__name", "product__sku")
+        .annotate(total_revenue=Sum(F("quantity") * F("sale_price"), output_field=DecimalField()))
+        .order_by("-total_revenue")
+    )
+
+    # 2. Считаем общую выручку по всем товарам
+    total_revenue_all = sum((item["total_revenue"] or 0) for item in sales_data)
+
+    abc_data = []
+    if total_revenue_all > 0:
+        cumulative_revenue = Decimal("0.0")
+
+        # 3. Распределяем товары по классам (80% / 15% / 5%)
+        for item in sales_data:
+            revenue = item["total_revenue"] or Decimal("0.0")
+            if revenue <= 0:
+                continue
+
+            cumulative_revenue += revenue
+            cumulative_percentage = (cumulative_revenue / total_revenue_all) * 100
+
+            if cumulative_percentage <= 80:
+                abc_class = "A"
+            elif cumulative_percentage <= 95:
+                abc_class = "B"
+            else:
+                abc_class = "C"
+
+            abc_data.append(
+                {
+                    "id": item["product__id"],
+                    "name": item["product__name"],
+                    "sku": item["product__sku"],
+                    "revenue": revenue,
+                    "share": (revenue / total_revenue_all) * 100,
+                    "abc_class": abc_class,
+                }
+            )
+
+    context = {
+        "abc_data": abc_data,
+        "total_revenue": total_revenue_all,
+    }
+    return render(request, "inventory/abc_analysis.html", context)

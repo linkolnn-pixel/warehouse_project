@@ -14,7 +14,7 @@ from inventory.serializers import (
     WarehouseSerializer,
     WarehouseStockSerializer,
 )
-from inventory.services import post_receipt_document, post_sale_document
+from inventory.services import process_receipt_post, process_sale_post
 
 
 class ProductViewSet(ReadOnlyModelViewSet):
@@ -84,7 +84,7 @@ class ReceiptViewSet(ModelViewSet):
         receipt = self.get_object()
 
         try:
-            post_receipt_document(receipt)
+            process_receipt_post(receipt)
 
         except InventoryError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -109,12 +109,11 @@ class SaleViewSet(ModelViewSet):
     serializer_class = SaleSerializer
 
     @action(detail=True, methods=["post"], url_path="post")
-    @action(detail=True, methods=["post"], url_path="post")
     def post_sale(self, request, pk=None):
         sale = self.get_object()
 
         try:
-            post_sale_document(sale)
+            process_sale_post(sale)
 
         except InventoryError as e:
             return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)

@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views.analytics import dashboard_view
+from .views.analytics import abc_analysis_view, dashboard_view
 from .views.api import ProductViewSet
 from .views.catalog import (
     category_create,
@@ -83,6 +83,7 @@ urlpatterns = [
     path("report/", movement_report, name="movement_report"),
     # Аналитика
     path("dashboard/", dashboard_view, name="dashboard"),
+    path("abc-analysis/", abc_analysis_view, name="abc_analysis"),
 ]
 
 urlpatterns += router.urls

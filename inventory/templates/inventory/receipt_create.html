@@ -263,6 +263,28 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 });
+/*
+     * ПРИВЯЗКА КЛИЕНТА К КНОПКЕ "ДОБАВИТЬ ТОВАРЫ"
+     */
+    const supplierSelect = document.querySelector('select[name="supplier"]');
+    const addProductsBtn = document.querySelector('a.btn-primary[href*="target=receipt"]');
+
+    if (supplierSelect && addProductsBtn) {
+        supplierSelect.addEventListener("change", function () {
+            // Берем текущую ссылку с кнопки
+            let url = new URL(addProductsBtn.href, window.location.origin);
+
+            // Если клиент выбран - добавляем его в параметры URL, если нет - удаляем
+            if (this.value) {
+                url.searchParams.set("supplier", this.value);
+            } else {
+                url.searchParams.delete("supplier");
+            }
+
+            // Сохраняем обновленную ссылку обратно в кнопку
+            addProductsBtn.href = url.toString();
+        });
+    }
 </script>
 
 {% endblock %}

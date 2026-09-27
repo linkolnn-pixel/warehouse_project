@@ -13,43 +13,32 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 
-from django import template
-
-register = template.Library()
-
-
-@register.filter
-def dict_value(d, key):
-    return d.get(key, 0)
-
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # ============================================================
-# ENVIRONMENT
+# ENVIRONMENT & SECURITY
 # ============================================================
 AMVERA = os.getenv("AMVERA", "False") == "True"
 
 # Локально автоматически тестовый режим.
-# На Amvera режим задаётся явно через TEST_MODE.
+
 if AMVERA:
+    # НА СЕРВЕРЕ проверка. Если ключа нет - приложение падает при старте
+    SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+    if not SECRET_KEY:
+        raise ImproperlyConfigured("КРИТИЧЕСКАЯ ОШИБКА: Переменная DJANGO_SECRET_KEY не задана на сервере!")
+
+    # По умолчанию всё выключено, пока явно не включим через переменные
+    DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
     TEST_MODE = os.getenv("TEST_MODE", "False") == "True"
 else:
-    TEST_MODE = True
-
-# ============================================================
-# SECURITY
-# ============================================================
-
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-local-dev-key")
-
-
-# SECURITY WARNING: don't run with debug turned on in production!
-if AMVERA:
-    DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
-else:
-    DEBUG = True
+    # ЛОКАЛЬНО: Мягкий режим для удобства разработки
+    SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-local-dev-key")
+    DEBUG = os.getenv("DJANGO_DEBUG", "True") == "True"
+    TEST_MODE = os.getenv("TEST_MODE", "True") == "True"
 
 # ============================================================
 # HOSTS / CSRF
@@ -87,6 +76,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.humanize",
     "cachalot",
     "rest_framework",
     "mptt",

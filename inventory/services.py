@@ -141,53 +141,79 @@ def import_products_from_excel(file_obj) -> tuple[int, int]:
 
 
 @transaction.atomic
-def post_receipt_document(receipt: Receipt):
-    """Проведение прихода (Receipt)"""
-    # Блокируем документ от одновременных изменений
+def process_receipt_post(receipt: Receipt):
+    """Проводит приход: добавляет товары на склад и обновляет закупочные цены."""
+
+    # БАЗОВАЯ ВАЛИДАЦИЯ
+    for item in receipt.items.all():
+        if item.quantity <= 0:
+            raise InvalidQuantityError(item.product.name)
+
+    # БЛОКИРОВКА ДОКУМЕНТА
     receipt = Receipt.objects.select_for_update().get(pk=receipt.pk)
 
     if receipt.posted:
         raise DocumentAlreadyPostedError("Приход", receipt.number)
 
-    for item in receipt.items.all():
-        if item.quantity <= 0:
-            raise InvalidQuantityError(item.product.name)
+    transactions = []
+    products_to_update = []
 
-        # 1. Создаем транзакцию
-        Transaction.objects.create(
-            product=item.product,
-            warehouse=receipt.warehouse,
-            counterparty=receipt.supplier,
-            type="IN",
-            quantity=item.quantity,
-            receipt=receipt,
-            comment=f"Приход №{receipt.number}",
+    for item in receipt.items.select_related("product"):
+        transactions.append(
+            Transaction(
+                date=receipt.date,
+                type="IN",
+                product=item.product,
+                warehouse=receipt.warehouse,
+                counterparty=receipt.supplier,
+                quantity=item.quantity,
+                receipt=receipt,
+                comment=f"Приход №{receipt.number}",
+            )
         )
-
-        # 2. Обновляем цены товара
         item.product.cost_price = item.cost_price
         item.product.sale_price = item.sale_price
-        item.product.save(update_fields=["cost_price", "sale_price"])
+        products_to_update.append(item.product)
+
+    if transactions:
+        Transaction.objects.bulk_create(transactions)
+
+    if products_to_update:
+        Product.objects.bulk_update(products_to_update, ["cost_price", "sale_price"])
 
     receipt.posted = True
     receipt.save(update_fields=["posted"])
 
 
 @transaction.atomic
-def post_sale_document(sale: Sale):
-    """Проведение продажи (Sale)"""
+def process_receipt_unpost(receipt: Receipt):
+    """Отменяет проведение прихода: списывает товары со склада."""
+    if not receipt.posted:
+        raise ValueError(f"Приход №{receipt.number} не проведен.")
+
+    Transaction.objects.filter(receipt=receipt).delete()
+    receipt.posted = False
+    receipt.save(update_fields=["posted"])
+
+
+@transaction.atomic
+def process_sale_post(sale: Sale):
+    """Проведение продажи: строгая проверка остатков и списание товаров."""
+
+    # 1. Считаем, сколько и какого товара нужно списать
+    quantities: dict[int, int] = {}
+    for item in sale.items.select_related("product"):
+        if item.quantity <= 0:
+            raise InvalidQuantityError(item.product.name)
+        quantities[item.product_id] = quantities.get(item.product_id, 0) + item.quantity
+
+    # 2. Блокируем документ
     sale = Sale.objects.select_for_update().get(pk=sale.pk)
 
     if sale.posted:
         raise DocumentAlreadyPostedError("Продажа", sale.number)
 
-    quantities: dict = {}
-    for item in sale.items.all():
-        if item.quantity <= 0:
-            raise InvalidQuantityError(item.product.name)
-        quantities[item.product_id] = quantities.get(item.product_id, 0) + item.quantity
-
-    # Проверяем остатки
+    # 3. Блокируем товары и строго проверяем остатки
     for product_id, quantity in quantities.items():
         product = Product.objects.select_for_update().get(pk=product_id)
         balance = product.get_balance(sale.warehouse)
@@ -195,18 +221,35 @@ def post_sale_document(sale: Sale):
         if quantity > balance:
             raise InsufficientStockError(product.name, balance, quantity)
 
-    # Создаем транзакции расхода
-    for product_id, quantity in quantities.items():
-        product = Product.objects.get(pk=product_id)
-        Transaction.objects.create(
-            product=product,
-            warehouse=sale.warehouse,
-            counterparty=sale.customer,
-            type="OUT",
-            quantity=quantity,
-            sale=sale,
-            comment=f"Продажа №{sale.number}",
+    # 4. Создание транзакций расхода
+    transactions = []
+    for item in sale.items.select_related("product"):
+        transactions.append(
+            Transaction(
+                date=sale.date,
+                type="OUT",
+                product=item.product,
+                warehouse=sale.warehouse,
+                counterparty=sale.customer,
+                quantity=item.quantity,
+                sale=sale,
+                comment=f"Продажа №{sale.number}",
+            )
         )
 
+    if transactions:
+        Transaction.objects.bulk_create(transactions)
+
     sale.posted = True
+    sale.save(update_fields=["posted"])
+
+
+@transaction.atomic
+def process_sale_unpost(sale: Sale):
+    """Отменяет проведение продажи: удаляет транзакции расхода, возвращая товары на склад."""
+    if not sale.posted:
+        raise ValueError(f"Продажа №{sale.number} не проведена.")
+
+    Transaction.objects.filter(sale=sale).delete()
+    sale.posted = False
     sale.save(update_fields=["posted"])

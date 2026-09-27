@@ -5,7 +5,33 @@ from django.utils.translation import gettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
-from inventory.managers import ProductManager
+from inventory.managers import ActiveManager, ProductManager
+
+
+class SoftDeleteModel(models.Model):
+    """
+    Абстрактная модель.
+    Вместо физического удаления ставит галочку is_deleted = True.
+    """
+
+    is_deleted = models.BooleanField(default=False, verbose_name="Удален")
+
+    # Переопределяем стандартный objects, чтобы он отдавал только "живые" записи
+    objects = ActiveManager()
+    # Оставляем доступ ко всем записям (включая удаленные) для админки и отчетов
+    all_objects = models.Manager()
+
+    class Meta:
+        abstract = True
+
+    def delete(self, using=None, keep_parents=False):
+        """Мягкое удаление (скрытие)"""
+        self.is_deleted = True
+        self.save(update_fields=["is_deleted"])
+
+    def hard_delete(self):
+        """Реальное удаление из БД"""
+        super().delete()
 
 
 class Warehouse(models.Model):
@@ -16,7 +42,7 @@ class Warehouse(models.Model):
         return self.name
 
 
-class Counterparty(models.Model):
+class Counterparty(SoftDeleteModel):
     TYPE_CHOICES = (
         ("supplier", "Поставщик"),
         ("customer", "Клиент"),
@@ -78,7 +104,7 @@ class Category(MPTTModel):
     )
     slug = models.SlugField(unique=True, blank=True)
 
-    class MPTTMetta:
+    class MPTTMeta:
         order_insertion_by = ["name"]
 
     class Meta:
@@ -113,7 +139,7 @@ class ProductCodeSequence(models.Model):
         return current_code
 
 
-class Product(models.Model):
+class Product(SoftDeleteModel):
     sku = models.CharField(max_length=50, blank=True, null=True, default="", verbose_name="Артикул")
     internal_code = models.CharField(max_length=20, unique=True, verbose_name="Внутренний код")
     name = models.CharField(max_length=200, verbose_name="Наименование")
@@ -150,7 +176,7 @@ class Product(models.Model):
         related_name="supplied_products",
         verbose_name="Поставщик",
     )
-    objects = ProductManager()
+    objects = ProductManager()  # type: ignore
 
     class Meta:
         verbose_name = "Товар"
@@ -160,6 +186,7 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+    @property
     def profit(self):
         # Прибыль с одной единицы товара
         return self.sale_price - self.cost_price
@@ -246,61 +273,6 @@ class Receipt(models.Model):
     def __str__(self):
         return f"Приход №{self.number}"
 
-    @transaction.atomic
-    def post(self):
-        receipt = Receipt.objects.select_for_update().get(pk=self.pk)
-
-        if receipt.posted:
-            return
-
-        items = receipt.items.select_related("product").all()
-
-        transactions_to_create = []
-        products_to_update = []
-
-        for item in items:
-            # Подготавливаем транзакции в памяти (без отправки в БД)
-            transactions_to_create.append(
-                Transaction(
-                    product=item.product,
-                    warehouse=receipt.warehouse,
-                    counterparty=receipt.supplier,
-                    type="IN",
-                    quantity=item.quantity,
-                    receipt=receipt,
-                    comment=f"Приход №{receipt.number}",
-                )
-            )
-            # Обновляем цены товара в оперативной памяти
-            item.product.cost_price = item.cost_price
-            item.product.sale_price = item.sale_price
-            products_to_update.append(item.product)
-
-        # Сохраняем все транзакции ОДНИМ запросом
-        if transactions_to_create:
-            Transaction.objects.bulk_create(transactions_to_create)
-
-        # Сохраняем новые цены для всех товаров ОДНИМ запросом
-        if products_to_update:
-            Product.objects.bulk_update(products_to_update, fields=["cost_price", "sale_price"])
-        # Помечаем документ как проведенный
-        receipt.posted = True
-        receipt.save(update_fields=["posted"])
-
-        # Обновляем состояние текущего инстанса, с которым мы работаем
-        self.posted = True
-
-    @transaction.atomic
-    def unpost(self):
-        if not self.posted:
-            return
-
-        # Удаляем все приходы по этому документу
-        Transaction.objects.filter(receipt=self).delete()
-
-        self.posted = False
-        self.save(update_fields=["posted"])
-
 
 class ReceiptItem(models.Model):
     receipt = models.ForeignKey(Receipt, related_name="items", on_delete=models.CASCADE)
@@ -340,67 +312,6 @@ class Sale(models.Model):
 
     def __str__(self):
         return f"Продажа №{self.number}"
-
-    @transaction.atomic
-    def post(self):
-        if self.posted:
-            return
-
-        sale = Sale.objects.select_for_update().get(pk=self.pk)
-        if sale.posted:
-            return
-
-        quantities: dict = {}
-        for item in sale.items.all():
-            if item.quantity <= 0:
-                raise ValidationError(f"Количество товара «{item.product.name}» должно быть больше 0.")
-            quantities[item.product_id] = quantities.get(item.product_id, 0) + item.quantity
-
-        # 1. Забираем ВСЕ нужные товары и блокируем их разом (один запрос в БД)
-        locked_products = {p.id: p for p in Product.objects.select_for_update().filter(id__in=quantities.keys())}
-
-        # 2. Проверяем остатки
-        for product_id, quantity in quantities.items():
-            product = locked_products[product_id]
-            balance = product.get_balance(sale.warehouse)
-
-            if quantity > balance:
-                raise ValidationError(
-                    f"Недостаточно товара: {product.name}. " f"Доступно: {balance} шт., запрошено: {quantity} шт."
-                )
-
-        # 3. Подготавливаем транзакции в памяти
-        new_transactions = []
-        for product_id, quantity in quantities.items():
-            new_transactions.append(
-                Transaction(
-                    product=locked_products[product_id],
-                    warehouse=sale.warehouse,
-                    counterparty=sale.customer,
-                    type="OUT",
-                    quantity=quantity,
-                    sale=sale,
-                    comment=f"Продажа №{sale.number}",
-                )
-            )
-
-        # 4. Сохраняем все транзакции ОДНИМ запросом в БД
-        Transaction.objects.bulk_create(new_transactions)
-
-        sale.posted = True
-        sale.save(update_fields=["posted"])
-        self.posted = True
-
-    @transaction.atomic
-    def unpost(self):
-        if not self.posted:
-            return
-
-        # Удаляем все движения по складу, связанные с этой продажей
-        Transaction.objects.filter(sale=self).delete()
-
-        self.posted = False
-        self.save(update_fields=["posted"])
 
 
 class SaleItem(models.Model):
