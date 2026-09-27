@@ -186,7 +186,6 @@ class Product(SoftDeleteModel):
     def __str__(self):
         return self.name
 
-    @property
     def profit(self):
         # Прибыль с одной единицы товара
         return self.sale_price - self.cost_price
@@ -206,7 +205,7 @@ class Product(SoftDeleteModel):
         # Потенциальная прибыль со всего остатка
         balance = self.get_balance(warehouse)
 
-        return balance * self.profit
+        return balance * self.profit()
 
     def save(self, *args, **kwargs):
         # Если код еще не установлен (новый товар)
