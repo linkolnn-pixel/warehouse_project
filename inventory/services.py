@@ -142,14 +142,8 @@ def import_products_from_excel(file_obj) -> tuple[int, int]:
 
 @transaction.atomic
 def process_receipt_post(receipt: Receipt):
-    """Проводит приход: добавляет товары на склад и обновляет закупочные цены."""
+    """Проводит приход: добавляет товары на склад и безопасно обновляет закупочные цены."""
 
-    # БАЗОВАЯ ВАЛИДАЦИЯ
-    for item in receipt.items.all():
-        if item.quantity <= 0:
-            raise InvalidQuantityError(item.product.name)
-
-    # БЛОКИРОВКА ДОКУМЕНТА
     receipt = Receipt.objects.select_for_update().get(pk=receipt.pk)
 
     if receipt.posted:
@@ -158,12 +152,24 @@ def process_receipt_post(receipt: Receipt):
     transactions = []
     products_to_update = []
 
-    for item in receipt.items.select_related("product"):
+    # Собираем ID всех товаров в приходе
+    product_ids = [item.product_id for item in receipt.items.all()]
+
+    # Блокируем товары в БД, чтобы никто параллельно не изменил их цены
+    locked_products = {p.id: p for p in Product.objects.select_for_update().filter(id__in=product_ids)}
+
+    for item in receipt.items.all():
+        if item.quantity <= 0:
+            raise InvalidQuantityError(item.product.name)
+
+        # Берем заблокированный экземпляр товара
+        product = locked_products[item.product_id]
+
         transactions.append(
             Transaction(
                 date=receipt.date,
                 type="IN",
-                product=item.product,
+                product=product,
                 warehouse=receipt.warehouse,
                 counterparty=receipt.supplier,
                 quantity=item.quantity,
@@ -171,9 +177,11 @@ def process_receipt_post(receipt: Receipt):
                 comment=f"Приход №{receipt.number}",
             )
         )
-        item.product.cost_price = item.cost_price
-        item.product.sale_price = item.sale_price
-        products_to_update.append(item.product)
+
+        # Обновляем цены
+        product.cost_price = item.cost_price
+        product.sale_price = item.sale_price
+        products_to_update.append(product)
 
     if transactions:
         Transaction.objects.bulk_create(transactions)

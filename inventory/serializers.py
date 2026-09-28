@@ -47,7 +47,7 @@ class WarehouseSerializer(serializers.ModelSerializer):
 
 class WarehouseStockSerializer(serializers.ModelSerializer):
     balance = serializers.IntegerField(read_only=True)
-    profit = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
+    profit_per_unit = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     stock_profit = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
     product_id = serializers.IntegerField(source="id", read_only=True)
@@ -68,7 +68,7 @@ class WarehouseStockSerializer(serializers.ModelSerializer):
             "cost_price",
             "sale_price",
             "balance",
-            "profit",
+            "profit_per_unit",
             "stock_profit",
         ]
 
@@ -149,7 +149,7 @@ class SaleItemSerializer(serializers.ModelSerializer):
 
 class SaleSerializer(serializers.ModelSerializer):
     items = SaleItemSerializer(many=True)
-    customer_name = serializers.CharField(source="customer.name", read_only=True, allow_null=True)
+    customer_name = serializers.SerializerMethodField()
     warehouse_name = serializers.CharField(source="warehouse.name", read_only=True)
 
     class Meta:
@@ -173,6 +173,13 @@ class SaleSerializer(serializers.ModelSerializer):
             "date",
             "posted",
         ]
+
+    def get_customer_name(self, obj):
+        if not obj.customer:
+            return None
+        if obj.customer.type == "customer":
+            return f"{obj.customer.last_name} {obj.customer.first_name}".strip()
+        return obj.customer.company_name
 
     def create(self, validated_data):
         items_data = validated_data.pop("items")

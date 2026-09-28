@@ -18,16 +18,12 @@ class ActiveManager(models.Manager):
         return super().get_queryset().filter(is_deleted=False)
 
 
-class ProductManager(models.Manager):
-    def get_queryset(self):
-        """Гарантирует, что ProductManager тоже скрывает удаленные товары"""
-        return super().get_queryset().filter(is_deleted=False)
-
+class ProductManager(ActiveManager):
     def with_balances(self, warehouse_id=None):
         """
         Возвращает QuerySet товаров, к каждому из которых добавлены поля:
         - balance (остаток на указанном складе)
-        - profit (прибыль с одной единицы)
+        - profit_per_unit (прибыль с одной единицы)
         - stock_profit (общая прибыль остатков на складе)
         """
         qs = self.get_queryset()
@@ -60,7 +56,7 @@ class ProductManager(models.Manager):
             # Баланс = Приход - Расход
             balance=F("in_qty") - F("out_qty"),
             # Прибыль = Цена продажи - Закупочная цена
-            profit=F("sale_price") - F("cost_price"),
+            profit_per_unit=F("sale_price") - F("cost_price"),
         ).annotate(
             # Считаем ожидаемую прибыль с остатков на складе
             stock_profit=ExpressionWrapper(F("balance") * F("profit"), output_field=DecimalField())

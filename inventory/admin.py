@@ -22,23 +22,6 @@ class CounterpartyAdmin(admin.ModelAdmin):
         "inn",
     )
 
-    def delete_model(self, request, obj):
-        from .models import Receipt, Sale, Transaction
-
-        Receipt.objects.filter(supplier=obj).delete()
-        Sale.objects.filter(customer=obj).delete()
-        Transaction.objects.filter(counterparty=obj).delete()
-        obj.delete()
-
-    def delete_queryset(self, request, queryset):
-        from .models import Receipt, Sale, Transaction
-
-        for counterparty in queryset:
-            Receipt.objects.filter(supplier=counterparty).delete()
-            Sale.objects.filter(customer=counterparty).delete()
-            Transaction.objects.filter(counterparty=counterparty).delete()
-        queryset.delete()
-
     def get_deleted_objects(self, objs, request):
         deleted_objects = []
         model_count = {}
@@ -71,23 +54,6 @@ class ProductAdmin(admin.ModelAdmin):
         form = super().get_form(request, obj, **kwargs)
         form.base_fields["internal_code"].required = False
         return form
-
-    def delete_model(self, request, obj):
-        from .models import ReceiptItem, SaleItem
-
-        ReceiptItem.objects.filter(product=obj).delete()
-        SaleItem.objects.filter(product=obj).delete()
-
-        obj.delete()
-
-    def delete_queryset(self, request, queryset):
-        from .models import ReceiptItem, SaleItem
-
-        for product in queryset:
-            ReceiptItem.objects.filter(product=product).delete()
-            SaleItem.objects.filter(product=product).delete()
-
-        queryset.delete()
 
     def get_deleted_objects(self, objs, request):
         # Отключаем блокировку PROTECT в админке
