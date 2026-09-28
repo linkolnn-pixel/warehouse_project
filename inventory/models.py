@@ -139,6 +139,26 @@ class ProductCodeSequence(models.Model):
         return current_code
 
 
+class DocumentSequence(models.Model):
+    document_type = models.CharField(max_length=50, unique=True, verbose_name="Тип документа")
+    last_number = models.PositiveIntegerField(default=0, verbose_name="Последний номер")
+
+    class Meta:
+        verbose_name = "Счетчик документов"
+        verbose_name_plural = "Счетчики документов"
+
+    @classmethod
+    @transaction.atomic
+    def get_next_number(cls, doc_type: str) -> int:
+        # Блокируем строку конкретного типа документа
+        sequence, created = cls.objects.select_for_update().get_or_create(
+            document_type=doc_type, defaults={"last_number": 0}
+        )
+        sequence.last_number += 1
+        sequence.save(update_fields=["last_number"])
+        return sequence.last_number
+
+
 class Product(SoftDeleteModel):
     sku = models.CharField(max_length=50, blank=True, null=True, default="", verbose_name="Артикул")
     internal_code = models.CharField(max_length=20, unique=True, verbose_name="Внутренний код")
@@ -265,8 +285,7 @@ class Receipt(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.number:
-            last = Receipt.objects.order_by("-number").first()
-            self.number = (last.number + 1) if last else 1
+            self.number = DocumentSequence.get_next_number("receipt")
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -305,8 +324,7 @@ class Sale(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.number:
-            last = Sale.objects.order_by("-number").first()
-            self.number = (last.number + 1) if last else 1
+            self.number = DocumentSequence.get_next_number("sale")
         super().save(*args, **kwargs)
 
     def __str__(self):
