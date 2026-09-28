@@ -59,5 +59,5 @@ class ProductManager(ActiveManager):
             profit_per_unit=F("sale_price") - F("cost_price"),
         ).annotate(
             # Считаем ожидаемую прибыль с остатков на складе
-            stock_profit=ExpressionWrapper(F("balance") * F("profit"), output_field=DecimalField())
+            stock_profit=ExpressionWrapper(F("balance") * F("profit_per_unit"), output_field=DecimalField())
         )
