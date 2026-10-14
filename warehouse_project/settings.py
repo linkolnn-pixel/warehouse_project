@@ -47,8 +47,8 @@ else:
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
-    "warehouse-mkhiln.amvera.io",
-    "workhouse-test-mkhiln.amvera.io",
+    "warehouse-mkhiln.msk1.amvera.tech",
+    "workhouse-test-mkhiln.msk1.amvera.tech",
 ]
 
 CACHES = {
@@ -62,8 +62,8 @@ CACHALOT_ENABLED = True
 CACHALOT_TIMEOUT = 60 * 15
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://warehouse-mkhiln.amvera.io",
-    "https://workhouse-test-mkhiln.amvera.io",
+    "https://warehouse-mkhiln.msk1.amvera.tech",
+    "https://workhouse-test-mkhiln.msk1.amvera.tech",
 ]
 
 
