@@ -1,4 +1,3 @@
-
 {% extends 'inventory/base.html' %}
 
 {% load static %}
@@ -30,9 +29,11 @@
 .products-page {
     width: 100%;
 }
+
 /* =========================================================
    HEADER
    ========================================================= */
+
 .products-header {
     display: flex;
     justify-content: space-between;
@@ -123,8 +124,9 @@
     font-weight: 600;
     vertical-align: top;
     border-bottom: 1px solid #dee2e6;
-    padding: 8px 7px;
+    padding: 8px 6px;
     white-space: nowrap;
+    box-sizing: border-box;
 }
 
 #productsTable thead th:hover {
@@ -145,7 +147,7 @@
     display: block;
     width: 100%;
     height: 30px;
-    padding: 3px 7px;
+    padding: 3px 20px 3px 7px;
     border: 1px solid #ced4da;
     border-radius: 4px;
     background: #ffffff;
@@ -153,16 +155,92 @@
     font-size: 12px;
     font-weight: 400;
     outline: none;
+    box-sizing: border-box;
+}
+
+select.column-filter {
+    padding-right: 6px;
 }
 
 .column-filter:focus {
     border-color: #86b7fe;
-    box-shadow:
-        0 0 0 0.12rem rgba(13, 110, 253, .12);
+    box-shadow: 0 0 0 0.12rem rgba(13, 110, 253, .12);
 }
 
 .column-filter::placeholder {
     color: #adb5bd;
+}
+
+/* =========================================================
+   РАЗМЕРЫ СТОЛБЦОВ (ПО ПОРЯДКУ 0..9)
+   ========================================================= */
+
+/* 0: Чекбокс */
+.col-check {
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    text-align: center !important;
+}
+
+/* 1: Наименование (забирает основное место) */
+.col-name {
+    min-width: 220px;
+    width: 350px;
+    white-space: normal !important;
+}
+
+/* 2: Количество */
+.col-qty {
+    width: 105px !important;
+    min-width: 105px !important;
+    max-width: 105px !important;
+    text-align: center !important;
+}
+
+/* 3: Остаток */
+.col-balance {
+    width: 95px !important;
+    min-width: 95px !important;
+    max-width: 95px !important;
+    text-align: center !important;
+}
+
+/* 4: Объем */
+.col-volume {
+    width: 110px !important;
+    min-width: 110px !important;
+    max-width: 110px !important;
+    text-align: center !important;
+}
+
+/* 5: Артикул */
+.col-sku {
+    width: 130px !important;
+    min-width: 130px !important;
+    max-width: 130px !important;
+    text-align: center !important;
+}
+
+/* 6: Категория */
+.col-category {
+    width: 160px !important;
+    min-width: 150px !important;
+    max-width: 180px !important;
+}
+
+/* 7: Поставщик */
+.col-supplier {
+    width: 160px !important;
+    min-width: 150px !important;
+    max-width: 180px !important;
+}
+
+/* 8, 9: Закупка и Продажа */
+.col-price {
+    width: 115px !important;
+    min-width: 115px !important;
+    max-width: 115px !important;
 }
 
 /* =========================================================
@@ -191,8 +269,7 @@
 #select-all:focus {
     border-color: #86b7fe;
     outline: none;
-    box-shadow:
-        0 0 0 0.15rem rgba(13, 110, 253, .12);
+    box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, .12);
 }
 
 #select-all:checked {
@@ -200,13 +277,12 @@
     border-color: #0d6efd;
 }
 
-
 /* =========================================================
    TABLE BODY
    ========================================================= */
 
 #productsTable tbody td {
-    padding: 8px 7px;
+    padding: 8px 6px;
     font-size: 13px;
     vertical-align: middle;
     white-space: nowrap;
@@ -229,7 +305,7 @@
 }
 
 /* =========================================================
-   CHECKBOXES
+   CHECKBOXES & QUANTITY INPUT
    ========================================================= */
 
 .product-check {
@@ -248,23 +324,40 @@
 }
 
 .product-check:focus {
-    box-shadow:
-        0 0 0 0.15rem rgba(13, 110, 253, .12);
+    box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, .12);
+}
+
+.product-qty {
+    width: 100%;
+    max-width: 88px;
+    height: 30px;
+    padding: 3px 6px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: #ffffff;
+    color: #212529;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.product-qty:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, .15);
+}
+
+/* Подсветка поля количества, если товар выбран */
+#productsTable tbody tr.product-selected .product-qty {
+    border-color: #198754;
+    background-color: #ffffff;
+    font-weight: 600;
 }
 
 /* =========================================================
-   FIRST COLUMN
-   ========================================================= */
-
-.check-column {
-    width: 45px !important;
-    min-width: 45px !important;
-    max-width: 45px !important;
-    text-align: center !important;
-}
-
-/* =========================================================
-   PRODUCT NAME
+   CELL CONTENT STYLES
    ========================================================= */
 
 .product-name {
@@ -272,9 +365,10 @@
     font-weight: 600;
 }
 
-/* =========================================================
-   PRICES
-   ========================================================= */
+.balance-cell {
+    font-weight: 600;
+    color: #495057;
+}
 
 .price-buy {
     color: #6c757d;
@@ -285,6 +379,11 @@
     color: #198754;
     font-weight: 700;
     text-align: right;
+}
+
+.text-truncate-cell {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* =========================================================
@@ -302,7 +401,6 @@
 .dataTables_wrapper {
     width: 100%;
 }
-
 
 .dataTables_wrapper .dataTables_length {
     color: #6c757d;
@@ -333,9 +431,7 @@
     padding-top: 8px !important;
 }
 
-.dataTables_wrapper
-.dataTables_paginate
-.paginate_button {
+.dataTables_wrapper .dataTables_paginate .paginate_button {
     padding: 4px 9px !important;
     border-radius: 4px !important;
 }
@@ -353,16 +449,6 @@
 .table-footer .btn {
     height: 42px;
     font-weight: 500;
-}
-
-/* =========================================================
-   EMPTY
-   ========================================================= */
-
-.empty-products {
-    padding: 50px !important;
-    text-align: center;
-    color: #6c757d;
 }
 
 /* =========================================================
@@ -393,7 +479,7 @@
 #productsTable thead th.sorting::before,
 #productsTable thead th.sorting_asc::before,
 #productsTable thead th.sorting_desc::before {
-    right: 13px !important;
+    right: 11px !important;
     top: 62% !important;
     bottom: auto !important;
     transform: translateY(-70%) !important;
@@ -404,7 +490,7 @@
 #productsTable thead th.sorting::after,
 #productsTable thead th.sorting_asc::after,
 #productsTable thead th.sorting_desc::after {
-    right: 13px !important;
+    right: 11px !important;
     top: 62% !important;
     bottom: auto !important;
     transform: translateY(30%) !important;
@@ -451,7 +537,7 @@
     <div class="selected-bar">
         <div class="selected-count">
             <i class="fa-solid fa-check-circle text-success me-1"></i>
-            Выбрано:
+            Выбрано позиций:
             <strong id="selected-count">
                 {{ selected_ids|length }}
             </strong>
@@ -488,7 +574,7 @@
         >
         <!--
             Сюда JavaScript положит
-            все выбранные товары.
+            все выбранные товары и их количество.
         -->
         <div id="selected-products"></div>
 
@@ -507,161 +593,132 @@
                          ===================================== -->
                     <thead>
                         <tr>
-                            <!-- =================================
-                                 CHECKBOX
-                                 ================================= -->
-                            <th class="check-column no-sort">
-                                    <span class="column-title">
-                                        &nbsp;
-                                    </span>
-                                    <div class="select-all-wrapper">
-                                        <input
-                                            type="checkbox"
-                                            id="select-all"
-                                            title="Выбрать все"
-                                        >
-                                    </div>
-                            </th>
-                            <!-- =================================
-                                 NAME
-                                 ================================= -->
-                            <th>
-                                    <span class="column-title">
-                                        Наименование
-                                    </span>
+                            <!-- 0: CHECKBOX -->
+                            <th class="col-check no-sort">
+                                <span class="column-title">&nbsp;</span>
+                                <div class="select-all-wrapper">
                                     <input
-                                        type="text"
-                                        class="column-filter"
-                                        data-column="1"
-                                        placeholder="Поиск..."
+                                        type="checkbox"
+                                        id="select-all"
+                                        title="Выбрать все"
                                     >
+                                </div>
                             </th>
-                            <!-- =================================
-                                 CODE
-                                 ================================= -->
-                            <th>
-                                    <span class="column-title">
-                                        Код
-                                    </span>
-                                    <input
-                                        type="text"
-                                        class="column-filter"
-                                        data-column="2"
-                                        placeholder="Поиск..."
-                                    >
+
+                            <!-- 1: NAME -->
+                            <th class="col-name">
+                                <span class="column-title">Наименование</span>
+                                <input
+                                    type="text"
+                                    class="column-filter"
+                                    data-column="1"
+                                    placeholder="Поиск..."
+                                >
                             </th>
-                            <!-- =================================
-                                 SKU
-                                 ================================= -->
-                            <th>
-                                    <span class="column-title">
-                                        Артикул
-                                    </span>
-                                    <input
-                                        type="text"
-                                        class="column-filter"
-                                        data-column="3"
-                                        placeholder="Поиск..."
-                                    >
+
+                            <!-- 2: QUANTITY -->
+                            <th class="col-qty no-sort">
+                                <span class="column-title">Количество</span>
+                                <div style="height: 30px;"></div>
                             </th>
-                            <!-- =================================
-                                 CATEGORY
-                                 ================================= -->
-                            <th class="no-sort">
-                                    <span class="column-title">
-                                        Категория
-                                    </span>
-                                    <select
-                                        class="column-filter"
-                                        data-column="4"
-                                    >
-                                        <option value="">
-                                            Все
+
+                            <!-- 3: BALANCE -->
+                            <th class="col-balance">
+                                <span class="column-title">Остаток</span>
+                                <input
+                                    type="text"
+                                    class="column-filter"
+                                    data-column="3"
+                                    placeholder="Поиск..."
+                                >
+                            </th>
+
+                            <!-- 4: VOLUME (ВМЕСТО КОДА) -->
+                            <th class="col-volume">
+                                <span class="column-title">Объем</span>
+                                <input
+                                    type="text"
+                                    class="column-filter"
+                                    data-column="4"
+                                    placeholder="Поиск..."
+                                >
+                            </th>
+
+                            <!-- 5: SKU -->
+                            <th class="col-sku">
+                                <span class="column-title">Артикул</span>
+                                <input
+                                    type="text"
+                                    class="column-filter"
+                                    data-column="5"
+                                    placeholder="Поиск..."
+                                >
+                            </th>
+
+                            <!-- 6: CATEGORY -->
+                            <th class="col-category no-sort">
+                                <span class="column-title">Категория</span>
+                                <select
+                                    class="column-filter"
+                                    data-column="6"
+                                >
+                                    <option value="">Все</option>
+                                    {% for c in categories %}
+                                        <option value="{{ c.name }}">
+                                            {{ c.name }}
                                         </option>
-                                        {% for c in categories %}
-                                            <option value="{{ c.name }}">
-                                                {{ c.name }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
+                                    {% endfor %}
+                                </select>
                             </th>
-                            <!-- =================================
-                                 BALANCE
-                                 ================================= -->
-                            <th>
-                                    <span class="column-title">
-                                        Остаток
-                                    </span>
-                                    <input
-                                        type="text"
-                                        class="column-filter"
-                                        data-column="5"
-                                        placeholder="Поиск..."
-                                    >
-                            </th>
-                            <!-- =================================
-                                 SUPPLIER
-                                 ================================= -->
-                            <th class="no-sort">
-                                    <span class="column-title">
-                                        Поставщик
-                                    </span>
-                                    <select
-                                        class="column-filter"
-                                        data-column="6"
-                                    >
-                                        <option value="">
-                                            Все
+
+                            <!-- 7: SUPPLIER -->
+                            <th class="col-supplier no-sort">
+                                <span class="column-title">Поставщик</span>
+                                <select
+                                    class="column-filter"
+                                    data-column="7"
+                                >
+                                    <option value="">Все</option>
+                                    {% for s in suppliers %}
+                                        <option value="{{ s.company_name }}">
+                                            {{ s.company_name }}
                                         </option>
-                                        {% for s in suppliers %}
-                                            <option
-                                                value="{{ s.company_name }}"
-                                            >
-                                                {{ s.company_name }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
+                                    {% endfor %}
+                                </select>
                             </th>
-                            <!-- =================================
-                                 COST
-                                 ================================= -->
-                            <th>
-                                    <span class="column-title">
-                                        Закупка
-                                    </span>
-                                    <input
-                                        type="text"
-                                        class="column-filter"
-                                        data-column="7"
-                                        placeholder="Поиск..."
-                                    >
+
+                            <!-- 8: COST -->
+                            <th class="col-price">
+                                <span class="column-title">Закупка</span>
+                                <input
+                                    type="text"
+                                    class="column-filter"
+                                    data-column="8"
+                                    placeholder="Поиск..."
+                                >
                             </th>
-                            <!-- =================================
-                                 SALE
-                                 ================================= -->
-                            <th>
-                                    <span class="column-title">
-                                        Продажа
-                                    </span>
-                                    <input
-                                        type="text"
-                                        class="column-filter"
-                                        data-column="8"
-                                        placeholder="Поиск..."
-                                    >
+
+                            <!-- 9: SALE -->
+                            <th class="col-price">
+                                <span class="column-title">Продажа</span>
+                                <input
+                                    type="text"
+                                    class="column-filter"
+                                    data-column="9"
+                                    placeholder="Поиск..."
+                                >
                             </th>
                         </tr>
                     </thead>
+
                     <!-- =================================================
                          BODY
                          ================================================= -->
                     <tbody>
                         {% for product in products %}
-                            <tr
-                                data-product-id="{{ product.id }}"
-                            >
-                                <!-- CHECKBOX -->
-                                <td class="check-column">
+                            <tr data-product-id="{{ product.id }}">
+                                <!-- 0: CHECKBOX -->
+                                <td class="col-check">
                                     <input
                                         type="checkbox"
                                         class="product-check"
@@ -671,48 +728,70 @@
                                         {% endif %}
                                     >
                                 </td>
-                                <!-- NAME -->
-                                <td>
+
+                                <!-- 1: NAME -->
+                                <td class="col-name">
                                     <span class="product-name">
                                         {{ product.name }}
                                     </span>
                                 </td>
-                                <!-- CODE -->
-                                <td>
-                                    {{ product.internal_code|default:"—" }}
+
+                                <!-- 2: QUANTITY -->
+                                <td class="col-qty">
+                                    <input
+                                        type="number"
+                                        class="product-qty"
+                                        min="1"
+                                        step="1"
+                                        value="1"
+                                    >
                                 </td>
-                                <!-- SKU -->
-                                <td>
+
+                                <!-- 3: BALANCE -->
+                                <td class="col-balance balance-cell" data-order="{{ product.balance|default:0 }}">
+                                    {{ product.balance|default:0 }}
+                                </td>
+
+                                <!-- 4: VOLUME (Объем) -->
+                                <td class="col-volume text-truncate-cell" data-order="{{ product.quantity_value|default:0|stringformat:'f' }}">
+                                    {% if product.quantity_value %}
+                                        {{ product.quantity_value }}
+                                        {{ product.measure_unit }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+
+                                <!-- 5: SKU -->
+                                <td class="col-sku text-truncate-cell">
                                     {{ product.sku|default:"—" }}
                                 </td>
-                                <!-- CATEGORY -->
-                                <td>
+
+                                <!-- 6: CATEGORY -->
+                                <td class="col-category text-truncate-cell">
                                     {% if product.category %}
                                         {{ product.category.name }}
                                     {% else %}
                                         —
                                     {% endif %}
                                 </td>
-                                <!-- BALANCE -->
-                                <td>
-                                    {{ product.balance|default:0 }}
-                                </td>
-                                <!-- SUPPLIER -->
-                                <td>
+
+                                <!-- 7: SUPPLIER -->
+                                <td class="col-supplier text-truncate-cell">
                                     {% if product.supplier %}
                                         {{ product.supplier.company_name }}
                                     {% else %}
-                                        <span class="text-danger">
-                                            Нет
-                                        </span>
+                                        <span class="text-danger">Нет</span>
                                     {% endif %}
                                 </td>
-                                <!-- COST -->
-                                <td class="price-buy">
+
+                                <!-- 8: COST -->
+                                <td class="col-price price-buy" data-order="{{ product.cost_price|stringformat:'f' }}">
                                     {{ product.cost_price|floatformat:2 }} ₽
                                 </td>
-                                <!-- SALE -->
-                                <td class="price-sale">
+
+                                <!-- 9: SALE -->
+                                <td class="col-price price-sale" data-order="{{ product.sale_price|stringformat:'f' }}">
                                     {{ product.sale_price|floatformat:2 }} ₽
                                 </td>
                             </tr>
@@ -720,6 +799,7 @@
                     </tbody>
                 </table>
             </div>
+
             <!-- =================================================
                  FOOTER
                  ================================================= -->
@@ -742,48 +822,53 @@
 {% block extra_body %}
 
 <!-- =========================================================
-     JQUERY
+     JQUERY & DATATABLES
      ========================================================= -->
 
-<script
-    src="https://code.jquery.com/jquery-3.7.0.min.js">
-</script>
-
-
-<!-- =========================================================
-     DATATABLES
-     ========================================================= -->
-
-<script
-    src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js">
-</script>
-
-<script
-    src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js">
-</script>
-
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
 
 <script>
 
 $(function () {
 
-
     /* =========================================================
-       SELECTED PRODUCTS
+       SELECTED PRODUCTS (ID -> QUANTITY)
        ========================================================= */
 
-    const selectedProducts = new Set();
+    const targetParam = "{{ request.GET.target|default:'sale' }}";
+    const STORAGE_KEY = "picker_quantities_" + targetParam;
+    const urlParams = new URLSearchParams(window.location.search);
 
+    let storedQuantities = {};
+    try {
+        storedQuantities = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}");
+    } catch (e) {
+        storedQuantities = {};
+    }
+
+    const selectedProducts = new Map();
 
     {% for id in selected_ids %}
-
-        selectedProducts.add(
-            String("{{ id }}")
-        );
-
+        (function() {
+            const idStr = String("{{ id }}");
+            const fromUrl = urlParams.get("quantity_" + idStr) || urlParams.get("qty_" + idStr);
+            const fromStorage = storedQuantities[idStr];
+            const initialQty = parseInt(fromUrl || fromStorage || 1, 10);
+            selectedProducts.set(idStr, (!isNaN(initialQty) && initialQty > 0) ? initialQty : 1);
+        })();
     {% endfor %}
 
+    {% if selected_quantities %}
+        {% for id, qty in selected_quantities.items %}
+            selectedProducts.set(
+                String("{{ id }}"),
+                Number("{{ qty }}") || 1
+            );
+        {% endfor %}
+    {% endif %}
 
 
     /* =========================================================
@@ -793,810 +878,331 @@ $(function () {
     const table = $('#productsTable').DataTable({
 
         language: {
-
-            url:
-                'https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json'
-
+            url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json'
         },
-
 
         pageLength: 25,
 
-
         lengthMenu: [
-
             [10, 25, 50, 100, -1],
-
             [10, 25, 50, 100, 'Все']
-
         ],
-
-
-        /*
-         * Сортировка по умолчанию:
-         * Наименование.
-         */
 
         order: [
-
             [1, 'asc']
-
         ],
-
-
-        /*
-         * Отключаем автоматическую ширину.
-         */
 
         autoWidth: false,
 
-
-        /*
-         * Сортировка:
-         *
-         * 0 = checkbox      НЕТ
-         * 4 = категория     НЕТ
-         * 6 = поставщик     НЕТ
-         */
-
         columnDefs: [
-
-            {
-                targets: 0,
-                orderable: false,
-                searchable: false
-            },
-
-            {
-                targets: 4,
-                orderable: false
-            },
-
-            {
-                targets: 6,
-                orderable: false
-            }
-
+            { targets: 0, width: '42px',  orderable: false, searchable: false },
+            { targets: 2, width: '105px', orderable: false, searchable: false },
+            { targets: 3, width: '95px' },
+            { targets: 4, width: '110px' },
+            { targets: 5, width: '130px' },
+            { targets: 6, width: '160px', orderable: false },
+            { targets: 7, width: '160px', orderable: false },
+            { targets: [8, 9], width: '115px' }
         ]
 
     });
-
 
 
     /* =========================================================
        FILTERS
        ========================================================= */
 
-    $('.column-filter').on(
-        'click',
-        function (event) {
+    $('.column-filter').on('click mousedown mouseup', function (event) {
+        event.stopPropagation();
+    });
 
+    $('.column-filter[type="text"]').on('input', function () {
+        const column = Number($(this).data('column'));
+        const value = $(this).val();
 
+        table
+            .column(column)
+            .search(value)
+            .draw();
+    });
 
-            event.stopPropagation();
+    $('.column-filter[type!="text"]').on('change', function () {
+        const column = Number($(this).data('column'));
+        const value = $(this).val();
 
-        }
-    );
-
-
-    $('.column-filter').on(
-        'mousedown',
-        function (event) {
-
-            event.stopPropagation();
-
-        }
-    );
-
-
-    $('.column-filter').on(
-        'mouseup',
-        function (event) {
-
-            event.stopPropagation();
-
-        }
-    );
-
-
-
-    /* =========================================================
-       TEXT FILTER
-       ========================================================= */
-
-    $('.column-filter[type="text"]').on(
-        'input',
-        function () {
-
-
-            const column =
-                Number(
-                    $(this).data('column')
-                );
-
-
-            const value =
-                $(this).val();
-
-
-
-
+        if (!value) {
             table
                 .column(column)
-                .search(value)
+                .search('')
                 .draw();
-
+            return;
         }
-    );
 
-
-
-    /* =========================================================
-       SELECT FILTER
-       ========================================================= */
-
-    $('.column-filter[type!="text"]').on(
-        'change',
-        function () {
-
-
-            const column =
-                Number(
-                    $(this).data('column')
-                );
-
-
-            const value =
-                $(this).val();
-
-
-            if (!value) {
-
-
-                table
-                    .column(column)
-                    .search('')
-                    .draw();
-
-
-                return;
-
-            }
-
-
-            table
-                .column(column)
-                .search(
-                    '^' +
-                    escapeRegex(value) +
-                    '$',
-                    true,
-                    false
-                )
-                .draw();
-
-        }
-    );
-
-
-
-    /* =========================================================
-       ESCAPE REGEX
-       ========================================================= */
+        table
+            .column(column)
+            .search('^' + escapeRegex(value) + '$', true, false)
+            .draw();
+    });
 
     function escapeRegex(value) {
-
-        return value.replace(
-            /[.*+?^${}()|[\]\\]/g,
-            '\\$&'
-        );
-
+        return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
 
-
     /* =========================================================
-       COUNTER
+       HELPERS & STATE UPDATES
        ========================================================= */
+
+    function parseQuantity(val) {
+        const parsed = parseInt(val, 10);
+        return (!isNaN(parsed) && parsed > 0) ? parsed : 1;
+    }
+
+    function syncStorage() {
+        const obj = {};
+        selectedProducts.forEach(function (qty, id) {
+            obj[id] = qty;
+        });
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+    }
 
     function updateCounter() {
-
-        $('#selected-count').text(
-            selectedProducts.size
-        );
-
+        $('#selected-count').text(selectedProducts.size);
     }
-
-
-
-    /* =========================================================
-       UPDATE ROW
-       ========================================================= */
 
     function updateRow(row) {
+        const id = String($(row).attr('data-product-id'));
+        if (!id) return;
 
+        const checkbox = $(row).find('.product-check');
+        const qtyInput = $(row).find('.product-qty');
+        const selected = selectedProducts.has(id);
 
-        const id =
-            String(
-                $(row).attr(
-                    'data-product-id'
-                )
-            );
+        checkbox.prop('checked', selected);
 
-
-        if (!id) {
-
-            return;
-
+        if (selected) {
+            qtyInput.val(selectedProducts.get(id));
         }
 
-
-        const checkbox =
-            $(row).find(
-                '.product-check'
-            );
-
-
-        const selected =
-            selectedProducts.has(id);
-
-
-        checkbox.prop(
-            'checked',
-            selected
-        );
-
-
-        $(row).toggleClass(
-            'product-selected',
-            selected
-        );
-
+        $(row).toggleClass('product-selected', selected);
     }
-
-
-
-    /* =========================================================
-       UPDATE SELECT ALL
-       ========================================================= */
 
     function updateSelectAll() {
-
-
-        const selectAll =
-            $('#select-all');
-
-
-        /*
-         * Берём ВСЕ товары,
-         * соответствующие текущему фильтру.
-         *
-         * Не только текущую страницу.
-         */
-
-        const rows =
-            table.rows({
-                search: 'applied'
-            });
-
+        const selectAll = $('#select-all');
+        const rows = table.rows({ search: 'applied' });
 
         let total = 0;
-
         let selected = 0;
 
-
         rows.every(function () {
+            const node = this.node();
+            if (!node) return;
 
-
-            const node =
-                this.node();
-
-
-            if (!node) {
-
-                return;
-
-            }
-
-
-            const id =
-                String(
-                    $(node).attr(
-                        'data-product-id'
-                    )
-                );
-
-
-            if (!id) {
-
-                return;
-
-            }
-
+            const id = String($(node).attr('data-product-id'));
+            if (!id) return;
 
             total++;
-
-
-            if (
-                selectedProducts.has(id)
-            ) {
-
+            if (selectedProducts.has(id)) {
                 selected++;
-
             }
-
         });
 
-
-
-        /*
-         * Нет подходящих товаров.
-         */
-
         if (total === 0) {
-
-
-            selectAll.prop(
-                'checked',
-                false
-            );
-
-
-            selectAll.prop(
-                'indeterminate',
-                false
-            );
-
-
+            selectAll.prop('checked', false);
+            selectAll.prop('indeterminate', false);
             return;
-
         }
-
-
-
-        /*
-         * Выбраны ВСЕ отфильтрованные товары.
-         */
 
         if (selected === total) {
-
-
-            selectAll.prop(
-                'checked',
-                true
-            );
-
-
-            selectAll.prop(
-                'indeterminate',
-                false
-            );
-
-
+            selectAll.prop('checked', true);
+            selectAll.prop('indeterminate', false);
             return;
-
         }
-
-
-
-        /*
-         * Выбрана часть.
-         */
 
         if (selected > 0) {
-
-
-            selectAll.prop(
-                'checked',
-                false
-            );
-
-
-            selectAll.prop(
-                'indeterminate',
-                true
-            );
-
-
+            selectAll.prop('checked', false);
+            selectAll.prop('indeterminate', true);
             return;
-
         }
 
-
-
-        /*
-         * Ничего не выбрано.
-         */
-
-        selectAll.prop(
-            'checked',
-            false
-        );
-
-
-        selectAll.prop(
-            'indeterminate',
-            false
-        );
-
+        selectAll.prop('checked', false);
+        selectAll.prop('indeterminate', false);
     }
 
 
-
     /* =========================================================
-       SINGLE CHECKBOX
+       CHECKBOX & QUANTITY EVENTS
        ========================================================= */
 
-    $('#productsTable tbody').on(
-        'change',
-        '.product-check',
-        function (event) {
+    $('#productsTable tbody').on('change', '.product-check', function (event) {
+        event.stopPropagation();
+
+        const row = $(this).closest('tr');
+        const id = String(row.attr('data-product-id'));
+        if (!id) return;
+
+        const qty = parseQuantity(row.find('.product-qty').val());
+
+        if (this.checked) {
+            selectedProducts.set(id, qty);
+        } else {
+            selectedProducts.delete(id);
+        }
+
+        syncStorage();
+        updateRow(row);
+        updateCounter();
+        updateSelectAll();
+    });
+
+    $('#productsTable tbody').on('click mousedown mouseup', '.product-qty', function (event) {
+        event.stopPropagation();
+    });
+
+    $('#productsTable tbody').on('input change', '.product-qty', function (event) {
+        event.stopPropagation();
+
+        const row = $(this).closest('tr');
+        const id = String(row.attr('data-product-id'));
+        if (!id) return;
+
+        const qty = parseQuantity($(this).val());
+
+        selectedProducts.set(id, qty);
+        syncStorage();
+
+        row.find('.product-check').prop('checked', true);
+        row.addClass('product-selected');
+
+        updateCounter();
+        updateSelectAll();
+    });
+
+    $('#productsTable tbody').on('blur', '.product-qty', function () {
+        const qty = parseQuantity($(this).val());
+        $(this).val(qty);
+    });
 
 
-            event.stopPropagation();
+    /* =========================================================
+       SELECT ALL & ROW CLICK
+       ========================================================= */
 
+    $('#select-all').on('change', function (event) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        event.stopPropagation();
 
-            const row =
-                $(this).closest('tr');
+        const checked = this.checked;
+        const rows = table.rows({ search: 'applied' });
 
+        rows.every(function () {
+            const node = this.node();
+            if (!node) return;
 
-            const id =
-                String(
-                    row.attr(
-                        'data-product-id'
-                    )
-                );
+            const id = String($(node).attr('data-product-id'));
+            if (!id) return;
 
+            const qty = parseQuantity($(node).find('.product-qty').val());
 
-            if (!id) {
-
-                return;
-
-            }
-
-
-            if (this.checked) {
-
-
-                selectedProducts.add(
-                    id
-                );
-
-
+            if (checked) {
+                selectedProducts.set(id, qty);
             } else {
-
-
-                selectedProducts.delete(
-                    id
-                );
-
+                selectedProducts.delete(id);
             }
 
+            $(node).find('.product-check').prop('checked', checked);
+            $(node).toggleClass('product-selected', checked);
+        });
 
-            updateRow(row);
+        syncStorage();
+        updateCounter();
+        updateSelectAll();
+    });
 
-            updateCounter();
-
-            updateSelectAll();
-
+    $('#productsTable tbody').on('click', 'tr', function (event) {
+        if ($(event.target).closest('.product-check, .product-qty').length) {
+            return;
         }
-    );
 
+        const row = $(this);
+        const id = String(row.attr('data-product-id'));
+        if (!id) return;
+
+        const checkbox = row.find('.product-check');
+        const qty = parseQuantity(row.find('.product-qty').val());
+        const newState = !checkbox.prop('checked');
+
+        checkbox.prop('checked', newState);
+
+        if (newState) {
+            selectedProducts.set(id, qty);
+        } else {
+            selectedProducts.delete(id);
+        }
+
+        syncStorage();
+        updateRow(row);
+        updateCounter();
+        updateSelectAll();
+    });
 
 
     /* =========================================================
-       SELECT ALL
+       DATATABLE DRAW & FORM SUBMIT
        ========================================================= */
 
-    $('#select-all').on(
-        'change',
-        function (event) {
-
-
-            /*
-             * Полностью останавливаем событие.
-             */
-
-            event.preventDefault();
-
-            event.stopImmediatePropagation();
-
-            event.stopPropagation();
-
-
-            const checked =
-                this.checked;
-
-
-            /*
-             * Берём все товары,
-             * которые соответствуют фильтрам.
-             */
-
-            const rows =
-                table.rows({
-                    search: 'applied'
-                });
-
-
-            rows.every(function () {
-
-
-                const node =
-                    this.node();
-
-
-                if (!node) {
-
-                    return;
-
-                }
-
-
-                const id =
-                    String(
-                        $(node).attr(
-                            'data-product-id'
-                        )
-                    );
-
-
-                if (!id) {
-
-                    return;
-
-                }
-
-
-                if (checked) {
-
-
-                    selectedProducts.add(
-                        id
-                    );
-
-
-                } else {
-
-
-                    selectedProducts.delete(
-                        id
-                    );
-
-
-                }
-
-
-                /*
-                 * Меняем checkbox напрямую.
-                 */
-
-                $(node)
-                    .find('.product-check')
-                    .prop(
-                        'checked',
-                        checked
-                    );
-
-
-                $(node).toggleClass(
-                    'product-selected',
-                    checked
-                );
-
-            });
-
-
-            /*
-             * Обновляем счётчик.
-             */
-
-            updateCounter();
-
-
-            /*
-             * Обновляем главный checkbox.
-             */
-
-            updateSelectAll();
-
-
-            /*
-             * НИКАКОГО:
-             *
-             * table.draw()
-             *
-             * Здесь нет.
-             */
-
-        }
-    );
-
-
-
-    /* =========================================================
-       ROW CLICK
-       ========================================================= */
-
-    $('#productsTable tbody').on(
-        'click',
-        'tr',
-        function (event) {
-
-
-
-            if (
-                $(event.target).closest(
-                    '.product-check'
-                ).length
-            ) {
-
-                return;
-
-            }
-
-
-            const row =
-                $(this);
-
-
-            const id =
-                String(
-                    row.attr(
-                        'data-product-id'
-                    )
-                );
-
-
-            if (!id) {
-
-                return;
-
-            }
-
-
-            const checkbox =
-                row.find(
-                    '.product-check'
-                );
-
-
-            const newState =
-                !checkbox.prop(
-                    'checked'
-                );
-
-
-            checkbox.prop(
-                'checked',
-                newState
-            );
-
-
-            if (newState) {
-
-
-                selectedProducts.add(
-                    id
-                );
-
-
-            } else {
-
-
-                selectedProducts.delete(
-                    id
-                );
-
-
-            }
-
-
-            updateRow(row);
-
-            updateCounter();
-
-            updateSelectAll();
-
-        }
-    );
-
-
-
-    /* =========================================================
-       DATATABLE DRAW
-       ========================================================= */
-
-    table.on(
-        'draw',
-        function () {
-
-
-            /*
-             * После поиска / сортировки / пагинации
-             * восстанавливаем выбранные строки.
-             */
-
-            $('#productsTable tbody tr')
-                .each(function () {
-
-                    updateRow(this);
-
-                });
-
-
-            updateCounter();
-
-            updateSelectAll();
-
-        }
-    );
-
-
-
-    /* =========================================================
-       FORM SUBMIT
-       ========================================================= */
-
-    $('#products-form').on(
-        'submit',
-        function () {
-
-
-            /*
-             * Удаляем старые hidden inputs.
-             */
-
-            $('#selected-products')
-                .empty();
-
-
-            /*
-             * Добавляем ВСЕ выбранные ID.
-             */
-
-            selectedProducts.forEach(
-                function (id) {
-
-
-                    $('<input>')
-                        .attr(
-                            'type',
-                            'hidden'
-                        )
-                        .attr(
-                            'name',
-                            'products'
-                        )
-                        .val(id)
-                        .appendTo(
-                            '#selected-products'
-                        );
-
-                }
-            );
-
-        }
-    );
-
+    table.on('draw', function () {
+        $('#productsTable tbody tr').each(function () {
+            updateRow(this);
+        });
+
+        updateCounter();
+        updateSelectAll();
+    });
+
+    $('#products-form').on('submit', function () {
+        const container = $('#selected-products');
+        container.empty();
+
+        syncStorage();
+
+        selectedProducts.forEach(function (qty, id) {
+            $('<input>')
+                .attr('type', 'hidden')
+                .attr('name', 'products')
+                .val(id)
+                .appendTo(container);
+
+            $('<input>')
+                .attr('type', 'hidden')
+                .attr('name', 'quantity_' + id)
+                .val(qty)
+                .appendTo(container);
+
+            $('<input>')
+                .attr('type', 'hidden')
+                .attr('name', 'quantities')
+                .val(qty)
+                .appendTo(container);
+        });
+    });
 
 
     /* =========================================================
        INITIALIZATION
        ========================================================= */
 
-    $('#productsTable tbody tr')
-        .each(function () {
+    table.rows().every(function () {
+        const node = this.node();
+        if (node) {
+            updateRow(node);
+        }
+    });
 
-            updateRow(this);
-
-        });
-
-
+    syncStorage();
     updateCounter();
-
     updateSelectAll();
-
 
 });
 

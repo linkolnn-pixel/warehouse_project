@@ -15,97 +15,103 @@
 
 <div class="container mt-4">
     <h2 class="mb-4">📥 Создание прихода</h2>
-        <form method="post">
-            {% csrf_token %}
-                <div class="card shadow p-4">
-                    <h5>Основная информация</h5>
-                <hr>
+    <form method="post" id="receipt-form">
+        {% csrf_token %}
+        <div class="card shadow p-4">
+            <h5>Основная информация</h5>
+            <hr>
 
-                    <div class="mb-3">
-                        <label class="form-label">Склад</label>
-                        {{ form.warehouse }}
-                    </div>
+            <div class="mb-3">
+                <label class="form-label">Склад</label>
+                {{ form.warehouse }}
+            </div>
 
-                    <label class="form-label">Поставщик <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        {{ form.supplier }}
-                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addSupplierModal">+</button>
-                    </div>
+            <label class="form-label">Поставщик <span class="text-danger">*</span></label>
+            <div class="input-group">
+                {{ form.supplier }}
+                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addSupplierModal">+</button>
+            </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Комментарий</label>
-                        {{ form.comment }}
-                    </div>
+            <div class="mb-3">
+                <label class="form-label">Комментарий</label>
+                {{ form.comment }}
+            </div>
 
-                <hr>
+            <hr>
 
-                <h5>Товары</h5>
+            <h5>Товары</h5>
 
-                    <a
-                        id="add-products-link"
-                        href="{% url 'product_picker' %}?target=receipt"
-                        class="btn btn-primary"
-                    >
-                        Добавить товары
-                    </a>
-                {{ formset.management_form }}
-                    <table class="table table-bordered align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Товар</th>
-                                <th width="120">Количество</th>
-                                <th width="150">Себестоимость</th>
-                                <th width="150">Цена продажи</th>
-                                <th width="90">Удалить</th>
-                            </tr>
-                        </thead>
+            <a
+                id="add-products-link"
+                href="{% url 'product_picker' %}?target=receipt"
+                class="btn btn-primary"
+            >
+                Добавить товары
+            </a>
+            {{ formset.management_form }}
+            <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Товар</th>
+                        <th width="120">Количество</th>
+                        <th width="150">Себестоимость</th>
+                        <th width="150">Цена продажи</th>
+                        <th width="90">Удалить</th>
+                    </tr>
+                </thead>
 
-                        <tbody>
-                            {% for f in formset %}
-                                <tr>
-                                    {{ f.id }}
-                                    <td>
-                                    {% if f.instance.pk %}
-                                        {{ f.instance.product.name }}
-                                        {{ f.product.as_hidden }}
-                                    {% elif f.initial.product %}
-                                        {{ f.initial.product.name }}
-                                        {{ f.product.as_hidden }}
-                                    {% else %}
-                                        {{ f.product.as_hidden }}
-                                    {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="quantity-field">
-                                            {{ f.quantity }}
-                                        </div>
-                                    </td>
-                                    <td>{{ f.cost_price }}</td>
-                                    <td>{{ f.sale_price }}</td>
-                                    <td class="text-center">
-                                        {% if f.DELETE %}
-                                            {{ f.DELETE.as_hidden }}
-                                            <button
-                                                type="button"
-                                                class="btn btn-danger btn-sm delete-row">
-                                                🗑
-                                            </button>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
+                <tbody>
+                    {% for f in formset %}
+                        <tr class="receipt-item-row">
+                            {{ f.id }}
+                            <td>
+                            {% if f.instance.pk %}
+                                {{ f.instance.product.name }}
+                                {{ f.product.as_hidden }}
+                            {% elif f.initial.product %}
+                                {{ f.initial.product.name }}
+                                {{ f.product.as_hidden }}
+                            {% else %}
+                                {{ f.product.as_hidden }}
+                            {% endif %}
+                            </td>
+                            <td>
+                                <div class="quantity-field">
+                                    {{ f.quantity }}
+                                </div>
+                                {% for error in f.quantity.errors %}
+                                    <div class="text-danger small">
+                                        {{ error }}
+                                    </div>
+                                {% endfor %}
+                                <div class="stock-error text-danger small"></div>
+                            </td>
+                            <td>{{ f.cost_price }}</td>
+                            <td>{{ f.sale_price }}</td>
+                            <td class="text-center">
+                                {% if f.DELETE %}
+                                    {{ f.DELETE.as_hidden }}
+                                    <button
+                                        type="button"
+                                        class="btn btn-danger btn-sm delete-row">
+                                        🗑
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
 
-                    </table>
-                    <button type="submit" class="btn btn-success w-100">
-                        {% if is_edit %}
-                            💾 Сохранить изменения
-                        {% else %}
-                            ✅ Создать приход
-                        {% endif %}
-                    </button>
-                </div>
-        </form>
+            </table>
+            <button type="submit" class="btn btn-success w-100">
+                {% if is_edit %}
+                    💾 Сохранить изменения
+                {% else %}
+                    ✅ Создать приход
+                {% endif %}
+            </button>
+        </div>
+    </form>
 </div>
 
 <!-- Модальное окно Поставщика -->
@@ -135,7 +141,7 @@
 
 <script>
 document.getElementById('ajaxSupplierForm').addEventListener('submit', function(e) {
-    e.preventDefault(); // Останавливаем перезагрузку страницы
+    e.preventDefault();
     let formData = new FormData(this);
 
     fetch("{% url 'api_counterparty_create' %}", {
@@ -146,15 +152,12 @@ document.getElementById('ajaxSupplierForm').addEventListener('submit', function(
     .then(response => response.json())
     .then(data => {
         if (data.id) {
-            // 1. Добавляем созданного поставщика в селект
-            let select = document.getElementById('id_supplier'); // Django по умолчанию дает ID "id_названиеполя"
+            let select = document.getElementById('id_supplier');
             let option = new Option(data.name, data.id, true, true);
             select.add(option);
+            select.dispatchEvent(new Event('change'));
 
-            // 2. Закрываем окно
             bootstrap.Modal.getInstance(document.getElementById('addSupplierModal')).hide();
-
-            // 3. Очищаем форму для следующего раза
             this.reset();
         }
     });
@@ -162,129 +165,182 @@ document.getElementById('ajaxSupplierForm').addEventListener('submit', function(
 </script>
 
 <script>
-
-document.addEventListener("DOMContentLoaded", function() {
-    /* =====================================================
-       УДАЛЕНИЕ СТРОКИ
-       ===================================================== */
-
-    document
-        .querySelectorAll(".delete-row")
-        .forEach(function(btn) {
-            btn.addEventListener(
-                "click",
-                function() {
-                    let row = this.closest("tr");
-                    if (!row) {
-                        return;
-                    }
-
-                    let deleteInput =
-                        row.querySelector(
-                            "input[name$='-DELETE']"
-                        );
-
-                    if (deleteInput) {
-                        deleteInput.value = "on";
-                    }
-                    row.style.display = "none";
-                }
-            );
-        });
-});
-
-</script>
-
-<script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    const supplierField = document.getElementById(
-        "id_supplier"
-    );
+    const STORAGE_KEY = "picker_quantities_receipt";
+    const urlParams = new URLSearchParams(window.location.search);
 
-    const addProductsLink = document.getElementById(
-        "add-products-link"
-    );
+    const supplierField = document.getElementById("id_supplier") || document.querySelector('select[name="supplier"]');
+    const addProductsLink = document.getElementById("add-products-link");
+    const receiptForm = document.getElementById("receipt-form") || document.querySelector("form[method='post']");
 
+    let storedQuantities = {};
+    try {
+        storedQuantities = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}");
+    } catch (e) {
+        storedQuantities = {};
+    }
+
+    /* =====================================================
+       1. ПОДСТАНОВКА КОЛИЧЕСТВА ПРИ ЗАГРУЗКЕ
+       ===================================================== */
+    document.querySelectorAll(".receipt-item-row").forEach(function (row) {
+        const productInput = row.querySelector("input[name$='-product']");
+        const quantityInput = row.querySelector("input[name$='-quantity']");
+
+        if (!productInput || !quantityInput) return;
+
+        quantityInput.setAttribute("min", "1");
+        quantityInput.setAttribute("step", "1");
+
+        const pid = String(productInput.value || "");
+        if (!pid) return;
+
+        const qtyFromUrl = urlParams.get("quantity_" + pid) || urlParams.get("qty_" + pid);
+        const qtyFromStorage = storedQuantities[pid];
+        const targetQty = qtyFromUrl !== null ? qtyFromUrl : qtyFromStorage;
+
+        {% if request.method != 'POST' %}
+        if (targetQty !== undefined && targetQty !== null) {
+            const parsed = parseInt(targetQty, 10);
+            if (!isNaN(parsed) && parsed > 0) {
+                quantityInput.value = parsed;
+            }
+        }
+        {% endif %}
+
+        storedQuantities[pid] = parseInt(quantityInput.value || 1, 10) || 1;
+    });
+
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(storedQuantities));
+
+    /* =====================================================
+       2. ОБНОВЛЕНИЕ ССЫЛКИ "ДОБАВИТЬ ТОВАРЫ"
+       ===================================================== */
     function updateAddProductsLink() {
+        if (!addProductsLink) return;
 
         const params = new URLSearchParams();
+        params.append("target", "receipt");
 
-        params.append(
-            "target",
-            "receipt"
-        );
-
-        // ТЕКУЩИЙ поставщик
-        if (
-            supplierField &&
-            supplierField.value
-        ) {
-            params.append(
-                "supplier",
-                supplierField.value
-            );
+        if (supplierField && supplierField.value) {
+            params.append("supplier", supplierField.value);
         }
 
-        // ВСЕ уже выбранные товары
-        document
-            .querySelectorAll(
-                "input[name$='-product']"
-            )
-            .forEach(function (input) {
+        const currentQuantities = {};
 
-                if (input.value) {
+        document.querySelectorAll(".receipt-item-row").forEach(function (row) {
+            if (row.style.display === "none") return;
 
-                    params.append(
-                        "products",
-                        input.value
-                    );
+            const productInput = row.querySelector("input[name$='-product']");
+            const quantityInput = row.querySelector("input[name$='-quantity']");
 
-                }
+            if (productInput && productInput.value) {
+                const pid = String(productInput.value);
+                const qty = quantityInput ? (parseInt(quantityInput.value || 1, 10) || 1) : 1;
 
-            });
+                currentQuantities[pid] = qty;
 
-        addProductsLink.href =
-            "{% url 'product_picker' %}?" +
-            params.toString();
+                params.append("products", pid);
+                params.append("selected", pid);
+                params.set("quantity_" + pid, qty);
+            }
+        });
+
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(currentQuantities));
+        addProductsLink.href = "{% url 'product_picker' %}?" + params.toString();
     }
 
-    // При загрузке
-    updateAddProductsLink();
-
-    // Если пользователь сменил поставщика
-    if (supplierField) {
-
-        supplierField.addEventListener(
-            "change",
-            updateAddProductsLink
-        );
-
-    }
-
-});
-/*
-     * ПРИВЯЗКА КЛИЕНТА К КНОПКЕ "ДОБАВИТЬ ТОВАРЫ"
-     */
-    const supplierSelect = document.querySelector('select[name="supplier"]');
-    const addProductsBtn = document.querySelector('a.btn-primary[href*="target=receipt"]');
-
-    if (supplierSelect && addProductsBtn) {
-        supplierSelect.addEventListener("change", function () {
-            // Берем текущую ссылку с кнопки
-            let url = new URL(addProductsBtn.href, window.location.origin);
-
-            // Если клиент выбран - добавляем его в параметры URL, если нет - удаляем
-            if (this.value) {
-                url.searchParams.set("supplier", this.value);
-            } else {
-                url.searchParams.delete("supplier");
+    /* =====================================================
+       3. ОТСЛЕЖИВАНИЕ ВВОДА КОЛИЧЕСТВА
+       ===================================================== */
+    document.querySelectorAll('input[name$="-quantity"]').forEach(function (input) {
+        input.addEventListener("input", function () {
+            let val = parseInt(this.value || 0, 10);
+            if (isNaN(val) || val < 1) {
+                val = 1;
+                this.value = 1;
             }
 
-            // Сохраняем обновленную ссылку обратно в кнопку
-            addProductsBtn.href = url.toString();
+            const row = this.closest(".receipt-item-row");
+            if (row) {
+                const productInput = row.querySelector("input[name$='-product']");
+                if (productInput && productInput.value) {
+                    storedQuantities[String(productInput.value)] = val;
+                    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(storedQuantities));
+                }
+            }
+            updateAddProductsLink();
+        });
+    });
+
+    /* =====================================================
+       4. УДАЛЕНИЕ СТРОКИ
+       ===================================================== */
+    document.querySelectorAll(".delete-row").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            const row = this.closest(".receipt-item-row");
+            if (!row) return;
+
+            const deleteInput = row.querySelector("input[name$='-DELETE']");
+            if (deleteInput) {
+                deleteInput.checked = true;
+                deleteInput.value = "on";
+            }
+
+            row.style.display = "none";
+            updateAddProductsLink();
+        });
+    });
+
+    /* =====================================================
+       5. СОХРАНЕНИЕ ПРИ ОТПРАВКЕ ФОРМЫ (SUBMIT)
+       ===================================================== */
+    if (receiptForm) {
+        receiptForm.addEventListener("submit", function () {
+            document.querySelectorAll("input.dynamic-receipt-input").forEach(e => e.remove());
+
+            const activeQuantities = {};
+
+            document.querySelectorAll(".receipt-item-row").forEach(function (row) {
+                if (row.style.display === "none") return;
+
+                const productInput = row.querySelector("input[name$='-product']");
+                const quantityInput = row.querySelector("input[name$='-quantity']");
+
+                if (productInput && productInput.value) {
+                    const pid = String(productInput.value);
+                    const qty = quantityInput ? (parseInt(quantityInput.value || 1, 10) || 1) : 1;
+
+                    activeQuantities[pid] = qty;
+
+                    const hiddenProd = document.createElement("input");
+                    hiddenProd.type = "hidden";
+                    hiddenProd.name = "products";
+                    hiddenProd.value = pid;
+                    hiddenProd.classList.add("dynamic-receipt-input");
+                    receiptForm.appendChild(hiddenProd);
+
+                    const hiddenQty = document.createElement("input");
+                    hiddenQty.type = "hidden";
+                    hiddenQty.name = "quantity_" + pid;
+                    hiddenQty.value = qty;
+                    hiddenQty.classList.add("dynamic-receipt-input");
+                    receiptForm.appendChild(hiddenQty);
+                }
+            });
+
+            sessionStorage.setItem(STORAGE_KEY, JSON.stringify(activeQuantities));
         });
     }
+
+    if (supplierField) {
+        supplierField.addEventListener("change", updateAddProductsLink);
+    }
+
+    /* Инициализация ссылки при загрузке */
+    updateAddProductsLink();
+});
 </script>
 
 {% endblock %}

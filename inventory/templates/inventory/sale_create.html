@@ -16,48 +16,49 @@
     <h2 class="mb-4">📤 Создание продажи</h2>
     <form method="post" id="sale-form">
         {% csrf_token %}
-            <div class="card shadow p-4">
-                <h5>Основная информация</h5>
+        <div class="card shadow p-4">
+            <h5>Основная информация</h5>
             <hr>
 
-                <div class="mb-3">
-                    <label class="form-label">Склад</label>
-                    {{ form.warehouse }}
-                    {% for error in form.warehouse.errors %}
-                        <div class="text-danger small">
-                            {{ error }}
-                        </div>
-                    {% endfor %}
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Клиент <span class="text-danger">*</span></label>
-                    <div class="input-group">
-                        {{ form.customer }}
-                        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">+</button>
+            <div class="mb-3">
+                <label class="form-label">Склад</label>
+                {{ form.warehouse }}
+                {% for error in form.warehouse.errors %}
+                    <div class="text-danger small">
+                        {{ error }}
                     </div>
-                    {% for error in form.customer.errors %}
-                        <div class="text-danger small">
-                            {{ error }}
-                        </div>
-                    {% endfor %}
-                </div>
+                {% endfor %}
+            </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Комментарий</label>
-                    {{ form.comment }}
+            <div class="mb-3">
+                <label class="form-label">Клиент <span class="text-danger">*</span></label>
+                <div class="input-group">
+                    {{ form.customer }}
+                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">+</button>
                 </div>
+                {% for error in form.customer.errors %}
+                    <div class="text-danger small">
+                        {{ error }}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Комментарий</label>
+                {{ form.comment }}
+            </div>
 
             <hr>
 
             <h5>Товары</h5>
-                <a
-                    href="{% url 'product_picker' %}?target=sale{% for f in formset %}{% if f.product.value %}&selected={{ f.product.value }}{% endif %}{% endfor %}{% if form.customer.value %}&customer={{ form.customer.value }}{% endif %}"
-                    class="btn btn-primary"
-                >
-                    Добавить товары
-                </a>
 
+            <a
+                id="add-products-link"
+                href="{% url 'product_picker' %}?target=sale"
+                class="btn btn-primary"
+            >
+                Добавить товары
+            </a>
 
             {{ formset.management_form }}
 
@@ -82,117 +83,116 @@
             {% endif %}
 
             <!-- ТАБЛИЦА ТОВАРОВ -->
-                <table class="table table-bordered align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Товар</th>
-                            <th width="130">Остаток</th>
-                            <th width="120">Количество</th>
-                            <th width="150">Цена продажи</th>
-                            <th width="150">Сумма</th>
-                            <th width="90">Удалить</th>
-                        </tr>
-                    </thead>
+            <table class="table table-bordered align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Товар</th>
+                        <th width="130">Остаток</th>
+                        <th width="120">Количество</th>
+                        <th width="150">Цена продажи</th>
+                        <th width="150">Сумма</th>
+                        <th width="90">Удалить</th>
+                    </tr>
+                </thead>
 
-                    <tbody>
-                        {% for f in formset %}
-                        <tr class="sale-item-row">
-                            <!-- ТОВАР -->
-                            <td>
-                                {{ f.id }}
+                <tbody>
+                    {% for f in formset %}
+                    <tr class="sale-item-row">
+                        <!-- ТОВАР -->
+                        <td>
+                            {{ f.id }}
 
-                                {% if f.instance.product %}
-                                    {{ f.instance.product.name }}
-                                    {{ f.product.as_hidden }}
-                                {% elif f.initial.product %}
-                                    {{ f.initial.product.name }}
-                                    {{ f.product.as_hidden }}
-                                {% else %}
-                                    {{ f.product.as_hidden }}
-                                {% endif %}
+                            {% if f.instance.product %}
+                                {{ f.instance.product.name }}
+                                {{ f.product.as_hidden }}
+                            {% elif f.initial.product %}
+                                {{ f.initial.product.name }}
+                                {{ f.product.as_hidden }}
+                            {% else %}
+                                {{ f.product.as_hidden }}
+                            {% endif %}
 
-                                {% for error in f.product.errors %}
-                                    <div class="text-danger small">
-                                        {{ error }}
-                                    </div>
-                                {% endfor %}
-                            </td>
-
-                            <!-- ОСТАТОК -->
-                            <td class="text-center align-middle">
-                                <div class="balance-field fw-bold text-primary">
-                                    <!-- Обращаемся к словарю initial -->
-                                    {{ f.initial.balance|default:"0" }}
+                            {% for error in f.product.errors %}
+                                <div class="text-danger small">
+                                    {{ error }}
                                 </div>
-                                <input type="hidden" name="{{ f.prefix }}-balance" value="{{ f.initial.balance|default:'0' }}">
-                            </td>
+                            {% endfor %}
+                        </td>
 
-                            <!-- КОЛИЧЕСТВО -->
-                            <td>
-                                <div class="quantity-field">
-                                    {{ f.quantity }}
+                        <!-- ОСТАТОК -->
+                        <td class="text-center align-middle">
+                            <div class="balance-field fw-bold text-primary">
+                                {{ f.initial.balance|default:"0" }}
+                            </div>
+                            <input type="hidden" name="{{ f.prefix }}-balance" value="{{ f.initial.balance|default:'0' }}">
+                        </td>
+
+                        <!-- КОЛИЧЕСТВО -->
+                        <td>
+                            <div class="quantity-field">
+                                {{ f.quantity }}
+                            </div>
+                            {% for error in f.quantity.errors %}
+                                <div class="text-danger small">
+                                    {{ error }}
                                 </div>
-                                {% for error in f.quantity.errors %}
-                                    <div class="text-danger small">
-                                        {{ error }}
-                                    </div>
-                                {% endfor %}
-                                <div class="stock-error text-danger small"></div>
-                            </td>
+                            {% endfor %}
+                            <div class="stock-error text-danger small"></div>
+                        </td>
 
-                            <!-- ЦЕНА -->
-                            <td>
-                                {{ f.sale_price }}
-                                {% for error in f.sale_price.errors %}
-                                    <div class="text-danger small">
-                                        {{ error }}
-                                    </div>
-                                {% endfor %}
-                            </td>
+                        <!-- ЦЕНА -->
+                        <td>
+                            {{ f.sale_price }}
+                            {% for error in f.sale_price.errors %}
+                                <div class="text-danger small">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
+                        </td>
 
-                            <!-- СУММА -->
-                            <td>
-                                <strong class="item-total">
-                                    0.00 ₽
-                                </strong>
-                            </td>
+                        <!-- СУММА -->
+                        <td>
+                            <strong class="item-total">
+                                0.00 ₽
+                            </strong>
+                        </td>
 
-                            <!-- УДАЛЕНИЕ -->
-                            <td class="text-center">
-                                {% if f.DELETE %}
-                                    {{ f.DELETE.as_hidden }}
-                                    <button
-                                        type="button"
-                                        class="btn btn-danger btn-sm delete-row"
-                                    >
-                                        🗑
-                                    </button>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        <!-- УДАЛЕНИЕ -->
+                        <td class="text-center">
+                            {% if f.DELETE %}
+                                {{ f.DELETE.as_hidden }}
+                                <button
+                                    type="button"
+                                    class="btn btn-danger btn-sm delete-row"
+                                >
+                                    🗑
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
 
-                <!-- ИТОГ -->
-                <div class="alert alert-info mt-3 text-end">
-                    <h5 class="mb-0">
-                        Итоговая стоимость продажи:
-                        <strong>
-                            <span id="total-sale">0.00</span> ₽
-                        </strong>
-                    </h5>
-                </div>
-
-                <!-- КНОПКА СОЗДАНИЯ -->
-                <button type="submit" class="btn btn-success w-100">
-                    {% if is_edit %}
-                        💾 Сохранить изменения
-                    {% else %}
-                        ✅ Создать продажу
-                    {% endif %}
-                </button>
+            <!-- ИТОГ -->
+            <div class="alert alert-info mt-3 text-end">
+                <h5 class="mb-0">
+                    Итоговая стоимость продажи:
+                    <strong>
+                        <span id="total-sale">0.00</span> ₽
+                    </strong>
+                </h5>
             </div>
+
+            <!-- КНОПКА СОЗДАНИЯ -->
+            <button type="submit" class="btn btn-success w-100">
+                {% if is_edit %}
+                    💾 Сохранить изменения
+                {% else %}
+                    ✅ Создать продажу
+                {% endif %}
+            </button>
+        </div>
     </form>
 </div>
 
@@ -237,6 +237,7 @@ document.getElementById('ajaxCustomerForm').addEventListener('submit', function(
             let select = document.getElementById('id_customer');
             let option = new Option(data.name, data.id, true, true);
             select.add(option);
+            select.dispatchEvent(new Event('change'));
 
             bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
             this.reset();
@@ -248,11 +249,120 @@ document.getElementById('ajaxCustomerForm').addEventListener('submit', function(
 <script>
 document.addEventListener("DOMContentLoaded", function () {
 
-    /*
-     * ==========================================
-     * ПЕРЕСЧЕТ ИТОГА
-     * ==========================================
-     */
+    const STORAGE_KEY = "picker_quantities_sale";
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const customerField = document.getElementById("id_customer") || document.querySelector('select[name="customer"]');
+    const addProductsLink = document.getElementById("add-products-link");
+
+    let storedQuantities = {};
+    try {
+        storedQuantities = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "{}");
+    } catch (e) {
+        storedQuantities = {};
+    }
+
+    /* ==========================================
+       ОБНОВЛЕНИЕ ССЫЛКИ "ДОБАВИТЬ ТОВАРЫ"
+       ========================================== */
+    function updateAddProductsLink() {
+        if (!addProductsLink) return;
+
+        const params = new URLSearchParams();
+        params.append("target", "sale");
+
+        if (customerField && customerField.value) {
+            params.append("customer", customerField.value);
+        }
+
+        const currentQuantities = {};
+
+        document.querySelectorAll(".sale-item-row").forEach(function (row) {
+            if (row.style.display === "none") return;
+
+            const productInput = row.querySelector("input[name$='-product']");
+            const quantityInput = row.querySelector("input[name$='-quantity']");
+
+            if (productInput && productInput.value) {
+                const pid = String(productInput.value);
+                const qty = quantityInput ? (parseInt(quantityInput.value || 1, 10) || 1) : 1;
+
+                currentQuantities[pid] = qty;
+
+                params.append("selected", pid);
+                params.append("products", pid);
+                params.set("quantity_" + pid, qty);
+            }
+        });
+
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(currentQuantities));
+        addProductsLink.href = "{% url 'product_picker' %}?" + params.toString();
+    }
+
+    /* ==========================================
+       ПРОВЕРКА ОСТАТКОВ В СТРОКЕ
+       ========================================== */
+    function validateRowStock(row) {
+        const quantityInput = row.querySelector('input[name$="-quantity"]');
+        const balanceInput = row.querySelector('input[name$="-balance"]');
+        const errorElement = row.querySelector(".stock-error");
+
+        if (!quantityInput) return;
+
+        let value = parseInt(quantityInput.value || 0, 10);
+        if (isNaN(value) || value < 1) {
+            value = 1;
+            quantityInput.value = 1;
+        }
+
+        if (!balanceInput) return;
+
+        const balance = parseInt(balanceInput.value || 0, 10);
+
+        if (value > balance) {
+            quantityInput.classList.add("is-invalid");
+            if (errorElement) {
+                errorElement.textContent = "Недостаточно товара. Доступно: " + balance;
+            }
+        } else {
+            quantityInput.classList.remove("is-invalid");
+            if (errorElement) {
+                errorElement.textContent = "";
+            }
+        }
+    }
+
+    /* ==========================================
+       ПОДСТАНОВКА КОЛИЧЕСТВА ПРИ ЗАГРУЗКЕ
+       ========================================== */
+    document.querySelectorAll(".sale-item-row").forEach(function (row) {
+        const productInput = row.querySelector('input[name$="-product"]');
+        const quantityInput = row.querySelector('input[name$="-quantity"]');
+
+        if (!productInput || !quantityInput) return;
+
+        const pid = String(productInput.value || "");
+        if (!pid) return;
+
+        const qtyFromUrl = urlParams.get("quantity_" + pid) || urlParams.get("qty_" + pid);
+        const qtyFromStorage = storedQuantities[pid];
+        const targetQty = qtyFromUrl !== null ? qtyFromUrl : qtyFromStorage;
+
+        {% if request.method != 'POST' %}
+        if (targetQty !== undefined && targetQty !== null) {
+            const parsed = parseInt(targetQty, 10);
+            if (!isNaN(parsed) && parsed > 0) {
+                quantityInput.value = parsed;
+            }
+        }
+        {% endif %}
+
+        validateRowStock(row);
+    });
+
+    /* ==========================================
+       ПЕРЕСЧЕТ ИТОГА
+       ========================================== */
     function updateTotal() {
         let total = 0;
 
@@ -265,9 +375,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (!quantityInput || !priceInput) return;
 
-            const quantity = parseInt(quantityInput.value || 0);
-            const price = parseFloat(priceInput.value || 0);
-            const sum = quantity * price;
+            const quantity = parseInt(quantityInput.value || 0, 10);
+            const price = parseFloat(String(priceInput.value || "0").replace(",", "."));
+            const sum = (isNaN(quantity) ? 0 : quantity) * (isNaN(price) ? 0 : price);
 
             total += sum;
 
@@ -279,42 +389,20 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("total-sale").textContent = total.toFixed(2);
     }
 
-    /*
-     * ==========================================
-     * КОЛИЧЕСТВО И ПРОВЕРКА ОСТАТКОВ
-     * ==========================================
-     */
+    /* ==========================================
+       СОБЫТИЯ ВВОДА КОЛИЧЕСТВА И ЦЕНЫ
+       ========================================== */
     document.querySelectorAll('input[name$="-quantity"]').forEach(function (input) {
         input.setAttribute("min", "1");
         input.setAttribute("step", "1");
 
         input.addEventListener("input", function () {
-            let value = parseInt(this.value || 0);
-            if (value < 1) value = 1;
-            this.value = value;
-
             const row = this.closest(".sale-item-row");
-            if (!row) return;
-
-            const balanceInput = row.querySelector('input[name$="-balance"]');
-            const errorElement = row.querySelector(".stock-error");
-
-            if (!balanceInput) {
-                updateTotal();
-                return;
+            if (row) {
+                validateRowStock(row);
             }
-
-            const balance = parseInt(balanceInput.value || 0);
-
-            if (value > balance) {
-                this.classList.add("is-invalid");
-                if (errorElement) errorElement.textContent = "Недостаточно товара. Доступно: " + balance;
-            } else {
-                this.classList.remove("is-invalid");
-                if (errorElement) errorElement.textContent = "";
-            }
-
             updateTotal();
+            updateAddProductsLink();
         });
     });
 
@@ -322,20 +410,16 @@ document.addEventListener("DOMContentLoaded", function () {
         input.addEventListener("input", updateTotal);
     });
 
-    /*
-     * ==========================================
-     * УДАЛЕНИЕ СТРОКИ
-     * ==========================================
-     */
+    /* ==========================================
+       УДАЛЕНИЕ СТРОКИ
+       ========================================== */
     document.querySelectorAll(".delete-row").forEach(function (button) {
         button.addEventListener("click", function () {
             const row = this.closest(".sale-item-row");
             if (!row) return;
 
-            // 1. Визуально скрываем строку
             row.style.display = "none";
 
-            // 2. Находим скрытый чекбокс удаления, который сгенерировал Django, и отмечаем его
             const deleteInput = row.querySelector("input[name$='-DELETE']");
             if (deleteInput) {
                 deleteInput.checked = true;
@@ -343,61 +427,43 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             updateTotal();
+            updateAddProductsLink();
         });
     });
 
-    /*
-     * ==========================================
-     * ПОДГОТОВКА ФОРМЫ ПЕРЕД ОТПРАВКОЙ (ИСПРАВЛЕНО)
-     * ==========================================
-     */
+    /* ==========================================
+       ПОДГОТОВКА ФОРМЫ ПЕРЕД ОТПРАВКОЙ
+       ========================================== */
     const saleForm = document.getElementById("sale-form");
     if (saleForm) {
         saleForm.addEventListener("submit", function () {
-            // Удаляем предыдущие скрытые поля, если форма отправляется повторно
-            document.querySelectorAll('input[name="products"].dynamic-product').forEach(e => e.remove());
+            document.querySelectorAll('input.dynamic-product').forEach(e => e.remove());
 
-            // Собираем ID только ВИДИМЫХ (не удаленных) товаров
             document.querySelectorAll(".sale-item-row").forEach(function (row) {
                 if (row.style.display !== "none") {
                     const productInput = row.querySelector("input[name$='-product']");
                     if (productInput && productInput.value) {
-                        // Создаем скрытое поле, чтобы бэкенд взял товары отсюда, а не из URL
                         const hiddenInput = document.createElement("input");
                         hiddenInput.type = "hidden";
-                        hiddenInput.name = "products"; // Именно это имя ищет ваш request.POST.getlist("products")
+                        hiddenInput.name = "products";
                         hiddenInput.value = productInput.value;
                         hiddenInput.classList.add("dynamic-product");
                         saleForm.appendChild(hiddenInput);
                     }
                 }
             });
+
+            updateAddProductsLink();
         });
     }
-    /*
-     * ПРИВЯЗКА КЛИЕНТА К КНОПКЕ "ДОБАВИТЬ ТОВАРЫ"
-     */
-    const customerSelect = document.querySelector('select[name="customer"]');
-    const addProductsBtn = document.querySelector('a.btn-primary[href*="target=sale"]');
 
-    if (customerSelect && addProductsBtn) {
-        customerSelect.addEventListener("change", function () {
-            // Берем текущую ссылку с кнопки
-            let url = new URL(addProductsBtn.href, window.location.origin);
-
-            // Если клиент выбран - добавляем его в параметры URL, если нет - удаляем
-            if (this.value) {
-                url.searchParams.set("customer", this.value);
-            } else {
-                url.searchParams.delete("customer");
-            }
-
-            // Сохраняем обновленную ссылку обратно в кнопку
-            addProductsBtn.href = url.toString();
-        });
+    if (customerField) {
+        customerField.addEventListener("change", updateAddProductsLink);
     }
-    /* Первичный расчет при загрузке */
+
+    /* Первичный расчет и формирование ссылки при загрузке */
     updateTotal();
+    updateAddProductsLink();
 });
 </script>
 
