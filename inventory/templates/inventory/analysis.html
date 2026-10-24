@@ -1,0 +1,130 @@
+{% extends 'inventory/base.html' %}
+{% block title %}Анализ продаж{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Анализ по клиентам</h2>
+
+    <div class="accordion shadow-sm" id="clientsAccordion">
+        <!-- Панель фильтров и сортировки -->
+        <form method="GET" class="card shadow-sm p-3 mb-4 bg-white border-0">
+            <div class="row g-3 align-items-end">
+
+                <!-- Клиент -->
+                <div class="col-md-3">
+                    <label for="client_id" class="form-label small text-muted mb-1">Клиент</label>
+                    <select name="client_id" id="client_id" class="form-select">
+                        <option value="">Все клиенты</option>
+                        {% for client in all_clients %}
+                            <option value="{{ client.id }}" {% if selected_client == client.id %}selected{% endif %}>
+                                {% if client.company_name %}{{ client.company_name }}{% else %}{{ client.first_name }} {{ client.last_name }}{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Период С -->
+                <div class="col-md-2">
+                    <label for="start_date" class="form-label small text-muted mb-1">Период с</label>
+                    <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date }}">
+                </div>
+
+                <!-- Период ПО -->
+                <div class="col-md-2">
+                    <label for="end_date" class="form-label small text-muted mb-1">Период по</label>
+                    <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date }}">
+                </div>
+
+                <!-- Сортировка -->
+                <div class="col-md-3">
+                    <label for="sort_by" class="form-label small text-muted mb-1">Сортировка</label>
+                    <select name="sort_by" id="sort_by" class="form-select">
+                        <option value="profit_desc" {% if sort_by == 'profit_desc' %}selected{% endif %}>По прибыли (убывание)</option>
+                        <option value="revenue_desc" {% if sort_by == 'revenue_desc' %}selected{% endif %}>По выручке (убывание)</option>
+                        <option value="count_desc" {% if sort_by == 'count_desc' %}selected{% endif %}>По кол-ву продаж</option>
+                        <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>По имени (А-Я)</option>
+                    </select>
+                </div>
+
+                <!-- Кнопки -->
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100">Применить</button>
+                    <a href="{% url 'analysis' %}" class="btn btn-outline-secondary">Сброс</a>
+                </div>
+
+            </div>
+        </form>
+        {% for data in analysis_data %}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                    <button class="accordion-button collapsed d-flex justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}">
+                        <div class="row w-100 me-3 align-items-center">
+                            <div class="col-3 fw-bold text-primary">
+                                {% if data.customer.company_name %}{{ data.customer.company_name }}{% else %}{{ data.customer.first_name }} {{ data.customer.last_name }}{% endif %}
+                            </div>
+                            <div class="col-2 text-muted small">
+                                Последняя: {{ data.latest_date|date:"d.m.Y" }}
+                            </div>
+                            <div class="col-2">
+                                {{ data.sales_count }} покупок
+                            </div>
+                            <div class="col-2 fw-bold">
+                                {{ data.total_revenue|floatformat:"0" }} ₽
+                            </div>
+                            <div class="col-3 text-end fw-bold text-success">
+                                Прибыль: {{ data.total_profit|floatformat:"0" }} ₽
+                            </div>
+                        </div>
+                    </button>
+                </h2>
+
+                <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#clientsAccordion">
+                    <div class="accordion-body bg-light">
+                        {% for sale in data.sales_list %}
+                            <div class="card mb-3 border-0 shadow-sm">
+                                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                                    <a href="{% url 'sale_detail' sale.pk %}" class="text-decoration-none fw-bold">Продажа №{{ sale.number }}</a>
+                                    <span class="text-muted small">{{ sale.date|date:"d.m.Y H:i" }}</span>
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm table-borderless mb-0 align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="ps-3">Товар</th>
+                                                <th>Кол-во</th>
+                                                <th>Цена</th>
+                                                <th>Прибыль</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in sale.items.all %}
+                                                <tr>
+                                                    <td class="ps-3">{{ item.product.name }}</td>
+                                                    <td>{{ item.quantity }}</td>
+                                                    <td>{{ item.sale_price|floatformat:"0" }} ₽</td>
+                                                    <td class="text-success">{{ item.profit|floatformat:"0" }} ₽</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                        <tfoot class="border-top">
+                                            <tr>
+                                                <td colspan="4" class="text-end pe-3 py-2">
+                                                    <small class="text-muted me-2">Доставка: -{{ sale.delivery_expense|floatformat:"0"|default:"0" }} ₽</small>
+                                                    <strong class="me-3">Чек: {{ sale.calculated_total|floatformat:"0" }} ₽</strong>
+                                                    <strong class="text-success">Прибыль: {{ sale.net_profit|floatformat:"0" }} ₽</strong>
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="alert alert-info">Нет проведенных продаж с указанными клиентами.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

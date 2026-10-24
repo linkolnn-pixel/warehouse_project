@@ -15,7 +15,7 @@
 
                 <p>
                 <strong>Дата:</strong><br>
-                {{ sale.date }}
+                {{ sale.date|date:"d.m.Y H:i" }}
                 </p>
 
                 <p>
@@ -39,13 +39,13 @@
                 <div class="col-md-6 text-end">
                     {% if sale.posted %}
                     <div class="alert alert-success d-inline-block py-2 mb-2 px-3">
-                        ✅ Продажа проведена
+                        Продажа проведена
                     </div>
                     <br>
                     <form action="{% url 'sale_unpost' sale.pk %}" method="post" class="d-inline">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-warning">
-                            ⏪ Отменить проведение
+                            Отменить проведение
                         </button>
                     </form>
                     {% else %}
@@ -54,13 +54,13 @@
                         </div>
 
                         <a href="{% url 'sale_edit' sale.pk %}" class="btn btn-primary me-2">
-                            ✏️ Редактировать
+                            Редактировать
                         </a>
 
                         <form method="post" action="{% url 'sale_post' sale.pk %}" class="d-inline">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-success">
-                                ✅ Провести продажу
+                                Провести продажу
                             </button>
                         </form>
                     {% endif %}
@@ -80,6 +80,7 @@
                     <th width="120">Количество</th>
                     <th width="150">Цена</th>
                     <th width="150">Сумма</th>
+                    <th width="150">Прибыль</th>
                 </tr>
             </thead>
 
@@ -94,6 +95,7 @@
                         <td>{{ item.quantity }}</td>
                         <td>{{ item.sale_price|floatformat:"0" }} ₽</td>
                         <td>{{ item.total|floatformat:"0" }} ₽</td>
+                        <td class="text-success fw-bold">{{ item.profit|floatformat:"0" }} ₽</td>
                     </tr>
                 {% empty %}
                     <tr>
@@ -102,19 +104,36 @@
                 {% endfor %}
             </tbody>
 
-            <tfoot class="table-light">
-                <tr>
-                    <td colspan="3" class="text-end align-middle">
-                        <span class="fw-bold">Расходы на доставку:</span>
+            <tfoot style="border-top: 2px solid #dee2e6; border-bottom-style: hidden;">
+                <!-- Строка: Выручка (под колонкой Сумма) -->
+                <tr class="bg-light">
+                    <td colspan="3" class="text-end align-middle text-secondary border-bottom-0 pt-3">
+                        Итого оплачено:
                     </td>
-                    <td class="fw-bold text-nowrap">
-                        {{ sale.delivery_expense|floatformat:"0" }} ₽
+                    <td class="fw-bold fs-6 align-middle border-bottom-0 pt-3">
+                        {{ sale.calculated_total|floatformat:"0"|default:"0" }} ₽
+                    </td>
+                    <td class="border-bottom-0 pt-3"></td>
+                </tr>
+
+                <!-- Строка: Доставка (под колонкой Прибыль) -->
+                <tr class="bg-light">
+                    <td colspan="3" class="text-end align-middle text-secondary border-bottom-0 pb-3">
+                        Расходы на доставку:
+                    </td>
+                    <td class="border-bottom-0 pb-3"></td>
+                    <td class="text-danger align-middle border-bottom-0 pb-3">
+                        - {{ sale.delivery_expense|floatformat:"0"|default:"0" }} ₽
                     </td>
                 </tr>
-                <tr class="table-secondary">
-                    <td colspan="3" class="text-end fw-bold fs-5 align-middle">Итого:</td>
-                    <td class="fw-bold fs-5 text-nowrap">
-                        {{ sale.calculated_total|floatformat:"0"|default:"0" }} ₽
+
+                <!-- Строка: Финальная прибыль (на всю ширину, акцент на Прибыль) -->
+                <tr class="table-success border-top border-success" style="border-bottom: hidden;">
+                    <td colspan="4" class="text-end fw-bold fs-5 align-middle text-success py-3 border-0">
+                        Чистая прибыль чека:
+                    </td>
+                    <td class="fw-bold fs-5 text-nowrap text-success py-3 border-0">
+                        {{ sale.net_profit|floatformat:"0"|default:"0" }} ₽
                     </td>
                 </tr>
             </tfoot>
@@ -129,17 +148,17 @@
 
                     <a href="{% url 'sale_create' %}"
                     class="btn btn-primary">
-                    ➕ Новая продажа
+                    Новая продажа
                     </a>
 
                     <a href="{% url 'stock_management' %}"
                     class="btn btn-secondary">
-                    🏬 Склад
+                    Склад
                     </a>
 
                     <a href="{% url 'products_catalog' %}"
                     class="btn btn-outline-secondary">
-                    📦 Каталог
+                    Каталог
                     </a>
 
                 </div>
