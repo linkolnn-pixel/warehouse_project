@@ -292,6 +292,7 @@ class Receipt(models.Model):
     supplier = models.ForeignKey(Counterparty, on_delete=models.PROTECT, limit_choices_to={"type": "supplier"})
     comment = models.TextField(blank=True)
     posted = models.BooleanField(default=False)
+    delivery_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Стоимость доставки")
 
     def save(self, *args, **kwargs):
         if not self.number:
@@ -300,6 +301,12 @@ class Receipt(models.Model):
 
     def __str__(self):
         return f"Приход №{self.number}"
+
+    @property
+    def calculated_total(self):
+        # Сумма всех товаров по закупочной цене + стоимость логистики
+        items_total = sum(item.total_cost for item in self.items.all())
+        return items_total + self.delivery_cost
 
 
 class ReceiptItem(models.Model):
@@ -331,6 +338,9 @@ class Sale(models.Model):
     )
     comment = models.TextField(blank=True)
     posted = models.BooleanField(default=False)
+    delivery_expense = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, verbose_name="Расходы на доставку"
+    )
 
     def save(self, *args, **kwargs):
         if not self.number:
@@ -339,6 +349,17 @@ class Sale(models.Model):
 
     def __str__(self):
         return f"Продажа №{self.number}"
+
+    @property
+    def net_profit(self):
+        # Маржа товаров минус расходы на доставку
+        items_profit = sum((item.sale_price - item.cost_price) * item.quantity for item in self.items.all())
+        return items_profit - self.delivery_expense
+
+    @property
+    def calculated_total(self):
+        # Для продажи мы просто суммируем стоимость товаров (клиент платит только за них)
+        return sum(item.total for item in self.items.all())
 
 
 class SaleItem(models.Model):

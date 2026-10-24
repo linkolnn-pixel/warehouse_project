@@ -130,9 +130,9 @@
                         <!-- ОСТАТОК -->
                         <td class="text-center align-middle">
                             <div class="balance-field fw-bold text-primary">
-                                {{ f.initial.balance|default:"0" }}
+                                {{ f.initial.balance|default:"0"|floatformat:"0" }}
                             </div>
-                            <input type="hidden" name="{{ f.prefix }}-balance" value="{{ f.initial.balance|default:'0' }}">
+                            <input type="hidden" name="{{ f.prefix }}-balance" value="{{ f.initial.balance|default:'0'|floatformat:'0' }}">
                         </td>
 
                         <!-- КОЛИЧЕСТВО -->
@@ -180,6 +180,20 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+
+                <tfoot class="table-light">
+                    <!-- Строка с полем расходов на доставку -->
+                    <tr>
+                        <td colspan="4" class="text-end align-middle">
+                            <span class="fw-bold">Расходы на доставку:</span><br>
+                        </td>
+                        <td style="width: 150px;">
+                            {{ form.delivery_expense }}
+                        </td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+
             </table>
 
             <!-- ИТОГ -->
@@ -394,6 +408,15 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
+        const deliveryInput = document.getElementById("id_delivery_expense");
+        if (deliveryInput) {
+            // Берем как целое число
+            const deliveryVal = parseInt(deliveryInput.value || "0", 10);
+            if (!isNaN(deliveryVal)) {
+                total += deliveryVal;
+            }
+        }
+
         document.getElementById("total-sale").textContent = total.toFixed(2);
     }
 
@@ -415,8 +438,14 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     document.querySelectorAll('input[name$="-sale_price"]').forEach(function (input) {
+        input.setAttribute("step", "1");
         input.addEventListener("input", updateTotal);
     });
+
+    const deliveryField = document.querySelector('input[name="delivery_expense"]');
+    if (deliveryField) {
+        deliveryField.addEventListener("input", updateTotal);
+    }
 
     /* ==========================================
        УДАЛЕНИЕ СТРОКИ

@@ -158,7 +158,7 @@ class ExcelUploadForm(forms.Form):
 class ReceiptForm(forms.ModelForm):
     class Meta:
         model = Receipt
-        fields = ["date", "warehouse", "supplier", "comment"]
+        fields = ["date", "warehouse", "supplier", "comment", "delivery_cost"]
         widgets = {
             "date": forms.DateTimeInput(
                 format="%Y-%m-%dT%H:%M", attrs={"type": "datetime-local", "class": "form-control"}
@@ -166,6 +166,7 @@ class ReceiptForm(forms.ModelForm):
             "warehouse": forms.Select(attrs={"class": "form-select"}),
             "supplier": forms.Select(attrs={"class": "form-select"}),
             "comment": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+            "delivery_cost": forms.NumberInput(attrs={"class": "form-control text-end", "step": "0.01", "min": "0"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -233,7 +234,7 @@ class ReceiptItemForm(forms.ModelForm):
 class SaleForm(forms.ModelForm):
     class Meta:
         model = Sale
-        fields = ["date", "warehouse", "customer", "comment"]
+        fields = ["date", "warehouse", "customer", "comment", "delivery_expense"]
         widgets = {
             "date": forms.DateTimeInput(
                 format="%Y-%m-%dT%H:%M", attrs={"type": "datetime-local", "class": "form-control"}
@@ -246,6 +247,7 @@ class SaleForm(forms.ModelForm):
                 }
             ),
             "comment": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+            "delivery_expense": forms.NumberInput(attrs={"class": "form-control text-end", "step": "0.01", "min": "0"}),
         }
 
     def __init__(self, *args, **kwargs):

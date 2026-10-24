@@ -8,7 +8,7 @@
 {% block content %}
 
 <div class="container mt-4">
-    <h2 class="mb-4">🧾 Продажа №{{ sale.number }}</h2>
+    <h2 class="mb-4">Продажа №{{ sale.number }}</h2>
         <div class="card shadow p-4">
             <div class="row">
                 <div class="col-md-6">
@@ -21,8 +21,10 @@
                 <p>
                 <strong>Клиент:</strong><br>
                 {% if sale.customer %}
+                    <a href="{% url 'customer_detail' sale.customer.pk %}" class="text-decoration-none">
                     {{ sale.customer.first_name }}
                     {{ sale.customer.last_name }}
+                    </a>
                 {% else %}
                 —
                 {% endif %}
@@ -72,7 +74,6 @@
 
 
         <table class="table table-bordered table-hover mt-3">
-
             <thead class="table-light">
                 <tr>
                     <th>Товар</th>
@@ -85,23 +86,39 @@
             <tbody>
                 {% for item in sale.items.all %}
                     <tr>
-                        <td>{{ item.product.name }}</td>
+                        <td>
+                            <a href="{% url 'product_detail' item.product.pk %}" class="text-decoration-none fw-bold text-primary">
+                                {{ item.product.name }}
+                            </a>
+                        </td>
                         <td>{{ item.quantity }}</td>
-                        <td>{{ item.sale_price }} ₽</td>
-                        <td>{{ item.total }} ₽</td>
+                        <td>{{ item.sale_price|floatformat:"0" }} ₽</td>
+                        <td>{{ item.total|floatformat:"0" }} ₽</td>
                     </tr>
-                    {% empty %}
+                {% empty %}
                     <tr>
                         <td colspan="4" class="text-center">Товары отсутствуют</td>
                     </tr>
                 {% endfor %}
             </tbody>
 
+            <tfoot class="table-light">
+                <tr>
+                    <td colspan="3" class="text-end align-middle">
+                        <span class="fw-bold">Расходы на доставку:</span>
+                    </td>
+                    <td class="fw-bold text-nowrap">
+                        {{ sale.delivery_expense|floatformat:"0" }} ₽
+                    </td>
+                </tr>
+                <tr class="table-secondary">
+                    <td colspan="3" class="text-end fw-bold fs-5 align-middle">Итого:</td>
+                    <td class="fw-bold fs-5 text-nowrap">
+                        {{ sale.calculated_total|floatformat:"0"|default:"0" }} ₽
+                    </td>
+                </tr>
+            </tfoot>
         </table>
-
-        <div class="text-end mb-3">
-            <h5 class="fw-bold">Итого: {{ sale.calculated_total|default:"0.00" }} ₽</h5>
-        </div>
 
         <hr>
 

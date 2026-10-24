@@ -267,6 +267,10 @@ def process_receipt_post(receipt: Receipt):
     transactions = []
     products_to_update = []
 
+    # 5.5 Считаем общую стоимость всех товаров для распределения доставки
+    total_receipt_sum = sum(item.quantity * item.cost_price for item in items)
+    delivery_cost = receipt.delivery_cost or Decimal("0")
+
     # 6. Формируем движения.
     for item in items:
         product = locked_products[item.product_id]
@@ -276,11 +280,17 @@ def process_receipt_post(receipt: Receipt):
             product=product, warehouse=receipt.warehouse, defaults={"quantity": Decimal("0")}
         )
 
+        # Распределяем доставку пропорционально стоимости позиции
+        if total_receipt_sum > 0:
+            delivery_share = ((item.quantity * item.cost_price) / total_receipt_sum) * delivery_cost
+        else:
+            delivery_share = Decimal("0")
+
         # 2. Расчет скользящей средней (Moving Average)
         current_qty = balance.quantity
         new_qty = current_qty + item.quantity
 
-        total_value = (current_qty * product.average_cost) + (item.quantity * item.cost_price)
+        total_value = (current_qty * product.average_cost) + (item.quantity * item.cost_price) + delivery_share
         product.average_cost = total_value / new_qty if new_qty > 0 else Decimal("0")
 
         # Обновляем также последние закупочные/продажные цены
@@ -387,7 +397,7 @@ def process_sale_post(sale: Sale):
         current_stock = balance.quantity if balance else Decimal("0")
 
         if quantity_to_sell > current_stock:
-            raise InsufficientStockError(product.name, balance, quantity_to_sell)
+            raise InsufficientStockError(product.name, current_stock, quantity_to_sell)
 
         assert balance is not None
 
