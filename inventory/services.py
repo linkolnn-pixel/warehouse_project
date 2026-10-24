@@ -15,6 +15,8 @@ from .models import (
     Product,
     Receipt,
     Sale,
+    SaleItem,
+    StockBalance,
     Transaction,
 )
 
@@ -265,9 +267,40 @@ def process_receipt_post(receipt: Receipt):
     transactions = []
     products_to_update = []
 
+    # 5.5 Считаем общую стоимость всех товаров для распределения доставки
+    total_receipt_sum = sum(item.quantity * item.cost_price for item in items)
+    delivery_cost = receipt.delivery_cost or Decimal("0")
+
     # 6. Формируем движения.
     for item in items:
         product = locked_products[item.product_id]
+
+        # 1. Получаем и блокируем остаток
+        balance, _ = StockBalance.objects.select_for_update().get_or_create(
+            product=product, warehouse=receipt.warehouse, defaults={"quantity": Decimal("0")}
+        )
+
+        # Распределяем доставку пропорционально стоимости позиции
+        if total_receipt_sum > 0:
+            delivery_share = ((item.quantity * item.cost_price) / total_receipt_sum) * delivery_cost
+        else:
+            delivery_share = Decimal("0")
+
+        # 2. Расчет скользящей средней (Moving Average)
+        current_qty = balance.quantity
+        new_qty = current_qty + item.quantity
+
+        total_value = (current_qty * product.average_cost) + (item.quantity * item.cost_price) + delivery_share
+        product.average_cost = total_value / new_qty if new_qty > 0 else Decimal("0")
+
+        # Обновляем также последние закупочные/продажные цены
+        product.cost_price = item.cost_price
+        product.sale_price = item.sale_price
+        products_to_update.append(product)
+
+        # 3. Обновляем остаток
+        balance.quantity = new_qty
+        balance.save(update_fields=["quantity"])
 
         transactions.append(
             Transaction(
@@ -282,19 +315,13 @@ def process_receipt_post(receipt: Receipt):
             )
         )
 
-        # Обновляем текущие цены товара.
-        product.cost_price = item.cost_price
-        product.sale_price = item.sale_price
-
-        products_to_update.append(product)
-
     # 7. Массово создаем движения.
     if transactions:
         Transaction.objects.bulk_create(transactions)
 
     # 8. Массово обновляем цены.
     if products_to_update:
-        Product.objects.bulk_update(products_to_update, ["cost_price", "sale_price"])
+        Product.objects.bulk_update(products_to_update, ["cost_price", "sale_price", "average_cost"])
 
     # 9. Завершаем проведение.
     receipt.posted = True
@@ -310,8 +337,17 @@ def process_receipt_unpost(receipt: Receipt):
     """
     receipt = Receipt.objects.select_for_update().get(pk=receipt.pk)
 
-    if not receipt.posted:
-        raise ValueError(f"Приход №{receipt.number} не проведен.")
+    # Вычитаем остатки из StockBalance
+    for item in receipt.items.all():
+        balance = (
+            StockBalance.objects.select_for_update()
+            .filter(product_id=item.product_id, warehouse_id=receipt.warehouse_id)
+            .first()
+        )
+
+        if balance:
+            balance.quantity -= item.quantity
+            balance.save(update_fields=["quantity"])
 
     Transaction.objects.filter(receipt=receipt).delete()
 
@@ -354,29 +390,49 @@ def process_sale_post(sale: Sale):
     for product_id in sorted(quantities):
         product = Product.objects.select_for_update().get(pk=product_id)
 
-        quantity = quantities[product_id]
+        quantity_to_sell = quantities[product_id]
 
-        balance = product.get_balance(sale.warehouse)
+        balance = StockBalance.objects.select_for_update().filter(product=product, warehouse=sale.warehouse).first()
 
-        if quantity > balance:
-            raise InsufficientStockError(product.name, balance, quantity)
+        current_stock = balance.quantity if balance else Decimal("0")
+
+        if quantity_to_sell > current_stock:
+            raise InsufficientStockError(product.name, current_stock, quantity_to_sell)
+
+        assert balance is not None
+
+        # Фактическое списание со склада
+        balance.quantity -= quantity_to_sell
+        balance.save(update_fields=["quantity"])
 
         locked_products[product_id] = product
 
     # 5. Создаем OUT-транзакции.
-    transactions = [
-        Transaction(
-            date=sale.date,
-            type="OUT",
-            product=locked_products[item.product_id],
-            warehouse=sale.warehouse,
-            counterparty=sale.customer,
-            quantity=item.quantity,
-            sale=sale,
-            comment=f"Продажа №{sale.number}",
+    transactions = []
+    items_to_update = []
+
+    for item in items:
+        locked_product = locked_products[item.product_id]
+
+        # ФИКСИРУЕМ ПРИБЫЛЬ: Копируем среднюю себестоимость склада в документ
+        item.cost_price = locked_product.average_cost
+        items_to_update.append(item)
+
+        transactions.append(
+            Transaction(
+                date=sale.date,
+                type="OUT",
+                product=locked_product,
+                warehouse=sale.warehouse,
+                counterparty=sale.customer,
+                quantity=item.quantity,
+                sale=sale,
+                comment=f"Продажа №{sale.number}",
+            )
         )
-        for item in items
-    ]
+        # Массово сохраняем обновленные цены в строках документа
+    if items_to_update:
+        SaleItem.objects.bulk_update(items_to_update, ["cost_price"])
 
     if transactions:
         Transaction.objects.bulk_create(transactions)
@@ -397,6 +453,14 @@ def process_sale_unpost(sale: Sale):
 
     if not sale.posted:
         raise ValueError(f"Продажа №{sale.number} не проведена.")
+
+    # Возвращаем товары на баланс склада
+    for item in sale.items.all():
+        balance, _ = StockBalance.objects.select_for_update().get_or_create(
+            product_id=item.product_id, warehouse_id=sale.warehouse_id, defaults={"quantity": Decimal("0")}
+        )
+        balance.quantity += item.quantity
+        balance.save(update_fields=["quantity"])
 
     Transaction.objects.filter(sale=sale).delete()
 

@@ -116,7 +116,78 @@
             </div>
         </div>
     </div>
+    <!-- РЯД: Расходы на доставку (Логистика) -->
+    <h4 class="mb-3 mt-4">Расходы на логистику</h4>
+    <div class="row mb-4">
+        <!-- Блок за 30 дней -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white border-primary">
+                    <h6 class="mb-0 text-center text-primary">За 30 дней</h6>
+                </div>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted">От поставщиков (Приход)</span>
+                        <span class="fw-bold">{{ delivery_in_1m|floatformat:"0"|default:"0" }} ₽</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Клиентам (Продажа)</span>
+                        <span class="fw-bold">{{ delivery_out_1m|floatformat:"0"|default:"0" }} ₽</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-light">
+                        <strong>Всего за период:</strong>
+                        <strong class="text-danger">{{ total_delivery_1m|floatformat:"0"|default:"0" }} ₽</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
 
+        <!-- Блок за полгода -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white border-warning">
+                    <h6 class="mb-0 text-center text-warning">За полгода</h6>
+                </div>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted">От поставщиков (Приход)</span>
+                        <span class="fw-bold">{{ delivery_in_6m|floatformat:"0"|default:"0" }} ₽</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Клиентам (Продажа)</span>
+                        <span class="fw-bold">{{ delivery_out_6m|floatformat:"0"|default:"0" }} ₽</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-light">
+                        <strong>Всего за период:</strong>
+                        <strong class="text-danger">{{ total_delivery_6m|floatformat:"0"|default:"0" }} ₽</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Блок за год -->
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white border-danger">
+                    <h6 class="mb-0 text-center text-danger">За год</h6>
+                </div>
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted">От поставщиков (Приход)</span>
+                        <span class="fw-bold">{{ delivery_in_1y|floatformat:"0"|default:"0" }} ₽</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Клиентам (Продажа)</span>
+                        <span class="fw-bold">{{ delivery_out_1y|floatformat:"0"|default:"0" }} ₽</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center bg-light">
+                        <strong>Всего за период:</strong>
+                        <strong class="text-danger">{{ total_delivery_1y|floatformat:"0"|default:"0" }} ₽</strong>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
     <!-- НИЖНИЙ РЯД: Последние операции (на всю ширину) -->
     <div class="row">
         <div class="col-12">

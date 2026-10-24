@@ -5,7 +5,8 @@ from django.db.models import DecimalField, F, Sum
 from django.shortcuts import render
 from django.utils import timezone
 
-from inventory.models import Product, Sale, SaleItem, Transaction, Warehouse
+# ВАЖНО: Добавлена модель Receipt в импорт
+from inventory.models import Product, Receipt, Sale, SaleItem, Transaction, Warehouse
 
 
 def dashboard_view(request):
@@ -19,7 +20,7 @@ def dashboard_view(request):
     out_of_stock_products = [p for p in products if (p.balance or 0) <= 0]
     out_of_stock_count = len(out_of_stock_products)
 
-    # --- 2. ВЫРУЧКА И ТОП ТОВАРОВ ЗА ПЕРИОДЫ ---
+    # --- 2. ВЫРУЧКА, ТОП ТОВАРОВ И ЛОГИСТИКА ЗА ПЕРИОДЫ ---
     now = timezone.now()
 
     def get_stats_since(days):
@@ -34,7 +35,7 @@ def dashboard_view(request):
         )
         revenue = float(revenue_agg["total"] or 0)
 
-        # 2.2 Определяем топ-3 товара по количеству проданных единиц
+        # 2.2 Определяем топ-3 товара
         top_products = (
             Sale.objects.filter(posted=True, date__gte=start_date)
             .values(product_name=F("items__product__name"))
@@ -43,12 +44,20 @@ def dashboard_view(request):
             .order_by("-total_sold")[:3]
         )
 
-        return revenue, list(top_products)
+        # 2.3 Считаем логистику
+        del_out_agg = Sale.objects.filter(posted=True, date__gte=start_date).aggregate(total=Sum("delivery_expense"))
+        del_in_agg = Receipt.objects.filter(posted=True, date__gte=start_date).aggregate(total=Sum("delivery_cost"))
+
+        delivery_out = float(del_out_agg["total"] or 0)
+        delivery_in = float(del_in_agg["total"] or 0)
+        total_delivery = delivery_out + delivery_in
+
+        return revenue, list(top_products), delivery_in, delivery_out, total_delivery
 
     # Получаем данные за 30, 180 и 365 дней
-    revenue_1m, top_1m = get_stats_since(30)
-    revenue_6m, top_6m = get_stats_since(180)
-    revenue_1y, top_1y = get_stats_since(365)
+    revenue_1m, top_1m, delivery_in_1m, delivery_out_1m, total_delivery_1m = get_stats_since(30)
+    revenue_6m, top_6m, delivery_in_6m, delivery_out_6m, total_delivery_6m = get_stats_since(180)
+    revenue_1y, top_1y, delivery_in_1y, delivery_out_1y, total_delivery_1y = get_stats_since(365)
 
     # --- 3. ПОСЛЕДНИЕ СОБЫТИЯ ---
     recent_transactions = Transaction.objects.select_related("product", "warehouse").order_by("-date")[:5]
@@ -65,6 +74,15 @@ def dashboard_view(request):
         "top_1m": top_1m,
         "top_6m": top_6m,
         "top_1y": top_1y,
+        "delivery_in_1m": delivery_in_1m,
+        "delivery_out_1m": delivery_out_1m,
+        "total_delivery_1m": total_delivery_1m,
+        "delivery_in_6m": delivery_in_6m,
+        "delivery_out_6m": delivery_out_6m,
+        "total_delivery_6m": total_delivery_6m,
+        "delivery_in_1y": delivery_in_1y,
+        "delivery_out_1y": delivery_out_1y,
+        "total_delivery_1y": total_delivery_1y,
     }
 
     return render(request, "inventory/dashboard.html", context)

@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+from django.core.paginator import Paginator
 from django.shortcuts import render
 
 from inventory.decorators import test_mode_login_required
@@ -12,7 +13,7 @@ def stock_management_view(request):
     categories = Category.objects.all()
 
     warehouse_id = warehouse.id if warehouse else None
-    products = Product.objects.with_balances(warehouse_id).select_related("category")
+    products = Product.objects.with_balances(warehouse_id).select_related("category").order_by("name")
 
     total_quantity = 0
     total_cost = 0
@@ -27,12 +28,17 @@ def stock_management_view(request):
 
     total_profit = total_retail - total_cost
 
+    paginator = Paginator(products, 100)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
     return render(
         request,
         "inventory/stock_page.html",
         {
             "page_title": "Управление остатками",
-            "products": products,
+            "products": page_obj,
+            "page_obj": page_obj,
             "warehouse": warehouse,
             "categories": categories,
             "total_quantity": total_quantity,

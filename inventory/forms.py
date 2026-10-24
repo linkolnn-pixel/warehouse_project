@@ -1,5 +1,6 @@
 from django import forms
 from django.forms import inlineformset_factory
+from django.utils import timezone
 from django_select2.forms import ModelSelect2Widget
 
 from .models import (
@@ -157,11 +158,15 @@ class ExcelUploadForm(forms.Form):
 class ReceiptForm(forms.ModelForm):
     class Meta:
         model = Receipt
-        fields = ["warehouse", "supplier", "comment"]
+        fields = ["date", "warehouse", "supplier", "comment", "delivery_cost"]
         widgets = {
+            "date": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M", attrs={"type": "datetime-local", "class": "form-control"}
+            ),
             "warehouse": forms.Select(attrs={"class": "form-select"}),
             "supplier": forms.Select(attrs={"class": "form-select"}),
             "comment": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+            "delivery_cost": forms.NumberInput(attrs={"class": "form-control text-end", "step": "0.01", "min": "0"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -171,6 +176,14 @@ class ReceiptForm(forms.ModelForm):
             first_warehouse = Warehouse.objects.first()
             if first_warehouse:
                 self.fields["warehouse"].initial = first_warehouse
+
+        # Установка даты
+        if not self.instance.pk and not self.initial.get("date"):
+            # Новый документ: ставим текущее время
+            self.initial["date"] = timezone.localtime(timezone.now()).strftime("%Y-%m-%dT%H:%M")
+        elif self.instance.pk and getattr(self.instance, "date", None):
+            # Редактирование: форматируем дату из БД
+            self.initial["date"] = timezone.localtime(self.instance.date).strftime("%Y-%m-%dT%H:%M")
 
 
 class ReceiptItemForm(forms.ModelForm):
@@ -221,8 +234,11 @@ class ReceiptItemForm(forms.ModelForm):
 class SaleForm(forms.ModelForm):
     class Meta:
         model = Sale
-        fields = ["warehouse", "customer", "comment"]
+        fields = ["date", "warehouse", "customer", "comment", "delivery_expense"]
         widgets = {
+            "date": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M", attrs={"type": "datetime-local", "class": "form-control"}
+            ),
             "warehouse": forms.Select(attrs={"class": "form-select"}),
             "customer": forms.Select(
                 attrs={
@@ -231,6 +247,7 @@ class SaleForm(forms.ModelForm):
                 }
             ),
             "comment": forms.Textarea(attrs={"rows": 3, "class": "form-control"}),
+            "delivery_expense": forms.NumberInput(attrs={"class": "form-control text-end", "step": "0.01", "min": "0"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -238,9 +255,14 @@ class SaleForm(forms.ModelForm):
 
         if not self.instance.pk and not self.initial.get("warehouse"):
             warehouse = Warehouse.objects.first()
-
             if warehouse:
                 self.initial["warehouse"] = warehouse.pk
+
+            # Установка даты
+            if not self.instance.pk and not self.initial.get("date"):
+                self.initial["date"] = timezone.localtime(timezone.now()).strftime("%Y-%m-%dT%H:%M")
+            elif self.instance.pk and getattr(self.instance, "date", None):
+                self.initial["date"] = timezone.localtime(self.instance.date).strftime("%Y-%m-%dT%H:%M")
 
         self.fields["customer"].required = True
         self.fields["customer"].error_messages = {"required": "Пожалуйста, выберите клиента для совершения продажи."}

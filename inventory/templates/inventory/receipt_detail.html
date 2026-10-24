@@ -1,58 +1,141 @@
 {% extends 'inventory/base.html' %}
 
+{% block title %}
+Приход №{{ receipt.number }}
+{% endblock %}
+
 {% block content %}
-  <h2>📥 Приход №{{ receipt.number }}</h2>
 
-  <div class="card p-3 mb-3">
-    <p><b>Склад:</b> {{ receipt.warehouse }}</p>
-    <p><b>Поставщик:</b> {{ receipt.supplier }}</p>
-    <p><b>Дата:</b> {{ receipt.date }}</p>
-  </div>
+<div class="container mt-4">
+    <h2 class="mb-4">📥 Приход №{{ receipt.number }}</h2>
+    <div class="card shadow p-4">
+        <div class="row">
+            <div class="col-md-6">
+                <p>
+                    <strong>Дата:</strong><br>
+                    {{ receipt.date }}
+                </p>
 
-  <table class="table table-bordered">
-    <thead>
-      <tr>
-        <th>Товар</th>
-        <th>Количество</th>
-        <th>Цена</th>
-        <th>Сумма</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for item in receipt.items.all %}
-        <tr>
-          <td>{{ item.product.name }}</td>
-          <td>{{ item.quantity }}</td>
-          <td>{{ item.cost_price }}</td>
-          <td>{{ item.total }}</td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+                <p>
+                    <strong>Поставщик:</strong><br>
+                    {% if receipt.supplier %}
+                        {{ receipt.supplier.company_name }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </p>
 
-  {% if receipt.posted %}
-    <div class="alert alert-success d-inline-block py-2 mb-2 px-3">
-      ✅ Приход проведен
+                <p>
+                    <strong>Склад:</strong><br>
+                    {{ receipt.warehouse }}
+                </p>
+            </div>
+
+            <div class="col-md-6 text-end">
+                {% if receipt.posted %}
+                    <div class="alert alert-success d-inline-block py-2 mb-2 px-3">
+                        ✅ Приход проведен
+                    </div>
+                    <br>
+                    <form action="{% url 'receipt_unpost' receipt.pk %}" method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning">
+                            ⏪ Отменить проведение
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="mb-3">
+                        <span class="badge bg-secondary fs-6">Черновик (не проведено)</span>
+                    </div>
+
+                    <a href="{% url 'receipt_edit' receipt.pk %}" class="btn btn-primary me-2">
+                        ✏️ Редактировать
+                    </a>
+
+                    <form method="post" action="{% url 'receipt_post' receipt.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success">
+                            ✅ Провести приход
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <hr>
+
+        <h4>Товары</h4>
+
+        <table class="table table-bordered table-hover mt-3">
+            <thead class="table-light">
+                <tr>
+                    <th>Товар</th>
+                    <th width="120">Количество</th>
+                    <th width="150">Закупочная цена</th>
+                    <th width="150">Сумма</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in receipt.items.all %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'product_detail' item.product.pk %}" class="text-decoration-none fw-bold text-primary">
+                                {{ item.product.name }}
+                            </a>
+                        </td>
+                        <td>{{ item.quantity }}</td>
+                        <td>{{ item.cost_price|floatformat:"0" }} ₽</td>
+                        <td>{{ item.total_cost|floatformat:"0" }} ₽</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center">Товары отсутствуют</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+
+            <tfoot class="table-light">
+                <tr>
+                    <td colspan="3" class="text-end align-middle">
+                        <span class="fw-bold">Стоимость доставки:</span>
+                    </td>
+                    <td class="fw-bold text-nowrap">
+                        {{ receipt.delivery_cost|floatformat:"0" }} ₽
+                    </td>
+                </tr>
+                <tr class="table-secondary">
+                    <td colspan="3" class="text-end fw-bold fs-5 align-middle">Итого по накладной:</td>
+                    <td class="fw-bold fs-5 text-nowrap">
+                        {{ receipt.calculated_total|floatformat:"0"|default:"0" }} ₽
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <hr>
+
+        <div class="d-flex justify-content-between">
+            <div>
+                <a href="{% url 'receipt_create' %}" class="btn btn-primary">
+                    ➕ Новый приход
+                </a>
+                <a href="{% url 'stock_management' %}" class="btn btn-secondary">
+                    🏬 Склад
+                </a>
+                <a href="{% url 'products_catalog' %}" class="btn btn-outline-secondary">
+                    📦 Каталог
+                </a>
+            </div>
+
+            <div>
+                <a href="javascript:history.back()" class="btn btn-outline-dark">
+                    ← Назад
+                </a>
+            </div>
+        </div>
+
     </div>
-    <br>
-    <form action="{% url 'receipt_unpost' receipt.pk %}" method="post" class="d-inline">
-      {% csrf_token %}
-      <button type="submit" class="btn btn-warning">
-        ⏪ Отменить проведение
-      </button>
-    </form>
-  {% else %}
-    <div class="mb-3">
-        <span class="badge bg-secondary fs-6">Черновик (не проведено)</span>
-    </div>
-        <a href="{% url 'receipt_edit' receipt.pk %}" class="btn btn-primary me-2">
-            ✏️ Редактировать
-        </a>
-    <form method="post" action="{% url 'receipt_post' receipt.pk %}" class="d-inline">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-success">
-            ✅ Провести приход
-        </button>
-    </form>
-  {% endif %}
+</div>
+
 {% endblock %}

@@ -6,9 +6,9 @@
 <div class="container mt-4">
     <!-- Заголовок и кнопка назад -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>👤 Клиент</h2>
-        <a href="{% url 'customers_list' %}" class="btn btn-secondary">
-            ← Назад к клиентам
+        <h2>Клиент</h2>
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> Назад
         </a>
     </div>
 
@@ -43,7 +43,7 @@
     <!-- История продаж -->
     <div class="card shadow">
         <div class="card-body">
-            <h4 class="mb-3">🧾 История продаж</h4>
+            <h4 class="mb-3">История продаж</h4>
 
             {% if sales %}
                 <div class="table-responsive">
@@ -54,12 +54,12 @@
                                 <th>Дата</th>
                                 <th>Товары</th>
                                 <th>Сумма</th>
-                                <th>Действие</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for sale in sales %}
-                                <tr>
+                                <!-- Делаем строку кликабельной -->
+                                <tr onclick="window.location.href='{% url 'sale_detail' sale.pk %}';" style="cursor: pointer;">
                                     <td>№{{ sale.number }}</td>
                                     <td>{{ sale.date|date:"d.m.Y H:i" }}</td>
                                     <td>
@@ -68,13 +68,8 @@
                                             {% if not forloop.last %}<br>{% endif %}
                                         {% endfor %}
                                     </td>
-                                    <td><strong>{{ sale.calculated_total|floatformat:2 }} ₽</strong></td>
-                                    <td>
-                                        <a href="{% url 'sale_detail' sale.pk %}"
-                                           class="btn btn-sm btn-outline-primary">
-                                            Открыть
-                                        </a>
-                                    </td>
+                                    <!-- Используем annotated_total, как мы делали во views.py -->
+                                    <td><strong>{{ sale.annotated_total|floatformat:2 }} ₽</strong></td>
                                 </tr>
                             {% endfor %}
                         </tbody>

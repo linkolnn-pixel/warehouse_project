@@ -21,6 +21,14 @@
             <h5>Основная информация</h5>
             <hr>
 
+            <div class="col-md-4">
+                <label for="{{ form.date.id_for_label }}" class="form-label">Дата и время</label>
+                {{ form.date }}
+                {% if form.date.errors %}
+                    <div class="text-danger small">{{ form.date.errors|striptags }}</div>
+                {% endif %}
+            </div>
+
             <div class="mb-3">
                 <label class="form-label">Склад</label>
                 {{ form.warehouse }}
@@ -102,12 +110,33 @@
                     {% endfor %}
                 </tbody>
 
+                <tfoot class="table-light">
+                    <!-- Строка с полем доставки -->
+                    <tr>
+                        <td colspan="3" class="text-end fw-bold align-middle">
+                            Стоимость доставки:
+                        </td>
+                        <td style="width: 150px;">
+                            {{ form.delivery_cost }}
+                        </td>
+                        <td></td>
+                    </tr>
+                    <!-- Строка Итого -->
+                    <tr class="table-secondary">
+                        <td colspan="3" class="text-end fw-bold fs-5 align-middle">Итого по накладной:</td>
+                        <td class="fw-bold fs-5 text-nowrap">
+                            <span id="grand-total">0.00</span> ₽
+                        </td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+
             </table>
             <button type="submit" class="btn btn-success w-100">
                 {% if is_edit %}
-                    💾 Сохранить изменения
+                    Сохранить изменения
                 {% else %}
-                    ✅ Создать приход
+                    Создать приход
                 {% endif %}
             </button>
         </div>
@@ -140,31 +169,6 @@
 </div>
 
 <script>
-document.getElementById('ajaxSupplierForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    let formData = new FormData(this);
-
-    fetch("{% url 'api_counterparty_create' %}", {
-        method: "POST",
-        body: formData,
-        headers: { "X-Requested-With": "XMLHttpRequest" }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.id) {
-            let select = document.getElementById('id_supplier');
-            let option = new Option(data.name, data.id, true, true);
-            select.add(option);
-            select.dispatchEvent(new Event('change'));
-
-            bootstrap.Modal.getInstance(document.getElementById('addSupplierModal')).hide();
-            this.reset();
-        }
-    });
-});
-</script>
-
-<script>
 document.addEventListener("DOMContentLoaded", function () {
 
     const STORAGE_KEY = "picker_quantities_receipt";
@@ -182,11 +186,54 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /* =====================================================
+       0. ПЕРЕСЧЕТ ИТОГА
+       ===================================================== */
+    function updateTotal() {
+        let total = 0;
+
+        // Считаем сумму товаров по себестоимости
+        document.querySelectorAll(".receipt-item-row").forEach(function (row) {
+            if (row.style.display === "none") return;
+
+            const quantityInput = row.querySelector('input[name$="-quantity"]');
+            const costPriceInput = row.querySelector('input[name$="-cost_price"]');
+
+            if (!quantityInput || !costPriceInput) return;
+
+            const quantity = parseInt(quantityInput.value || 0, 10);
+            const price = parseInt(String(costPriceInput.value || "0").replace(",", "."), 10);
+
+            const sum = (isNaN(quantity) ? 0 : quantity) * (isNaN(price) ? 0 : price);
+            total += sum;
+        });
+
+        // Прибавляем стоимость доставки
+        const deliveryInput = document.getElementById("id_delivery_cost");
+        if (deliveryInput) {
+            const deliveryVal = parseInt(String(deliveryInput.value || "0").replace(",", "."), 10);
+            if (!isNaN(deliveryVal)) {
+                total += deliveryVal;
+            }
+        }
+
+        // Выводим общий итог без копеек
+        const totalElement = document.getElementById("grand-total");
+        if (totalElement) {
+            totalElement.textContent = total.toFixed(0);
+        }
+    }
+
+    /* =====================================================
        1. ПОДСТАНОВКА КОЛИЧЕСТВА ПРИ ЗАГРУЗКЕ
        ===================================================== */
     document.querySelectorAll(".receipt-item-row").forEach(function (row) {
         const productInput = row.querySelector("input[name$='-product']");
         const quantityInput = row.querySelector("input[name$='-quantity']");
+        const costPriceInput = row.querySelector('input[name$="-cost_price"]');
+        const salePriceInput = row.querySelector('input[name$="-sale_price"]');
+
+        if (costPriceInput) costPriceInput.setAttribute("step", "1");
+        if (salePriceInput) salePriceInput.setAttribute("step", "1");
 
         if (!productInput || !quantityInput) return;
 
@@ -252,7 +299,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /* =====================================================
-       3. ОТСЛЕЖИВАНИЕ ВВОДА КОЛИЧЕСТВА
+       3. ОТСЛЕЖИВАНИЕ ВВОДА (КОЛИЧЕСТВО, ЦЕНА, ДОСТАВКА)
        ===================================================== */
     document.querySelectorAll('input[name$="-quantity"]').forEach(function (input) {
         input.addEventListener("input", function () {
@@ -271,8 +318,19 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
             updateAddProductsLink();
+            updateTotal(); // Пересчитываем итог
         });
     });
+
+    document.querySelectorAll('input[name$="-cost_price"]').forEach(function (input) {
+        input.addEventListener("input", updateTotal); // Пересчитываем итог при изменении цены
+    });
+
+    const deliveryCostInput = document.getElementById("id_delivery_cost");
+    if (deliveryCostInput) {
+        deliveryCostInput.setAttribute("step", "1");
+        deliveryCostInput.addEventListener("input", updateTotal); // Пересчитываем итог при изменении доставки
+    }
 
     /* =====================================================
        4. УДАЛЕНИЕ СТРОКИ
@@ -290,11 +348,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
             row.style.display = "none";
             updateAddProductsLink();
+            updateTotal(); // Пересчитываем итог после удаления
         });
     });
 
     /* =====================================================
-       5. СОХРАНЕНИЕ ПРИ ОТПРАВКЕ ФОРМЫ (SUBMIT)
+       5. СОХРАНЕНИЕ ПРИ ОТПРАВКЕ ФОРМЫ
        ===================================================== */
     if (receiptForm) {
         receiptForm.addEventListener("submit", function () {
@@ -338,8 +397,9 @@ document.addEventListener("DOMContentLoaded", function () {
         supplierField.addEventListener("change", updateAddProductsLink);
     }
 
-    /* Инициализация ссылки при загрузке */
+    /* Инициализация ссылок и итогов при загрузке */
     updateAddProductsLink();
+    updateTotal();
 });
 </script>
 

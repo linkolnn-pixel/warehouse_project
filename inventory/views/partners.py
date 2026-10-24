@@ -103,7 +103,7 @@ def customer_detail(request, pk):
     sales = (
         Sale.objects.filter(customer=customer)
         .annotate(
-            calculated_total=Coalesce(
+            annotated_total=Coalesce(
                 Sum(
                     F("items__quantity") * F("items__sale_price"),
                     output_field=DecimalField(),
@@ -114,7 +114,7 @@ def customer_detail(request, pk):
         .order_by("-date", "-id")
     )
 
-    total_sales = sales.aggregate(total=Coalesce(Sum("calculated_total"), Decimal("0.00")))["total"]
+    total_sales = sales.aggregate(total=Coalesce(Sum("annotated_total"), Decimal("0.00")))["total"]
 
     sales_count = sales.count()
 

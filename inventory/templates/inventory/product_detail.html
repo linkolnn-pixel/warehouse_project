@@ -79,8 +79,8 @@
     <!-- Заголовок и кнопки -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <a href="{% url 'products_catalog' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="fas fa-arrow-left"></i> Назад в каталог
+            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Назад
             </a>
             <h2 class="product-title mt-3">{{ product.name|default:"Без названия" }}</h2>
         </div>
@@ -242,7 +242,17 @@
                                 {{ tx.quantity }} {{ product.unit|default:"шт" }}
                             </td>
 
-                            <td class="text-muted">{{ tx.comment|default:"—" }}</td>
+                            <td>
+                                {% if tx.receipt %}
+                                    <a href="{% url 'receipt_detail' tx.receipt.pk %}" class="text-decoration-none fw-bold">
+                                        Приход №{{ tx.receipt.number }}
+                                    </a>
+                                {% elif tx.sale %}
+                                    <a href="{% url 'sale_detail' tx.sale.pk %}" class="text-decoration-none fw-bold text-primary">
+                                        Продажа №{{ tx.sale.number }}
+                                    </a>
+                                {% endif %}
+                            </td>
                         </tr>
                     {% empty %}
                         <tr>
