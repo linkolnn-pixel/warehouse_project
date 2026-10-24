@@ -21,6 +21,14 @@
             <hr>
 
             <div class="mb-3">
+                <div class="col-md-4">
+                    <label for="{{ form.date.id_for_label }}" class="form-label">Дата и время</label>
+                    {{ form.date }}
+                    {% if form.date.errors %}
+                        <div class="text-danger small">{{ form.date.errors|striptags }}</div>
+                    {% endif %}
+                </div>
+
                 <label class="form-label">Склад</label>
                 {{ form.warehouse }}
                 {% for error in form.warehouse.errors %}

@@ -1,11 +1,27 @@
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from mptt.fields import TreeForeignKey
 from mptt.models import MPTTModel
 
 from inventory.managers import ActiveManager, ProductManager
+
+
+class StockBalance(models.Model):
+    product = models.ForeignKey("Product", on_delete=models.CASCADE, related_name="balances")
+    warehouse = models.ForeignKey("Warehouse", on_delete=models.CASCADE)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    class Meta:
+        verbose_name = "Остаток на складе"
+        verbose_name_plural = "Остатки на складах"
+        # Уникальный индекс гарантирует одну запись на пару товар-склад
+        constraints = [models.UniqueConstraint(fields=["product", "warehouse"], name="unique_stock_balance")]
+
+    def __str__(self):
+        return f"{self.product.name} - {self.warehouse.name}: {self.quantity}"
 
 
 class SoftDeleteModel(models.Model):
@@ -196,6 +212,7 @@ class Product(SoftDeleteModel):
         related_name="supplied_products",
         verbose_name="Поставщик",
     )
+    average_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Средняя себестоимость")
     objects = ProductManager()  # type: ignore
 
     class Meta:
@@ -211,15 +228,8 @@ class Product(SoftDeleteModel):
         return self.sale_price - self.cost_price
 
     def get_balance(self, warehouse):
-        from django.db.models import Sum
-
-        in_sum = self.transactions.filter(warehouse=warehouse, type="IN").aggregate(total=Sum("quantity"))["total"] or 0
-
-        out_sum = (
-            self.transactions.filter(warehouse=warehouse, type="OUT").aggregate(total=Sum("quantity"))["total"] or 0
-        )
-
-        return in_sum - out_sum
+        balance = self.balances.filter(warehouse=warehouse).first()
+        return balance.quantity if balance else 0
 
     def get_stock_profit(self, warehouse):
         # Потенциальная прибыль со всего остатка
@@ -250,9 +260,9 @@ class Transaction(models.Model):
         blank=True,
         related_name="transactions",
     )
-    type = models.CharField(max_length=3, choices=TYPE_CHOICES)
+    type = models.CharField(max_length=3, choices=TYPE_CHOICES, db_index=True)
     quantity = models.PositiveIntegerField()
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField(default=timezone.now, db_index=True)
     comment = models.TextField(blank=True)
     receipt = models.ForeignKey("Receipt", null=True, blank=True, on_delete=models.SET_NULL)
 
@@ -277,7 +287,7 @@ class Transaction(models.Model):
 
 class Receipt(models.Model):
     number = models.PositiveIntegerField(unique=True, editable=False)
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField(default=timezone.now)
     warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT)
     supplier = models.ForeignKey(Counterparty, on_delete=models.PROTECT, limit_choices_to={"type": "supplier"})
     comment = models.TextField(blank=True)
@@ -310,7 +320,7 @@ class ReceiptItem(models.Model):
 
 class Sale(models.Model):
     number = models.PositiveIntegerField(unique=True, editable=False)
-    date = models.DateTimeField(auto_now_add=True)
+    date = models.DateTimeField(default=timezone.now)
     warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT)
     customer = models.ForeignKey(
         Counterparty,
@@ -336,7 +346,16 @@ class SaleItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
     sale_price = models.DecimalField(max_digits=10, decimal_places=2)
+    cost_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     @property
     def total(self):
         return self.quantity * self.sale_price
+
+    @property
+    def total_cost(self):
+        return self.quantity * self.cost_price
+
+    @property
+    def profit(self):
+        return self.total - self.total_cost

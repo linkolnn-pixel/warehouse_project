@@ -4,7 +4,6 @@
 Управление остатками
 {% endblock %}
 
-
 {% block content %}
 
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
@@ -78,13 +77,26 @@
 
     <h1>Управление остатками</h1>
 
-
     <table id="stock-table" class="display">
-
         <thead>
             <tr>
-                <th>Наименование</th>
-                <th>Категория</th>
+                <!-- Поле поиска по Наименованию (колонка 0) -->
+                <th>
+                    <span style="display: block; margin-bottom: 5px;">Наименование</span>
+                    <input type="text" class="column-filter form-control form-control-sm" data-column="0" placeholder="Поиск..." style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
+                </th>
+
+                <!-- Выпадающий список Категорий (колонка 1) -->
+                <th>
+                    <span style="display: block; margin-bottom: 5px;">Категория</span>
+                    <select class="column-filter form-select form-select-sm" data-column="1" style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
+                        <option value="">Все</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat.name }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </th>
+
                 <th>Остаток</th>
                 <th>Закупочная цена</th>
                 <th>Цена продажи</th>
@@ -97,7 +109,6 @@
         </thead>
 
         <tbody>
-
         {% for product in products %}
             <tr>
                 <td>{{ product.name }}</td>
@@ -116,12 +127,11 @@
                 <td colspan="10" style="text-align: center;">Товары не найдены</td>
             </tr>
         {% endfor %}
-
         </tbody>
-
     </table>
-        <!-- Сводная статистика склада -->
-    <div class="row mb-4">
+
+    <!-- Сводная статистика склада -->
+    <div class="row mb-4 mt-4">
         <div class="col-md-3 col-sm-6 mb-2">
             <div class="card bg-white shadow-sm h-100 border-0 border-start border-4 border-secondary">
                 <div class="card-body">
@@ -166,13 +176,12 @@
 <script>
 $(document).ready(function () {
 
-    $('#stock-table').DataTable({
-
+    // 1. Инициализируем таблицу и сохраняем её в переменную table
+    var table = $('#stock-table').DataTable({
         pageLength: 50,
-
         language: {
             processing: "Обработка...",
-            search: "Поиск:",
+            search: "Глобальный поиск:",
             lengthMenu: "Показать _MENU_ записей",
             info: "Показаны записи с _START_ по _END_ из _TOTAL_",
             infoEmpty: "Записей нет",
@@ -180,20 +189,37 @@ $(document).ready(function () {
             loadingRecords: "Загрузка...",
             zeroRecords: "Совпадений не найдено",
             emptyTable: "В таблице нет данных",
-
             paginate: {
                 first: "Первая",
                 previous: "Предыдущая",
                 next: "Следующая",
                 last: "Последняя"
-            },
-
-            aria: {
-                sortAscending: ": активировать для сортировки по возрастанию",
-                sortDescending: ": активировать для сортировки по убыванию"
             }
         }
+    });
 
+    // 2. Предотвращаем сортировку колонки при клике на фильтры внутри заголовка
+    $('.column-filter').on('click mousedown mouseup', function (event) {
+        event.stopPropagation();
+    });
+
+    // 3. Фильтрация для выпадающего списка (Категория - data-column="1")
+    $('select.column-filter').on('change', function () {
+        var columnIdx = $(this).data('column');
+        var val = $(this).val();
+
+        if (val) {
+            table.column(columnIdx).search('^' + $.fn.dataTable.util.escapeRegex(val) + '$', true, false).draw();
+        } else {
+            table.column(columnIdx).search('').draw();
+        }
+    });
+
+    // 4. Мгновенный поиск для текстового поля (Наименование - data-column="0")
+    $('input.column-filter').on('input', function () {
+        var columnIdx = $(this).data('column');
+        var val = $(this).val();
+        table.column(columnIdx).search(val).draw();
     });
 
 });

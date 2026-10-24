@@ -27,14 +27,11 @@
                             <th>
                                 Клиент
                             </th>
-                            <th width="120">
-                                Действия
-                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for customer in customers %}
-                        <tr>
+                        <tr onclick="window.location.href='{% url 'customer_detail' customer.pk %}';" style="cursor: pointer;">
                             <td>
                                 <strong>
                                     {% if customer.company_name %}
@@ -44,14 +41,6 @@
                                         {{ customer.first_name }}
                                     {% endif %}
                                 </strong>
-                            </td>
-                            <td>
-                                <a
-                                    href="{% url 'customer_detail' customer.pk %}"
-                                    class="btn btn-sm btn-outline-primary"
-                                >
-                                    👁 Открыть
-                                </a>
                             </td>
                         </tr>
                         {% endfor %}
