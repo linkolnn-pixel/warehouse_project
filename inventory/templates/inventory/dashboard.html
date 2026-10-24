@@ -39,16 +39,20 @@
         </div>
     </div>
 
-    <!-- СРЕДНИЙ РЯД: Выручка и Топ-3 товара за периоды -->
+    <!-- СРЕДНИЙ РЯД: Выручка, Прибыль и Топ-3 товара за периоды -->
     <div class="row mb-4">
         <!-- Блок за месяц -->
         <div class="col-md-4 mb-3">
             <div class="card bg-light border-primary shadow-sm h-100">
                 <div class="card-body">
                     <h5 class="card-title text-center text-primary mb-3">За 30 дней</h5>
-                    <h4 class="card-text text-center mb-4">
+                    <h4 class="card-text text-center mb-2">
                         <small class="text-muted d-block fs-6 mb-1">Выручка</small>
                         {{ revenue_1m|floatformat:2 }} ₽
+                    </h4>
+                    <h4 class="card-text text-center mb-4 text-success">
+                        <small class="text-success d-block fs-6 mb-1 opacity-75">Чистая прибыль</small>
+                        {{ profit_1m|floatformat:2 }} ₽
                     </h4>
 
                     <h6 class="text-secondary small fw-bold">Топ-3 продаваемых товаров:</h6>
@@ -71,9 +75,13 @@
             <div class="card bg-light border-warning shadow-sm h-100">
                 <div class="card-body">
                     <h5 class="card-title text-center text-warning mb-3">За полгода</h5>
-                    <h4 class="card-text text-center mb-4">
+                    <h4 class="card-text text-center mb-2">
                         <small class="text-muted d-block fs-6 mb-1">Выручка</small>
                         {{ revenue_6m|floatformat:2 }} ₽
+                    </h4>
+                    <h4 class="card-text text-center mb-4 text-success">
+                        <small class="text-success d-block fs-6 mb-1 opacity-75">Чистая прибыль</small>
+                        {{ profit_6m|floatformat:2 }} ₽
                     </h4>
 
                     <h6 class="text-secondary small fw-bold">Топ-3 продаваемых товаров:</h6>
@@ -96,9 +104,13 @@
             <div class="card bg-light border-danger shadow-sm h-100">
                 <div class="card-body">
                     <h5 class="card-title text-center text-danger mb-3">За год</h5>
-                    <h4 class="card-text text-center mb-4">
+                    <h4 class="card-text text-center mb-2">
                         <small class="text-muted d-block fs-6 mb-1">Выручка</small>
                         {{ revenue_1y|floatformat:2 }} ₽
+                    </h4>
+                    <h4 class="card-text text-center mb-4 text-success">
+                        <small class="text-success d-block fs-6 mb-1 opacity-75">Чистая прибыль</small>
+                        {{ profit_1y|floatformat:2 }} ₽
                     </h4>
 
                     <h6 class="text-secondary small fw-bold">Топ-3 продаваемых товаров:</h6>

@@ -222,6 +222,19 @@
                         Аналитика
                     </a>
 
+                <li class="nav-item">
+
+                    <a
+                        href="{% url 'analysis' %}"
+                        class="nav-link
+                        {% if request.resolver_match.url_name == 'analysis' %}
+                            active
+                        {% endif %}"
+                    >
+                        <i class="fa-solid fa-list"></i>
+                        Анализ
+                    </a>
+
                 </li>
 
             </ul>

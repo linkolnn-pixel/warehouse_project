@@ -151,13 +151,16 @@ def sale_create(request):
                 items = formset.save(commit=False)
                 for item in items:
                     item.sale = sale
+                    item.cost_price = (
+                        item.product.average_cost if item.product.average_cost > 0 else item.product.cost_price
+                    )
                     item.save()
                 for obj in formset.deleted_objects:
                     obj.delete()
 
                 try:
                     process_sale_post(sale)
-                    messages.success(request, f"Продажа №{sale.id} успешно создана и проведена!")
+                    messages.success(request, f"Продажа №{sale.number} успешно создана и проведена!")
                 except (ValidationError, ValueError) as e:
                     messages.warning(request, f"Продажа создана, но не проведена: {e}")
                 except Exception as e:
@@ -215,8 +218,17 @@ def sale_edit(request, pk):
 
         if form.is_valid() and formset.is_valid():
             sale = form.save()
-            formset.save()
-            messages.success(request, f"Продажа №{sale.id} успешно обновлена.")
+            items = formset.save(commit=False)
+            for item in items:
+                # Если себестоимость нулевая (например, добавили новый товар в существующий чек)
+                if not item.cost_price or item.cost_price == 0:
+                    item.cost_price = (
+                        item.product.average_cost if item.product.average_cost > 0 else item.product.cost_price
+                    )
+                item.save()
+            for obj in formset.deleted_objects:
+                obj.delete()
+            messages.success(request, f"Продажа №{sale.number} успешно обновлена.")
             return redirect("sale_detail", pk=sale.pk)
         else:
             messages.error(request, "Ошибка сохранения! Проверьте данные.")

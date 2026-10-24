@@ -209,9 +209,9 @@
             <!-- КНОПКА СОЗДАНИЯ -->
             <button type="submit" class="btn btn-success w-100">
                 {% if is_edit %}
-                    💾 Сохранить изменения
+                    Сохранить изменения
                 {% else %}
-                    ✅ Создать продажу
+                    Создать продажу
                 {% endif %}
             </button>
         </div>
@@ -404,22 +404,17 @@ document.addEventListener("DOMContentLoaded", function () {
             total += sum;
 
             if (itemTotal) {
-                itemTotal.textContent = sum.toFixed(2) + " ₽";
+                itemTotal.textContent = sum.toFixed(0) + " ₽";
             }
         });
 
-        const deliveryInput = document.getElementById("id_delivery_expense");
-        if (deliveryInput) {
-            // Берем как целое число
-            const deliveryVal = parseInt(deliveryInput.value || "0", 10);
-            if (!isNaN(deliveryVal)) {
-                total += deliveryVal;
-            }
+
+
+       const grandTotalElement = document.getElementById("total-sale");
+        if (grandTotalElement) {
+            grandTotalElement.textContent = total.toFixed(0);
         }
-
-        document.getElementById("total-sale").textContent = total.toFixed(2);
     }
-
     /* ==========================================
        СОБЫТИЯ ВВОДА КОЛИЧЕСТВА И ЦЕНЫ
        ========================================== */

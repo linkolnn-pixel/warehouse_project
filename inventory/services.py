@@ -415,7 +415,7 @@ def process_sale_post(sale: Sale):
         locked_product = locked_products[item.product_id]
 
         # ФИКСИРУЕМ ПРИБЫЛЬ: Копируем среднюю себестоимость склада в документ
-        item.cost_price = locked_product.average_cost
+        item.cost_price = locked_product.average_cost if locked_product.average_cost > 0 else locked_product.cost_price
         items_to_update.append(item)
 
         transactions.append(

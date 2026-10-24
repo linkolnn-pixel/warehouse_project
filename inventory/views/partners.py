@@ -115,6 +115,7 @@ def customer_detail(request, pk):
     )
 
     total_sales = sales.aggregate(total=Coalesce(Sum("annotated_total"), Decimal("0.00")))["total"]
+    total_profit = sum(sale.net_profit for sale in sales) if sales else 0
 
     sales_count = sales.count()
 
@@ -126,6 +127,7 @@ def customer_detail(request, pk):
             "sales": sales,
             "sales_count": sales_count,
             "total_sales": total_sales,
+            "total_profit": total_profit,
         },
     )
 

@@ -34,9 +34,15 @@
 
     <!-- Карточка с итогом -->
     <div class="card shadow mb-4">
-        <div class="card-body text-end">
-            <h5 class="text-muted">Общая сумма покупок:</h5>
-            <h2 class="text-success">{{ total_sales|floatformat:2 }} ₽</h2>
+        <div class="card-body d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="text-muted mb-1">Общая сумма покупок:</h5>
+                <h3 class="text-dark mb-0">{{ total_sales|floatformat:2 }} ₽</h3>
+            </div>
+            <div class="text-end">
+                <h5 class="text-muted mb-1">Принес чистой прибыли:</h5>
+                <h2 class="text-success mb-0 fw-bold">{{ total_profit|floatformat:2 }} ₽</h2>
+            </div>
         </div>
     </div>
 
@@ -54,6 +60,7 @@
                                 <th>Дата</th>
                                 <th>Товары</th>
                                 <th>Сумма</th>
+                                <th>Прибыль</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -68,8 +75,10 @@
                                             {% if not forloop.last %}<br>{% endif %}
                                         {% endfor %}
                                     </td>
-                                    <!-- Используем annotated_total, как мы делали во views.py -->
+                                    <!-- Используем annotated_total, как во views.py -->
                                     <td><strong>{{ sale.annotated_total|floatformat:2 }} ₽</strong></td>
+                                    <!-- Выводим чистую прибыль чека -->
+                                    <td class="text-success fw-bold">{{ sale.net_profit|floatformat:2|default:"0" }} ₽</td>
                                 </tr>
                             {% endfor %}
                         </tbody>

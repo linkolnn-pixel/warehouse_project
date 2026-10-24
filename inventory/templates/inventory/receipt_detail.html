@@ -13,7 +13,7 @@
             <div class="col-md-6">
                 <p>
                     <strong>Дата:</strong><br>
-                    {{ receipt.date }}
+                    {{ receipt.date|date:"d.m.Y H:i" }}
                 </p>
 
                 <p>
@@ -34,13 +34,13 @@
             <div class="col-md-6 text-end">
                 {% if receipt.posted %}
                     <div class="alert alert-success d-inline-block py-2 mb-2 px-3">
-                        ✅ Приход проведен
+                        Приход проведен
                     </div>
                     <br>
                     <form action="{% url 'receipt_unpost' receipt.pk %}" method="post" class="d-inline">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-warning">
-                            ⏪ Отменить проведение
+                            Отменить проведение
                         </button>
                     </form>
                 {% else %}
@@ -49,13 +49,13 @@
                     </div>
 
                     <a href="{% url 'receipt_edit' receipt.pk %}" class="btn btn-primary me-2">
-                        ✏️ Редактировать
+                        Редактировать
                     </a>
 
                     <form method="post" action="{% url 'receipt_post' receipt.pk %}" class="d-inline">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-success">
-                            ✅ Провести приход
+                            Провести приход
                         </button>
                     </form>
                 {% endif %}
@@ -118,19 +118,19 @@
         <div class="d-flex justify-content-between">
             <div>
                 <a href="{% url 'receipt_create' %}" class="btn btn-primary">
-                    ➕ Новый приход
+                    Новый приход
                 </a>
                 <a href="{% url 'stock_management' %}" class="btn btn-secondary">
-                    🏬 Склад
+                    Склад
                 </a>
                 <a href="{% url 'products_catalog' %}" class="btn btn-outline-secondary">
-                    📦 Каталог
+                    Каталог
                 </a>
             </div>
 
             <div>
                 <a href="javascript:history.back()" class="btn btn-outline-dark">
-                    ← Назад
+                    Назад
                 </a>
             </div>
         </div>
