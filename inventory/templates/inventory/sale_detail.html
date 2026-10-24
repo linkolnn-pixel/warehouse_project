@@ -104,7 +104,7 @@
                 {% endfor %}
             </tbody>
 
-            <tfoot style="border-top: 2px solid #dee2e6;">
+            <tfoot style="border-top: 2px solid #dee2e6; border-bottom-style: hidden;">
                 <!-- Строка: Выручка (под колонкой Сумма) -->
                 <tr class="bg-light">
                     <td colspan="3" class="text-end align-middle text-secondary border-bottom-0 pt-3">
@@ -128,11 +128,11 @@
                 </tr>
 
                 <!-- Строка: Финальная прибыль (на всю ширину, акцент на Прибыль) -->
-                <tr class="table-success border-top border-success">
-                    <td colspan="4" class="text-end fw-bold fs-5 align-middle text-success py-3">
+                <tr class="table-success border-top border-success" style="border-bottom: hidden;">
+                    <td colspan="4" class="text-end fw-bold fs-5 align-middle text-success py-3 border-0">
                         Чистая прибыль чека:
                     </td>
-                    <td class="fw-bold fs-5 text-nowrap text-success py-3">
+                    <td class="fw-bold fs-5 text-nowrap text-success py-3 border-0">
                         {{ sale.net_profit|floatformat:"0"|default:"0" }} ₽
                     </td>
                 </tr>
