@@ -332,22 +332,46 @@ def process_receipt_post(receipt: Receipt):
 def process_receipt_unpost(receipt: Receipt):
     """
     Отмена проведения прихода.
-    Удаляет созданные этим документом IN-транзакции
-    и переводит документ обратно в состояние draft.
+    Откатывает остатки, пересчитывает среднюю себестоимость товара и удаляет транзакции.
     """
     receipt = Receipt.objects.select_for_update().get(pk=receipt.pk)
+    items = list(receipt.items.select_related("product"))
 
-    # Вычитаем остатки из StockBalance
-    for item in receipt.items.all():
-        balance = (
-            StockBalance.objects.select_for_update()
-            .filter(product_id=item.product_id, warehouse_id=receipt.warehouse_id)
-            .first()
-        )
+    # Считаем общую стоимость прихода для правильного отката доли доставки
+    total_receipt_sum = sum(item.quantity * item.cost_price for item in items)
+    delivery_cost = receipt.delivery_cost or Decimal("0")
+
+    products_to_update = []
+
+    for item in items:
+        product = Product.objects.select_for_update().get(pk=item.product_id)
+        balance = StockBalance.objects.select_for_update().filter(product=product, warehouse=receipt.warehouse).first()
 
         if balance:
-            balance.quantity -= item.quantity
+            # 1. Откатываем среднюю себестоимость (Moving Average)
+            if total_receipt_sum > 0:
+                delivery_share = ((item.quantity * item.cost_price) / total_receipt_sum) * delivery_cost
+            else:
+                delivery_share = Decimal("0")
+
+            current_qty = balance.quantity
+            new_qty = current_qty - item.quantity
+
+            # Общая стоимость на складе ДО отмены минус стоимость отменяемого прихода
+            # Используем max(0, ...), чтобы избежать отрицательных копеек из-за округлений
+            total_value = max(
+                Decimal("0"), (current_qty * product.average_cost) - (item.quantity * item.cost_price) - delivery_share
+            )
+
+            product.average_cost = total_value / new_qty if new_qty > 0 else Decimal("0")
+            products_to_update.append(product)
+
+            # 2. Откатываем остаток
+            balance.quantity = new_qty
             balance.save(update_fields=["quantity"])
+
+    if products_to_update:
+        Product.objects.bulk_update(products_to_update, ["average_cost"])
 
     Transaction.objects.filter(receipt=receipt).delete()
 

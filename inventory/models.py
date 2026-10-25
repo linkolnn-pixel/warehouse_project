@@ -24,9 +24,9 @@ class StockBalance(models.Model):
         return f"{self.product.name} - {self.warehouse.name}: {self.quantity}"
 
 
-class SoftDeleteModel(models.Model):
+class SoftDeleteModel(models.Model):  # mixin
     """
-    Абстрактная модель.
+    Абстрактная модель. Миксин.
     Вместо физического удаления ставит галочку is_deleted = True.
     """
 
@@ -285,26 +285,40 @@ class Transaction(models.Model):
         return f"{self.get_type_display()} {self.product.name} ({self.quantity} {self.product.unit})"
 
 
-class Receipt(models.Model):
+class DocumentMixin(models.Model):
+    """
+    Миксин для всех документов движения товаров.
+    Добавляет базовые поля и автоматическую генерацию номера.
+    """
+
     number = models.PositiveIntegerField(unique=True, editable=False)
     date = models.DateTimeField(default=timezone.now)
-    warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT)
-    supplier = models.ForeignKey(Counterparty, on_delete=models.PROTECT, limit_choices_to={"type": "supplier"})
     comment = models.TextField(blank=True)
     posted = models.BooleanField(default=False)
-    delivery_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Стоимость доставки")
+
+    class Meta:
+        abstract = True  # Обязательно для миксинов с полями БД
+
+    def get_document_type(self):
+        # По умолчанию берем имя дочернего класса в нижнем регистре ('receipt', 'sale')
+        return self.__class__.__name__.lower()
 
     def save(self, *args, **kwargs):
         if not self.number:
-            self.number = DocumentSequence.get_next_number("receipt")
+            self.number = DocumentSequence.get_next_number(self.get_document_type())
         super().save(*args, **kwargs)
+
+
+class Receipt(DocumentMixin):
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT)
+    supplier = models.ForeignKey(Counterparty, on_delete=models.PROTECT, limit_choices_to={"type": "supplier"})
+    delivery_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Стоимость доставки")
 
     def __str__(self):
         return f"Приход №{self.number}"
 
     @property
     def calculated_total(self):
-        # Сумма всех товаров по закупочной цене + стоимость логистики
         items_total = sum(item.total_cost for item in self.items.all())
         return items_total + self.delivery_cost
 
@@ -325,40 +339,25 @@ class ReceiptItem(models.Model):
         return self.quantity * self.sale_price
 
 
-class Sale(models.Model):
-    number = models.PositiveIntegerField(unique=True, editable=False)
-    date = models.DateTimeField(default=timezone.now)
+class Sale(DocumentMixin):
     warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT)
     customer = models.ForeignKey(
-        Counterparty,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        limit_choices_to={"type": "customer"},
+        Counterparty, on_delete=models.PROTECT, null=True, blank=True, limit_choices_to={"type": "customer"}
     )
-    comment = models.TextField(blank=True)
-    posted = models.BooleanField(default=False)
     delivery_expense = models.DecimalField(
         max_digits=10, decimal_places=2, default=0, verbose_name="Расходы на доставку"
     )
-
-    def save(self, *args, **kwargs):
-        if not self.number:
-            self.number = DocumentSequence.get_next_number("sale")
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Продажа №{self.number}"
 
     @property
     def net_profit(self):
-        # Маржа товаров минус расходы на доставку
         items_profit = sum((item.sale_price - item.cost_price) * item.quantity for item in self.items.all())
         return items_profit - self.delivery_expense
 
     @property
     def calculated_total(self):
-        # Для продажи мы просто суммируем стоимость товаров (клиент платит только за них)
         return sum(item.total for item in self.items.all())
 
 
