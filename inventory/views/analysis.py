@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.utils.dateparse import parse_date
 
-from inventory.models import Sale
+from inventory.models import Customer, Sale
 
 
 def analysis_view(request):
@@ -49,7 +49,7 @@ def analysis_view(request):
 
     analysis_data = list(clients_data.values())
 
-    # 5. Применяем сортировку
+    # 5. Применяем сортировку (УБРАЛИ company_name, сортируем по фамилии и имени)
     if sort_by == "profit_desc":
         analysis_data.sort(key=lambda x: x["total_profit"], reverse=True)
     elif sort_by == "revenue_desc":
@@ -57,14 +57,11 @@ def analysis_view(request):
     elif sort_by == "count_desc":
         analysis_data.sort(key=lambda x: x["sales_count"], reverse=True)
     elif sort_by == "name_asc":
-        # Сортировка по имени по алфавиту
-        analysis_data.sort(key=lambda x: (x["customer"].company_name or x["customer"].first_name or "").lower())
+        # Сортировка по фамилии по алфавиту
+        analysis_data.sort(key=lambda x: (x["customer"].last_name or "").lower())
 
-    # Получаем список всех клиентов для выпадающего списка (берем уникальных из всех продаж)
-    all_clients_with_sales = {
-        sale.customer for sale in Sale.objects.filter(posted=True, customer__isnull=False).select_related("customer")
-    }
-    all_clients = sorted(list(all_clients_with_sales), key=lambda c: (c.company_name or c.first_name or "").lower())
+    # ОПТИМИЗАЦИЯ: Получаем уникальных клиентов, у которых есть проведенные продажи, одним легким SQL-запросом
+    all_clients = Customer.objects.filter(sale__posted=True).distinct().order_by("last_name", "first_name")
 
     context = {
         "analysis_data": analysis_data,

@@ -5,12 +5,13 @@ from django_select2.forms import ModelSelect2Widget
 
 from .models import (
     Category,
-    Counterparty,
+    Customer,
     Product,
     Receipt,
     ReceiptItem,
     Sale,
     SaleItem,
+    Supplier,
     Warehouse,
 )
 
@@ -81,65 +82,54 @@ class ProductEditForm(forms.ModelForm):
         }
 
 
-class CounterpartyForm(forms.ModelForm):
+class SupplierForm(forms.ModelForm):
     class Meta:
-        model = Counterparty
-        fields = ["type", "company_name", "inn", "last_name", "first_name"]
+        model = Supplier
+        fields = ["company_name", "inn"]
         widgets = {
-            "type": forms.Select(attrs={"class": "form-select"}),
             "company_name": forms.TextInput(attrs={"class": "form-control"}),
             "inn": forms.TextInput(attrs={"class": "form-control"}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if not cleaned_data.get("company_name"):
+            self.add_error("company_name", "Введите название компании")
+        return cleaned_data
+
+
+class CustomerForm(forms.ModelForm):
+    class Meta:
+        model = Customer
+        fields = ["last_name", "first_name"]
+        widgets = {
             "first_name": forms.TextInput(attrs={"class": "form-control"}),
             "last_name": forms.TextInput(attrs={"class": "form-control"}),
         }
 
-    def __init__(self, *args, counterparty_type=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.counterparty_type = counterparty_type
-
-        if counterparty_type == "customer":
-            self.fields.pop("company_name")
-            self.fields.pop("inn")
-            self.fields.pop("type")
-
-        elif counterparty_type == "supplier":
-            self.fields.pop("first_name")
-            self.fields.pop("last_name")
-            self.fields.pop("type")
-
-        if "inn" in self.fields:
-            self.fields["inn"].required = False
-
     def clean(self):
         cleaned_data = super().clean()
+        first_name = cleaned_data.get("first_name")
+        last_name = cleaned_data.get("last_name")
 
-        if self.counterparty_type == "customer":  # type: ignore
-            first_name = cleaned_data.get("first_name")  # type: ignore
-            last_name = cleaned_data.get("last_name")  # type: ignore
+        if not first_name:
+            self.add_error("first_name", "Введите имя клиента")
 
-            if not first_name:
-                self.add_error("first_name", "Введите имя клиента")
+        if not last_name:
+            self.add_error("last_name", "Введите фамилию клиента")
 
-            if not last_name:
-                self.add_error("last_name", "Введите фамилию клиента")
-
-            if first_name and last_name:
-                exists = (
-                    Counterparty.objects.filter(
-                        type="customer",
-                        first_name__iexact=first_name.strip(),
-                        last_name__iexact=last_name.strip(),
-                    )
-                    .exclude(pk=self.instance.pk)
-                    .exists()
+        if first_name and last_name:
+            exists = (
+                Customer.objects.filter(
+                    first_name__iexact=first_name.strip(),
+                    last_name__iexact=last_name.strip(),
                 )
+                .exclude(pk=self.instance.pk)
+                .exists()
+            )
 
-                if exists:
-                    raise forms.ValidationError("Клиент с таким именем и фамилией уже существует.")
-
-        elif self.counterparty_type == "supplier":
-            if not cleaned_data.get("company_name"):
-                self.add_error("company_name", "Введите название компании")
+            if exists:
+                raise forms.ValidationError("Клиент с таким именем и фамилией уже существует.")
 
         return cleaned_data
 
@@ -171,6 +161,9 @@ class ReceiptForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.fields["supplier"].queryset = Supplier.objects.filter(is_deleted=False)
+
         # если склад не выбран — ставим первый
         if not self.instance.pk:
             first_warehouse = Warehouse.objects.first()
@@ -252,6 +245,8 @@ class SaleForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.fields["customer"].queryset = Customer.objects.filter(is_deleted=False)
 
         if not self.instance.pk and not self.initial.get("warehouse"):
             warehouse = Warehouse.objects.first()

@@ -54,9 +54,8 @@ def movement_report(request):
     transactions = Transaction.objects.select_related(
         "product",
         "warehouse",
-        "counterparty",
-        "receipt",
-        "sale",
+        "receipt__supplier",
+        "sale__customer",
     ).order_by("-date", "-id")
 
     grouped_docs = OrderedDict()
@@ -84,7 +83,7 @@ def movement_report(request):
             doc_key = f"manual_{tx.id}"
             doc_type = tx.type
             doc_obj = None
-            counterparty = tx.counterparty
+            counterparty = None
             url_name = None
             doc_number = None
             reference = ""  # Ручная транзакция без комментария

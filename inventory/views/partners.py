@@ -12,21 +12,20 @@ from django.views.decorators.http import require_POST
 from rest_framework.generics import get_object_or_404
 
 from inventory.decorators import test_mode_login_required
-from inventory.forms import CounterpartyForm
-from inventory.models import Counterparty, Sale
+from inventory.forms import CustomerForm, SupplierForm
+from inventory.models import Customer, Sale, Supplier
 
 
 @test_mode_login_required
-def counterparty_create(request):
+def supplier_create(request):
     next_name = request.GET.get("next", "products_catalog")
     selected_products = request.GET.getlist("products")
     return_url = request.GET.get("return_url")
 
     if request.method == "POST":
-        form = CounterpartyForm(request.POST, counterparty_type="supplier")
+        form = SupplierForm(request.POST)
         if form.is_valid():
             supplier = form.save(commit=False)
-            supplier.type = "supplier"
             try:
                 supplier.save()
                 messages.success(request, f"Поставщик «{supplier.company_name}» создан.")
@@ -47,15 +46,13 @@ def counterparty_create(request):
             except IntegrityError:
                 messages.error(request, "Такой поставщик уже существует.")
         else:
-            # ВЫТАСКИВАЕМ ОШИБКИ
-            print("=== ОШИБКИ ФОРМЫ ===", form.errors)
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"Ошибка [{field}]: {error}")
     else:
-        form = CounterpartyForm(counterparty_type="supplier")
+        form = SupplierForm()
 
-    return render(request, "inventory/counterparty_form.html", {"form": form})
+    return render(request, "inventory/supplier_form.html", {"form": form})
 
 
 @test_mode_login_required
@@ -63,15 +60,14 @@ def customer_create(request):
     next_name = request.GET.get("next", "sale_create")
     selected_products = request.GET.getlist("products")
     if request.method == "POST":
-        form = CounterpartyForm(request.POST, counterparty_type="customer")
+        form = CustomerForm(request.POST)
         if form.is_valid():
             customer = form.save(commit=False)
-            customer.type = "customer"
             try:
                 customer.save()
                 messages.success(
                     request,
-                    f"Клиент «{customer.first_name} {customer.last_name}» создан.",
+                    f"Клиент «{customer.last_name} {customer.first_name}» создан.",
                 )
                 # Собираем все нужные параметры в словарь/список
                 query_kwargs = [("customer", customer.pk)]
@@ -87,19 +83,19 @@ def customer_create(request):
             except IntegrityError:
                 messages.error(request, "Такой клиент уже существует.")
     else:
-        form = CounterpartyForm(counterparty_type="customer")
+        form = CustomerForm()
     return render(request, "inventory/customer_form.html", {"form": form})
 
 
 @test_mode_login_required
 def customers_list(request):
-    customers = Counterparty.objects.filter(type="customer").order_by("company_name", "last_name", "first_name")
+    customers = Customer.objects.order_by("last_name", "first_name")
     return render(request, "inventory/customers.html", {"customers": customers})
 
 
 @test_mode_login_required
 def customer_detail(request, pk):
-    customer = get_object_or_404(Counterparty, pk=pk, type="customer")
+    customer = get_object_or_404(Customer, pk=pk)
     sales = (
         Sale.objects.filter(customer=customer)
         .annotate(
@@ -133,21 +129,24 @@ def customer_detail(request, pk):
 
 
 @require_POST
-def api_counterparty_create(request):
-    c_type = request.POST.get("type")
+def api_supplier_create(request):
+    company_name = request.POST.get("company_name")
+    inn = request.POST.get("inn", "")
 
-    # Сохраняем поставщика
-    if c_type == "supplier":
-        company_name = request.POST.get("company_name")
-        inn = request.POST.get("inn", "")
-        obj = Counterparty.objects.create(type="supplier", company_name=company_name, inn=inn)
-        return JsonResponse({"id": obj.id, "name": obj.company_name})
+    if not company_name:
+        return JsonResponse({"error": "Введите название компании"}, status=400)
 
-    # Сохраняем клиента
-    elif c_type == "customer":
-        first_name = request.POST.get("first_name", "")
-        last_name = request.POST.get("last_name", "")
-        obj = Counterparty.objects.create(type="customer", first_name=first_name, last_name=last_name)
-        return JsonResponse({"id": obj.id, "name": f"{last_name} {first_name}".strip()})
+    obj = Supplier.objects.create(company_name=company_name, inn=inn)
+    return JsonResponse({"id": obj.id, "name": obj.company_name})
 
-    return JsonResponse({"error": "Неверный тип"}, status=400)
+
+@require_POST
+def api_customer_create(request):
+    first_name = request.POST.get("first_name", "")
+    last_name = request.POST.get("last_name", "")
+
+    if not first_name or not last_name:
+        return JsonResponse({"error": "Имя и фамилия обязательны"}, status=400)
+
+    obj = Customer.objects.create(first_name=first_name, last_name=last_name)
+    return JsonResponse({"id": obj.id, "name": f"{last_name} {first_name}".strip()})

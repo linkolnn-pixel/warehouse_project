@@ -5,12 +5,13 @@ from django.test import TestCase
 from inventory.exceptions import DocumentAlreadyPostedError, InsufficientStockError
 from inventory.models import (
     Category,
-    Counterparty,
+    Customer,
     Product,
     Receipt,
     ReceiptItem,
     Sale,
     SaleItem,
+    Supplier,
     Transaction,
     Warehouse,
 )
@@ -26,10 +27,9 @@ class StockBalanceTestCase(TestCase):
         # Подготавливаем чистые данные для теста
         self.warehouse = Warehouse.objects.create(name="Основной склад")
 
-        self.supplier = Counterparty.objects.create(type="supplier", company_name="Поставщик ООО")
-        self.customer = Counterparty.objects.create(type="customer", first_name="Иван", last_name="Иванов")
+        self.supplier = Supplier.objects.create(type="supplier", company_name="Поставщик ООО")
+        self.customer = Customer.objects.create(type="customer", first_name="Иван", last_name="Иванов")
 
-        # ИСПРАВЛЕНО: убрали несуществующее поле type
         self.product = Product.objects.create(name="Ceramide repair cream 50 мл")
 
     def test_stock_balances_after_receipt_and_sale(self):
@@ -71,8 +71,8 @@ class InventoryServicesTests(TestCase):
         """Создаем базовые данные для всех тестов (склад, клиенты, товары)"""
         self.warehouse = Warehouse.objects.create(name="Основной склад")
 
-        self.supplier = Counterparty.objects.create(type="supplier", company_name="ООО Ромашка", inn="1234567890")
-        self.customer = Counterparty.objects.create(type="customer", first_name="Иван", last_name="Иванов")
+        self.supplier = Supplier.objects.create(type="supplier", company_name="ООО Ромашка", inn="1234567890")
+        self.customer = Customer.objects.create(type="customer", first_name="Иван", last_name="Иванов")
 
         self.category = Category.objects.create(name="Напитки")
 

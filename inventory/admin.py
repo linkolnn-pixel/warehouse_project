@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.db.models import Sum
 
-from .models import Category, Counterparty, Product, StockBalance, Transaction, Warehouse
+from .models import Category, Customer, Product, StockBalance, Supplier, Transaction, Warehouse
 
 
 @admin.register(Warehouse)
@@ -10,23 +10,18 @@ class WarehouseAdmin(admin.ModelAdmin):
     search_fields = ("name",)
 
 
-@admin.register(Counterparty)
-class CounterpartyAdmin(admin.ModelAdmin):
-    list_display = ("company_name", "first_name", "last_name", "type", "inn", "is_deleted")
-    list_filter = ("type", "is_deleted")
-    search_fields = (
-        "company_name",
-        "first_name",
-        "last_name",
-        "inn",
-    )
+@admin.register(Supplier)
+class SupplierAdmin(admin.ModelAdmin):
+    list_display = ("company_name", "inn", "is_deleted")
+    list_filter = ("is_deleted",)
+    search_fields = ("company_name", "inn")
 
-    def get_deleted_objects(self, objs, request):
-        deleted_objects = []
-        model_count = {}
-        perms_needed = set()
-        protected = []
-        return deleted_objects, model_count, perms_needed, protected
+
+@admin.register(Customer)
+class CustomerAdmin(admin.ModelAdmin):
+    list_display = ("first_name", "last_name", "is_deleted")
+    list_filter = ("is_deleted",)
+    search_fields = ("first_name", "last_name")
 
 
 @admin.action(description="Пересчитать остатки")
@@ -59,6 +54,7 @@ class ProductAdmin(admin.ModelAdmin):
         "internal_code",
         "sku",
         "name",
+        "brand",
         "category",
         "supplier",
         "cost_price",
@@ -67,22 +63,14 @@ class ProductAdmin(admin.ModelAdmin):
         "measure_unit",
         "is_deleted",
     )
-    list_filter = ("category", "unit", "is_deleted")
-    search_fields = ("sku", "name")
+    list_filter = ("category", "brand", "unit", "is_deleted")
+    search_fields = ("sku", "name", "brand")
     ordering = ("name",)
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         form.base_fields["internal_code"].required = False
         return form
-
-    def get_deleted_objects(self, objs, request):
-        # Отключаем блокировку PROTECT в админке
-        deleted_objects = []
-        model_count = {}
-        perms_needed = set()
-        protected = []
-        return deleted_objects, model_count, perms_needed, protected
 
 
 @admin.register(Category)
@@ -94,13 +82,21 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
-    list_display = ("product", "warehouse", "type", "quantity", "date", "counterparty")
+    list_display = ("product", "warehouse", "type", "quantity", "date", "get_counterparty")
     list_filter = ("type", "warehouse")
     search_fields = (
         "product__name",
-        "counterparty__company_name",
-        "counterparty__first_name",
-        "counterparty__last_name",
+        "receipt__supplier__company_name",
+        "sale__customer__first_name",
+        "sale__customer__last_name",
     )
     date_hierarchy = "date"
     readonly_fields = ("date",)
+
+    @admin.display(description="Контрагент")
+    def get_counterparty(self, obj):
+        if obj.type == "IN" and obj.receipt and obj.receipt.supplier:
+            return obj.receipt.supplier.company_name
+        elif obj.type == "OUT" and obj.sale and obj.sale.customer:
+            return f"{obj.sale.customer.first_name} {obj.sale.customer.last_name}"
+        return "-"

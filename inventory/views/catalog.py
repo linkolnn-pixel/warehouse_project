@@ -60,7 +60,9 @@ def product_detail(request, pk):
     stock_profit = getattr(product, "stock_profit", 0)
 
     transactions = (
-        Transaction.objects.filter(product=product).select_related("warehouse", "counterparty").order_by("-date")
+        Transaction.objects.filter(product=product)
+        .select_related("warehouse", "receipt__supplier", "sale__customer")
+        .order_by("-date")
     )
 
     return render(

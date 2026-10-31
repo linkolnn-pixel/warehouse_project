@@ -228,7 +228,6 @@
       </div>
       <form id="ajaxCustomerForm" class="p-3">
         {% csrf_token %}
-        <input type="hidden" name="type" value="customer">
         <div class="mb-3">
           <label>Имя <span class="text-danger">*</span></label>
           <input type="text" name="first_name" class="form-control" required>
@@ -497,6 +496,37 @@ document.addEventListener("DOMContentLoaded", function () {
     updateTotal();
     updateAddProductsLink();
 });
+</script>
+
+<script>
+function submitQuickCustomer() {
+    const form = document.getElementById('quickCustomerForm');
+    const formData = new FormData(form);
+
+    // НОВЫЙ URL: /api/customer/create/
+    fetch("{% url 'api_customer_create' %}", {
+        method: "POST",
+        body: formData,
+        headers: {
+            "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            const select = document.getElementById('id_customer');
+            const option = new Option(data.name, data.id, true, true);
+            select.add(option);
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addCustomerModal'));
+            modal.hide();
+            form.reset();
+        } else {
+            alert(data.error || "Произошла ошибка");
+        }
+    })
+    .catch(error => console.error("Ошибка:", error));
+}
 </script>
 
 {% endblock %}
