@@ -11,9 +11,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL("UPDATE inventory_receipt SET supplier_id = NULL;"),
-        migrations.RunSQL("UPDATE inventory_sale SET customer_id = NULL;"),
-        migrations.RunSQL("UPDATE inventory_product SET supplier_id = NULL;"),
+        migrations.RunSQL("DELETE FROM inventory_receipt WHERE supplier_id NOT IN (SELECT id FROM inventory_supplier);"),
+        migrations.RunSQL("DELETE FROM inventory_sale WHERE customer_id NOT IN (SELECT id FROM inventory_customer);"),
+        migrations.RunSQL("UPDATE inventory_product SET supplier_id = NULL WHERE supplier_id NOT IN (SELECT id FROM inventory_supplier);"),
 
         migrations.RemoveConstraint(
             model_name='counterparty',
