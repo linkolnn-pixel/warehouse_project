@@ -11,6 +11,7 @@ from inventory.models import Category, Product, Transaction, Warehouse
 def stock_management_view(request):
     warehouse = Warehouse.objects.first()  # Берем первый склад для отображения
     categories = Category.objects.all()
+    warehouses = Warehouse.objects.all()
 
     warehouse_id = warehouse.id if warehouse else None
     products = Product.objects.with_balances(warehouse_id).select_related("category").order_by("name")
@@ -40,6 +41,7 @@ def stock_management_view(request):
             "products": page_obj,
             "page_obj": page_obj,
             "warehouse": warehouse,
+            "warehouses": warehouses,
             "categories": categories,
             "total_quantity": total_quantity,
             "total_cost": total_cost,
@@ -51,12 +53,16 @@ def stock_management_view(request):
 
 @test_mode_login_required
 def movement_report(request):
+    op_type = request.GET.get("type")
     transactions = Transaction.objects.select_related(
         "product",
         "warehouse",
         "receipt__supplier",
         "sale__customer",
     ).order_by("-date", "-id")
+
+    if op_type in ["IN", "OUT"]:
+        transactions = transactions.filter(type=op_type)
 
     grouped_docs = OrderedDict()
 

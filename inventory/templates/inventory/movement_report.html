@@ -6,28 +6,46 @@
 
 {% block content %}
 
-<div class="container-fluid mt-4">
+<div class="container-fluid">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2>
+    <div class="mb-4">
+        <div class="d-flex align-items-center gap-4 mb-2">
+            <h2 class="mb-0">
                 <i class="fa-solid fa-arrow-right-arrow-left"></i>
                 Операции
             </h2>
-            <p class="text-muted">
-                История движения по документам
-            </p>
+
+            <div class="btn-group shadow-sm" role="group" aria-label="Фильтр операций">
+                <a href="?" class="btn {% if not request.GET.type or request.GET.type == 'all' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                    Все
+                </a>
+                <a href="?type=IN" class="btn {% if request.GET.type == 'IN' %}btn-success{% else %}btn-outline-success{% endif %}">
+                    Приход
+                </a>
+                <a href="?type=OUT" class="btn {% if request.GET.type == 'OUT' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                    Продажа
+                </a>
+            </div>
         </div>
     </div>
 
     <div class="card shadow-sm">
         <div class="card-body p-0"> <!-- Убрали padding, чтобы таблица была на всю ширину карточки -->
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table class="table table-hover align-middle mb-0" style="table-layout: fixed; width: 100%; word-break: break-word;">
+                    <colgroup>
+                        <col style="width: 50px;"> <!-- Иконка раскрытия -->
+                        <col style="width: 14%;">  <!-- Дата -->
+                        <col style="width: 12%;">  <!-- Тип -->
+                        <col style="width: 16%;">  <!-- Документ -->
+                        <col style="width: 15%;">  <!-- Склад -->
+                        <col style="width: 18%;">  <!-- Контрагент -->
+                        <col style="width: auto;"> <!-- Комментарий (займет всё оставшееся место) -->
+                    </colgroup>
+
                     <thead class="table-light">
                         <tr>
-                            <!-- Убрали колонки "Товар" и "Количество", оставили только суть документа -->
-                            <th width="40"></th> <!-- Для иконки раскрытия -->
+                            <th></th> <!-- Для иконки раскрытия -->
                             <th>Дата</th>
                             <th>Тип</th>
                             <th>Документ</th>

@@ -13,7 +13,7 @@
 </style>
 
 <div class="container mt-4">
-    <h2 class="mb-4">📤 Создание продажи</h2>
+    <h2 class="mb-4 text-danger">📤 Создание продажи</h2>
     <form method="post" id="sale-form">
         {% csrf_token %}
         <div class="card shadow p-4">
@@ -39,7 +39,7 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Клиент <span class="text-danger">*</span></label>
+                <label class="form-label">Клиент</label>
                 <div class="input-group">
                     {{ form.customer }}
                     <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">+</button>

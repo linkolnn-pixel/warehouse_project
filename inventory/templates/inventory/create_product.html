@@ -43,7 +43,7 @@
 
                     <!--  БЛОК ПОСТАВЩИК  -->
                     <div class="mb-3">
-                        <label class="form-label">Поставщик <span class="text-danger">*</span></label>
+                        <label class="form-label">Поставщик</label>
                         <div class="input-group">
                             {{ form.supplier }}
 
@@ -60,19 +60,34 @@
 
                     <!-- Название -->
                     <div class="mb-3">
-                        <label class="form-label">Название товара <span class="text-danger">*</span></label>
+                        <label class="form-label">Название товара</label>
                         {{ form.name }}
                     </div>
 
                     <!-- Категория -->
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Артикул <span class="text-danger">*</span></label>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Артикул</label>
                             {{ form.sku }}
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Бренд (Категория) <span class="text-danger">*</span></label>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Бренд</label>
+                            <div class="input-group">
+                                {{ form.brand }}
+
+                                <!-- Кнопка вызова модального окна для бренда -->
+                                <button type="button" class="btn btn-outline-secondary"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#addBrandModal"
+                                        title="Добавить новый бренд">
+                                    +
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Категория</label>
                             <div class="input-group">
                                 {{ form.category }}
 
@@ -84,9 +99,7 @@
                                     +
                                 </button>
                             </div>
-                            <small class="text-muted">Нажмите «+», если нужного бренда нет в списке</small>
                         </div>
-
                     </div>
 
                     <!-- Ед. изм., Вес/Объем (в ряд) -->
@@ -157,7 +170,7 @@
 
 
       <form
-          action="{% url 'counterparty_create' %}?next=create_product&return_url={{ return_url }}{% for product_id in selected_products %}&products={{ product_id }}{% endfor %}"
+          action="{% url 'supplier_create' %}?next=create_product&return_url={{ return_url }}{% for product_id in selected_products %}&products={{ product_id }}{% endfor %}"
           method="post"
           class="p-3"
       >
@@ -185,12 +198,43 @@
   </div>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО: Создание категории (Бренда) -->
+<!-- МОДАЛЬНОЕ ОКНО: Бренда -->
+<div class="modal fade" id="addBrandModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Бренд</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <!-- action ведет на category_create -->
+      <form
+          action="{% url 'category_create' %}?next=create_product&return_url={{ return_url }}{% for product_id in selected_products %}&products={{ product_id }}{% endfor %}"
+          method="post"
+          class="p-3"
+      >
+          {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label">Название бренда</label>
+          <input type="text" name="name" class="form-control" required placeholder="Например: DMK" autofocus>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="submit" class="btn btn-success">Создать и вернуться</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО: Категории -->
 <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Новая категория (Бренд)</h5>
+        <h5 class="modal-title">Категория</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
@@ -204,7 +248,7 @@
 
         <div class="mb-3">
           <label class="form-label">Название категории <span class="text-danger">*</span></label>
-          <input type="text" name="name" class="form-control" required placeholder="Например: DMK" autofocus>
+          <input type="text" name="name" class="form-control" required placeholder="Например: Для лица" autofocus>
         </div>
 
         <div class="d-flex gap-2">
