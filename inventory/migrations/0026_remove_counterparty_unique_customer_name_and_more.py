@@ -11,6 +11,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunSQL("UPDATE inventory_receipt SET supplier_id = NULL;"),
+        migrations.RunSQL("UPDATE inventory_sale SET customer_id = NULL;"),
+        migrations.RunSQL("UPDATE inventory_product SET supplier_id = NULL;"),
+
         migrations.RemoveConstraint(
             model_name='counterparty',
             name='unique_customer_name',
