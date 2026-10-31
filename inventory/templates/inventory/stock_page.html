@@ -88,11 +88,13 @@
 
                 <!-- Выпадающий список Категорий (колонка 1) -->
                 <th>
-                    <span style="display: block; margin-bottom: 5px;">Категория</span>
+                    <span style="display: block; margin-bottom: 5px;">Бренд</span>
                     <select class="column-filter form-select form-select-sm" data-column="1" style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
                         <option value="">Все</option>
-                        {% for cat in categories %}
-                            <option value="{{ cat.name }}">{{ cat.name }}</option>
+                        {% for brand in brands %}
+                            {% if brand %}
+                                <option value="{{ brand }}">{{ brand }}</option>
+                            {% endif %}
                         {% endfor %}
                     </select>
                 </th>
@@ -123,7 +125,7 @@
                         {{ product.name }}
                     </a>
                 </td>
-                <td>{{ product.category|default:"-" }}</td>
+                <td>{{ product.brand|default:"-" }}</td>
                 <td>{{ product.balance|default:"0" }} шт.</td>
                 <td>{{ product.cost_price }}</td>
                 <td>{{ product.sale_price }}</td>

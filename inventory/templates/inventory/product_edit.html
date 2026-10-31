@@ -2,6 +2,51 @@
 
 {% block title %}Редактирование: {{ product.name|default:"Товар" }}{% endblock %}
 
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    /* Адаптация Select2 под Bootstrap 5 */
+    .select2-container .select2-selection--multiple {
+        min-height: 38px;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+    }
+
+    /* Сам бейджик категории */
+    .select2-container--default .select2-selection--multiple .select2-selection__choice {
+        background-color: #6c757d;
+        border: 1px solid #5c636a;
+        color: white;
+        border-radius: 4px;
+        padding: 2px 8px 2px 28px; /* Оставляем 28px слева для крестика */
+        margin-top: 5px;
+        position: relative;
+    }
+
+    /* Крестик удаления */
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+        color: white;
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-right: 1px solid rgba(255, 255, 255, 0.3);
+        margin: 0;
+        font-weight: bold;
+    }
+
+    /* Эффект при наведении на крестик */
+    .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+        background-color: rgba(0, 0, 0, 0.15);
+        color: white;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="card shadow">
@@ -59,4 +104,21 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_body %}
+<!-- Подключаем jQuery (нужен для Select2) и сам Select2 -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Инициализируем Select2 для поля категории.
+        // Django обычно дает полю ID "id_category".
+        $('#id_category').select2({
+            placeholder: "Выберите категории",
+            allowClear: true,
+            width: '100%'
+        });
+    });
+</script>
 {% endblock %}

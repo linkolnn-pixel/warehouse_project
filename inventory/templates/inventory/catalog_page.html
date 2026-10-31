@@ -18,7 +18,7 @@
     .catalog-sidebar {
         width: 240px;
         position: fixed;
-        top: 60px;
+        top: 172px;
         bottom: 0;
         left: 0;
         background: white;
@@ -121,16 +121,18 @@
 
 <div class="catalog-sidebar">
 
-    <div class="sidebar-title">
-
-        <i class="fa-solid fa-tags"></i>
-        Бренды
-
+    <div class="sidebar-title d-flex justify-content-between align-items-center">
+        <span>
+            <i class="fa-solid fa-tags"></i>
+            Категории
+        </span>
+        <!-- Кнопка добавления категории -->
+        <a href="{% url 'category_create' %}?next=products_catalog" class="btn btn-sm btn-outline-primary" title="Добавить категорию">
+            <i class="fa-solid fa-plus"></i>
+        </a>
     </div>
 
-
     <!-- Все товары -->
-
     <a
         href="{% url 'products_catalog' %}"
         class="brand-link
@@ -138,30 +140,22 @@
             active
         {% endif %}"
     >
-
         Все товары
-
     </a>
 
-
-    <!-- Бренды -->
-
-    {% for brand in brands %}
-
+    <!-- Категории -->
+    {% for cat in categories %}
         <a
-            href="{% url 'products_catalog' %}?cat={{ brand.id }}"
-            class="brand-link
-            {% if selected_category and selected_category.id == brand.id %}
+            href="{% url 'products_catalog' %}?cat={{ cat.id }}"
+            class="brand-link drop-zone
+            {% if selected_category and selected_category.id == cat.id %}
                 active
             {% endif %}"
+            data-category-id="{{ cat.id }}"
         >
-
-            {{ brand.name }}
-
+            {{ cat.name }}
         </a>
-
     {% endfor %}
-
 </div>
 
 
@@ -170,259 +164,144 @@
 ========================= -->
 
 <div class="catalog-main">
-
     <div class="catalog-header d-flex justify-content-between align-items-center">
-
         <h4 class="mb-0">
-
             <i class="fa-solid fa-box"></i>
-
             {{ page_title }}
-
         </h4>
-
-
         <div>
-
             <!-- Excel -->
-
             <a
                 href="{% url 'upload_products' %}"
                 class="btn btn-outline-secondary btn-sm"
             >
-
                 <i class="fa-solid fa-file-excel"></i>
-
                 Excel
-
             </a>
 
-
             <!-- Добавить -->
-
             <a
                 href="{% url 'create_product' %}"
                 class="btn btn-primary btn-sm ms-2"
             >
-
                 <i class="fa-solid fa-plus"></i>
-
                 Добавить
-
             </a>
-
-
         </div>
-
     </div>
-
 
     <!-- =========================
          ПОИСК
     ========================= -->
 
     {% if query %}
-
         <div class="mb-3">
-
             <span class="text-muted">
                 Поиск:
             </span>
-
             <strong>
                 {{ query }}
             </strong>
-
         </div>
-
     {% endif %}
-
 
     <!-- =========================
          TABLE
     ========================= -->
 
     <div class="card p-3">
-
         <table
             id="catalogTable"
             class="table table-hover"
         >
-
             <thead>
-
                 <tr>
-
                     <th>Наименование</th>
-
                     <th>Код</th>
-
                     <th>Артикул</th>
-
                     <th>Бренд</th>
-
                     <th>Объем</th>
-
                     <th>Поставщик</th>
-
                     <th>Закупка</th>
-
                     <th>Продажа</th>
-
                 </tr>
-
             </thead>
-
-
             <tbody>
-
                 {% for product in products %}
-
-                    <tr>
-
+                    <tr draggable="true" class="draggable-product" data-product-id="{{ product.id }}">
                         <!-- Наименование -->
-
                         <td>
-
                             <a
                                 href="{% url 'product_detail' product.id %}"
                                 class="text-decoration-none product-name"
                             >
-
                                 {{ product.name }}
-
                             </a>
-
                         </td>
-
-
                         <!-- Код -->
-
                         <td>
-
                             {{ product.internal_code }}
-
                         </td>
-
-
                         <!-- Артикул -->
-
                         <td>
-
                             {% if product.sku %}
-
                                 {{ product.sku }}
-
                             {% else %}
-
                                 —
-
                             {% endif %}
-
                         </td>
-
-
                         <!-- Бренд -->
-
                         <td>
-
-                            {% if product.category %}
-
-                                {{ product.category.name }}
-
+                            {% if product.brand %}
+                                {{ product.brand }}
                             {% else %}
-
                                 —
-
                             {% endif %}
-
                         </td>
-
-
                         <!-- Объем -->
-
                         <td>
-
                             {% if product.quantity_value %}
-
                                 {{ product.quantity_value }}
                                 {{ product.measure_unit }}
-
                             {% else %}
-
                                 —
-
                             {% endif %}
-
                         </td>
-
-
                         <!-- Поставщик -->
-
                         <td>
-
                             {% if product.supplier %}
-
                                 {{ product.supplier.company_name }}
-
                             {% else %}
-
                                 <span class="text-danger">
                                     Нет
                                 </span>
-
                             {% endif %}
-
                         </td>
-
-
                         <!-- Закупка -->
-
                         <td class="price-buy">
-
                             {{ product.cost_price }} ₽
-
                         </td>
-
-
                         <!-- Продажа -->
-
                         <td class="price-sale">
-
                             {{ product.sale_price }} ₽
-
                         </td>
-
                     </tr>
-
-
                 {% empty %}
-
                     <tr>
-
                         <td
                             colspan="8"
                             class="text-center text-muted py-4"
                         >
-
                             Товары отсутствуют
-
                         </td>
-
                     </tr>
-
                 {% endfor %}
-
             </tbody>
-
         </table>
-
     </div>
-
 </div>
 
 {% endblock %}
-
 
 {% block extra_body %}
 
@@ -442,6 +321,8 @@
 
 $(document).ready(function () {
 
+    $.fn.dataTable.ext.errMode = 'none';
+
     $('#catalogTable').DataTable({
 
         language: {
@@ -460,6 +341,74 @@ $(document).ready(function () {
 
 });
 
+</script>
+
+<style>
+    /* Подсветка категории при наведении товара */
+    .brand-link.drag-over {
+        background: #e7f1ff;
+        border: 2px dashed #0d6efd;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. При начале перетаскивания запоминаем ID товара
+    document.addEventListener('dragstart', function(e) {
+        const row = e.target.closest('.draggable-product');
+        if (row) {
+            e.dataTransfer.setData('text/plain', row.dataset.productId);
+        }
+    });
+
+    // 2. Настраиваем категории на прием товаров
+    const dropZones = document.querySelectorAll('.drop-zone');
+
+    dropZones.forEach(zone => {
+        // Разрешаем сброс элемента
+        zone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            zone.classList.add('drag-over');
+        });
+
+        // Убираем подсветку, если увели курсор
+        zone.addEventListener('dragleave', () => {
+            zone.classList.remove('drag-over');
+        });
+
+        // 3. Ловим сброс товара и отправляем AJAX-запрос
+        zone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            zone.classList.remove('drag-over');
+
+            const productId = e.dataTransfer.getData('text/plain');
+            const categoryId = zone.dataset.categoryId;
+
+            if (!productId || !categoryId) return;
+
+            fetch('{% url "update_product_category" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}' // Обязательно для Django
+                },
+                body: JSON.stringify({
+                    product_id: productId,
+                    category_id: categoryId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Перезагружаем страницу, чтобы таблица обновилась
+                    location.reload();
+                } else {
+                    alert('Ошибка при переносе товара: ' + data.message);
+                }
+            });
+        });
+    });
+});
 </script>
 
 {% endblock %}
