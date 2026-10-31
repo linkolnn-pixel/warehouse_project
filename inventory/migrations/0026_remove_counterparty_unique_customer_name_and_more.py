@@ -11,9 +11,26 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunSQL("DELETE FROM inventory_receipt WHERE supplier_id NOT IN (SELECT id FROM inventory_supplier);"),
+        # 1. СНАЧАЛА удаляем элементы (строки) из "битых" приходов и продаж
+        migrations.RunSQL(
+            "DELETE FROM inventory_receiptitem WHERE receipt_id IN (SELECT id FROM inventory_receipt WHERE supplier_id NOT IN (SELECT id FROM inventory_supplier));"),
+        migrations.RunSQL(
+            "DELETE FROM inventory_saleitem WHERE sale_id IN (SELECT id FROM inventory_sale WHERE customer_id NOT IN (SELECT id FROM inventory_customer));"),
+
+        # (Если у вас есть транзакции, связанные с ними, очистим и их)
+        migrations.RunSQL(
+            "DELETE FROM inventory_transaction WHERE receipt_id IN (SELECT id FROM inventory_receipt WHERE supplier_id NOT IN (SELECT id FROM inventory_supplier));"),
+        migrations.RunSQL(
+            "DELETE FROM inventory_transaction WHERE sale_id IN (SELECT id FROM inventory_sale WHERE customer_id NOT IN (SELECT id FROM inventory_customer));"),
+
+        # 2. ПОТОМ удаляем сами битые приходы и продажи
+        migrations.RunSQL(
+            "DELETE FROM inventory_receipt WHERE supplier_id NOT IN (SELECT id FROM inventory_supplier);"),
         migrations.RunSQL("DELETE FROM inventory_sale WHERE customer_id NOT IN (SELECT id FROM inventory_customer);"),
-        migrations.RunSQL("UPDATE inventory_product SET supplier_id = NULL WHERE supplier_id NOT IN (SELECT id FROM inventory_supplier);"),
+
+        # 3. И обнуляем поставщика у товаров (они не удаляются)
+        migrations.RunSQL(
+            "UPDATE inventory_product SET supplier_id = NULL WHERE supplier_id NOT IN (SELECT id FROM inventory_supplier);"),
 
         migrations.RemoveConstraint(
             model_name='counterparty',
