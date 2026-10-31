@@ -101,10 +101,17 @@
                 <th>Закупочная цена</th>
                 <th>Цена продажи</th>
                 <th>Прибыль</th>
-                <th>Прибыль со склада</th>
                 <th>Внутренний код</th>
                 <th>Артикул</th>
-                <th>Склад</th>
+                <th>
+                    <span style="display: block; margin-bottom: 5px;">Склад</span>
+                    <select class="column-filter form-select form-select-sm" data-column="8" style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
+                        <option value="">Все</option>
+                        {% for w in warehouses %}
+                            <option value="{{ w.name }}">{{ w.name }}</option>
+                        {% endfor %}
+                    </select>
+                </th>
             </tr>
         </thead>
 
@@ -121,7 +128,6 @@
                 <td>{{ product.cost_price }}</td>
                 <td>{{ product.sale_price }}</td>
                 <td>{{ product.profit_per_unit }}</td>
-                <td>{{ product.stock_profit|default:"0.00" }}</td>
                 <td>{{ product.internal_code }}</td>
                 <td>{{ product.sku|default:"-" }}</td>
                 <td>{{ warehouse.name|default:"Нет складов" }}</td>

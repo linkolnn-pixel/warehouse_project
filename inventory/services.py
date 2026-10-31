@@ -11,12 +11,12 @@ from .exceptions import (
 )
 from .models import (
     Category,
-    Counterparty,
     Product,
     Receipt,
     Sale,
     SaleItem,
     StockBalance,
+    Supplier,
     Transaction,
 )
 
@@ -51,7 +51,7 @@ def import_products_from_excel(file_obj) -> tuple[int, int]:
     # Кэши существующих сущностей
     categories_cache = {category.name: category for category in Category.objects.all()}
 
-    suppliers_cache = {supplier.company_name: supplier for supplier in Counterparty.objects.filter(type="supplier")}
+    suppliers_cache = {supplier.company_name: supplier for supplier in Supplier.objects.all()}
 
     existing_skus = set(Product.objects.exclude(sku="").values_list("sku", flat=True))
 
@@ -190,10 +190,7 @@ def import_products_from_excel(file_obj) -> tuple[int, int]:
             supplier_obj = suppliers_cache.get(supplier_name)
 
             if supplier_obj is None:
-                supplier_obj = Counterparty.objects.create(
-                    company_name=supplier_name,
-                    type="supplier",
-                )
+                supplier_obj = Supplier.objects.create(company_name=supplier_name)
 
                 suppliers_cache[supplier_name] = supplier_obj
 
@@ -308,7 +305,6 @@ def process_receipt_post(receipt: Receipt):
                 type="IN",
                 product=product,
                 warehouse=receipt.warehouse,
-                counterparty=receipt.supplier,
                 quantity=item.quantity,
                 receipt=receipt,
                 comment=f"Приход №{receipt.number}",
@@ -448,7 +444,6 @@ def process_sale_post(sale: Sale):
                 type="OUT",
                 product=locked_product,
                 warehouse=sale.warehouse,
-                counterparty=sale.customer,
                 quantity=item.quantity,
                 sale=sale,
                 comment=f"Продажа №{sale.number}",

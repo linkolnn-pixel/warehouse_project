@@ -13,7 +13,7 @@
 </style>
 
 <div class="container mt-4">
-    <h2 class="mb-4">📤 Создание продажи</h2>
+    <h2 class="mb-4 text-danger">📤 Создание продажи</h2>
     <form method="post" id="sale-form">
         {% csrf_token %}
         <div class="card shadow p-4">
@@ -39,7 +39,7 @@
             </div>
 
             <div class="mb-3">
-                <label class="form-label">Клиент <span class="text-danger">*</span></label>
+                <label class="form-label">Клиент</label>
                 <div class="input-group">
                     {{ form.customer }}
                     <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">+</button>
@@ -228,7 +228,6 @@
       </div>
       <form id="ajaxCustomerForm" class="p-3">
         {% csrf_token %}
-        <input type="hidden" name="type" value="customer">
         <div class="mb-3">
           <label>Имя <span class="text-danger">*</span></label>
           <input type="text" name="first_name" class="form-control" required>
@@ -248,7 +247,7 @@ document.getElementById('ajaxCustomerForm').addEventListener('submit', function(
     e.preventDefault();
     let formData = new FormData(this);
 
-    fetch("{% url 'api_counterparty_create' %}", {
+    fetch("{% url 'api_customer_create' %}", {
         method: "POST",
         body: formData,
         headers: { "X-Requested-With": "XMLHttpRequest" }
@@ -497,6 +496,37 @@ document.addEventListener("DOMContentLoaded", function () {
     updateTotal();
     updateAddProductsLink();
 });
+</script>
+
+<script>
+function submitQuickCustomer() {
+    const form = document.getElementById('quickCustomerForm');
+    const formData = new FormData(form);
+
+    // НОВЫЙ URL: /api/customer/create/
+    fetch("{% url 'api_customer_create' %}", {
+        method: "POST",
+        body: formData,
+        headers: {
+            "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            const select = document.getElementById('id_customer');
+            const option = new Option(data.name, data.id, true, true);
+            select.add(option);
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addCustomerModal'));
+            modal.hide();
+            form.reset();
+        } else {
+            alert(data.error || "Произошла ошибка");
+        }
+    })
+    .catch(error => console.error("Ошибка:", error));
+}
 </script>
 
 {% endblock %}

@@ -58,54 +58,28 @@ class Warehouse(models.Model):
         return self.name
 
 
-class Counterparty(SoftDeleteModel):
-    TYPE_CHOICES = (
-        ("supplier", "Поставщик"),
-        ("customer", "Клиент"),
-    )
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
-
-    # Поставщик
-    company_name = models.CharField(max_length=200, blank=True, verbose_name="Название компании")
-    inn = models.CharField(max_length=20, blank=True, null=True, verbose_name="ИНН")
-
-    # Клиент
-    first_name = models.CharField(max_length=100, blank=True, verbose_name="Имя")
-    last_name = models.CharField(max_length=100, blank=True, verbose_name="Фамилия")
+class Supplier(SoftDeleteModel):
+    company_name = models.CharField(max_length=200)
+    inn = models.CharField(max_length=20, null=True, blank=True)
 
     class Meta:
-        verbose_name = "Контрагент"
-        verbose_name_plural = "Контрагенты"
-        constraints = [
-            models.UniqueConstraint(
-                fields=["type", "first_name", "last_name"],
-                condition=models.Q(type="customer"),
-                name="unique_customer_name",
-            ),
-        ]
-
-    def clean(self):
-        super().clean()
-
-        if self.type == "customer":
-            if not self.first_name or not self.first_name.strip():
-                raise ValidationError({"first_name": "Введите имя клиента."})
-
-            if not self.last_name or not self.last_name.strip():
-                raise ValidationError({"last_name": "Введите фамилию клиента."})
-
-        elif self.type == "supplier":
-            if not self.company_name or not self.company_name.strip():
-                raise ValidationError({"company_name": "Введите название компании."})
-
-            if not self.inn or not self.inn.strip():
-                raise ValidationError({"inn": "Введите ИНН."})
+        verbose_name = "Поставщик"
+        verbose_name_plural = "Поставщики"
 
     def __str__(self):
-        if self.type == "customer":
-            return f"{self.last_name} {self.first_name}"
-
         return self.company_name
+
+
+class Customer(SoftDeleteModel):
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name = "Клиент"
+        verbose_name_plural = "Клиенты"
+
+    def __str__(self):
+        return f"{self.last_name} {self.first_name}"
 
 
 class Category(MPTTModel):
@@ -205,7 +179,7 @@ class Product(SoftDeleteModel):
         verbose_name="Ед. изм. (вес/объем)",
     )
     supplier = models.ForeignKey(
-        Counterparty,
+        Supplier,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -253,19 +227,11 @@ class Transaction(models.Model):
     )
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="transactions")
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name="transactions")
-    counterparty = models.ForeignKey(
-        Counterparty,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="transactions",
-    )
     type = models.CharField(max_length=3, choices=TYPE_CHOICES, db_index=True)
     quantity = models.PositiveIntegerField()
     date = models.DateTimeField(default=timezone.now, db_index=True)
     comment = models.TextField(blank=True)
     receipt = models.ForeignKey("Receipt", null=True, blank=True, on_delete=models.SET_NULL)
-
     sale = models.ForeignKey("Sale", null=True, blank=True, on_delete=models.SET_NULL)
 
     class Meta:
@@ -311,7 +277,7 @@ class DocumentMixin(models.Model):
 
 class Receipt(DocumentMixin):
     warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT)
-    supplier = models.ForeignKey(Counterparty, on_delete=models.PROTECT, limit_choices_to={"type": "supplier"})
+    supplier = models.ForeignKey(Supplier, on_delete=models.PROTECT, null=True)
     delivery_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Стоимость доставки")
 
     def __str__(self):
@@ -341,9 +307,7 @@ class ReceiptItem(models.Model):
 
 class Sale(DocumentMixin):
     warehouse = models.ForeignKey(Warehouse, on_delete=models.PROTECT)
-    customer = models.ForeignKey(
-        Counterparty, on_delete=models.PROTECT, null=True, blank=True, limit_choices_to={"type": "customer"}
-    )
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, null=True)
     delivery_expense = models.DecimalField(
         max_digits=10, decimal_places=2, default=0, verbose_name="Расходы на доставку"
     )

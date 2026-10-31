@@ -14,7 +14,7 @@
 </style>
 
 <div class="container mt-4">
-    <h2 class="mb-4">📥 Создание прихода</h2>
+    <h2 class="mb-4 text-success">📥 Создание прихода</h2>
     <form method="post" id="receipt-form">
         {% csrf_token %}
         <div class="card shadow p-4">
@@ -32,12 +32,24 @@
             <div class="mb-3">
                 <label class="form-label">Склад</label>
                 {{ form.warehouse }}
+                {% for error in form.warehouse.errors %}
+                    <div class="text-danger small">
+                        {{ error }}
+                    </div>
+                {% endfor %}
             </div>
 
-            <label class="form-label">Поставщик <span class="text-danger">*</span></label>
-            <div class="input-group">
-                {{ form.supplier }}
-                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addSupplierModal">+</button>
+            <div class="mb-3">
+                <label class="form-label">Поставщик</label>
+                <div class="input-group">
+                    {{ form.supplier }}
+                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addSupplierModal">+</button>
+                </div>
+                {% for error in form.supplier.errors %}
+                    <div class="text-danger small">
+                        {{ error }}
+                    </div>
+                {% endfor %}
             </div>
 
             <div class="mb-3">
@@ -153,7 +165,6 @@
       </div>
       <form id="ajaxSupplierForm" class="p-3">
         {% csrf_token %}
-        <input type="hidden" name="type" value="supplier">
         <div class="mb-3">
           <label>Название компании <span class="text-danger">*</span></label>
           <input type="text" name="company_name" class="form-control" required>
@@ -401,6 +412,39 @@ document.addEventListener("DOMContentLoaded", function () {
     updateAddProductsLink();
     updateTotal();
 });
+</script>
+
+<script>
+function submitQuickSupplier() {
+    const form = document.getElementById('quickSupplierForm');
+    const formData = new FormData(form);
+
+    // НОВЫЙ URL: /api/supplier/create/
+    fetch("{% url 'api_supplier_create' %}", {
+        method: "POST",
+        body: formData,
+        headers: {
+            "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            // Добавляем нового поставщика в Select2 или обычный select
+            const select = document.getElementById('id_supplier');
+            const option = new Option(data.name, data.id, true, true);
+            select.add(option);
+
+            // Закрываем модалку Bootstrap
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addSupplierModal'));
+            modal.hide();
+            form.reset();
+        } else {
+            alert(data.error || "Произошла ошибка");
+        }
+    })
+    .catch(error => console.error("Ошибка:", error));
+}
 </script>
 
 {% endblock %}

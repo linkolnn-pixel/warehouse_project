@@ -73,7 +73,9 @@ def dashboard_view(request):
     revenue_1y, profit_1y, top_1y, delivery_in_1y, delivery_out_1y, total_delivery_1y = get_stats_since(365)
 
     # --- 3. ПОСЛЕДНИЕ СОБЫТИЯ ---
-    recent_transactions = Transaction.objects.select_related("product", "warehouse").order_by("-date")[:5]
+    recent_transactions = Transaction.objects.select_related(
+        "product", "warehouse", "receipt__supplier", "sale__customer"
+    ).order_by("-date")[:5]
 
     context = {
         "total_stock_cost": total_stock_cost,
