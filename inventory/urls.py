@@ -11,6 +11,7 @@ from .views.catalog import (
     product_edit,
     product_picker,
     products_catalog_view,
+    update_product_category,
     upload_products,
 )
 from .views.documents import (
@@ -50,6 +51,7 @@ urlpatterns = [
     path("product/<int:pk>/edit/", product_edit, name="product_edit"),
     path("products/picker/", product_picker, name="product_picker"),
     path("category/new/", category_create, name="category_create"),
+    path("catalog/update-category/", update_product_category, name="update_product_category"),
     # ПОСТАВЩИКИ
     path("supplier/new/", supplier_create, name="supplier_create"),
     path("api/supplier/create/", api_supplier_create, name="api_supplier_create"),

@@ -23,6 +23,7 @@ class ProductForm(forms.ModelForm):
         fields = [
             "name",
             "sku",
+            "brand",
             "category",
             "supplier",
             "unit",
@@ -35,6 +36,7 @@ class ProductForm(forms.ModelForm):
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "sku": forms.TextInput(attrs={"class": "form-control"}),
             "supplier": forms.Select(attrs={"class": "form-select"}),
+            "brand": forms.TextInput(attrs={"class": "form-control"}),
             "category": forms.Select(attrs={"class": "form-select"}),
             "unit": forms.TextInput(attrs={"class": "form-control"}),
             "quantity_value": forms.NumberInput(attrs={"class": "form-control"}),
@@ -49,6 +51,7 @@ class ProductEditForm(forms.ModelForm):
         model = Product
         fields = [
             "name",
+            "brand",
             "category",
             "supplier",
             "sku",
@@ -60,7 +63,8 @@ class ProductEditForm(forms.ModelForm):
         ]
         labels = {
             "name": "Наименование",
-            "category": "Бренд",
+            "brand": "Бренд",
+            "category": "Категории",
             "supplier": "Поставщик",
             "sku": "Артикул",
             "cost_price": "Закупочная цена",
@@ -71,7 +75,8 @@ class ProductEditForm(forms.ModelForm):
         }
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
-            "category": forms.Select(attrs={"class": "form-select"}),
+            "brand": forms.TextInput(attrs={"class": "form-control"}),
+            "category": forms.SelectMultiple(attrs={"class": "form-control"}),
             "supplier": forms.Select(attrs={"class": "form-select"}),
             "sku": forms.TextInput(attrs={"class": "form-control"}),
             "cost_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),

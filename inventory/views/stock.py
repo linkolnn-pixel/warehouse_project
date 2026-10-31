@@ -13,6 +13,14 @@ def stock_management_view(request):
     categories = Category.objects.all()
     warehouses = Warehouse.objects.all()
 
+    brands = (
+        Product.objects.exclude(brand__isnull=True)
+        .exclude(brand__exact="")
+        .values_list("brand", flat=True)
+        .order_by("brand")
+        .distinct()
+    )
+
     warehouse_id = warehouse.id if warehouse else None
     products = Product.objects.with_balances(warehouse_id).select_related("category").order_by("name")
 
@@ -43,6 +51,7 @@ def stock_management_view(request):
             "warehouse": warehouse,
             "warehouses": warehouses,
             "categories": categories,
+            "brands": brands,
             "total_quantity": total_quantity,
             "total_cost": total_cost,
             "total_retail": total_retail,

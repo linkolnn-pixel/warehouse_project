@@ -1,8 +1,12 @@
+import json
+
 from django.contrib import messages
 from django.db import IntegrityError
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 from rest_framework.generics import get_object_or_404
 
 from ..decorators import test_mode_login_required
@@ -14,22 +18,30 @@ from ..services import import_products_from_excel
 
 @test_mode_login_required
 def products_catalog_view(request):
-    brands = Category.objects.filter(parent__isnull=True).order_by("name")
+    # 1. Получаем категории (для бокового меню)
+    categories = Category.objects.all().order_by("name")
+
+    # 2. Получаем уникальные текстовые бренды (для выпадающего фильтра в таблице)
+    brands = (
+        Product.objects.exclude(brand__isnull=True)
+        .exclude(brand__exact="")
+        .values_list("brand", flat=True)
+        .order_by("brand")
+        .distinct()
+    )
 
     products = Product.objects.select_related("category", "supplier").order_by("brand", "name")
 
-    # Фильтр по бренду/категории
+    # Фильтр по категории (при клике в боковом меню)
     selected_cat_id = request.GET.get("cat")
     selected_category = None
 
     if selected_cat_id:
         selected_category = get_object_or_404(Category, id=selected_cat_id)
-
         products = products.filter(category=selected_category)
 
     # Поиск
     query = request.GET.get("q", "").strip()
-
     if query:
         products = products.filter(
             Q(name__icontains=query) | Q(sku__icontains=query) | Q(internal_code__icontains=query)
@@ -37,7 +49,8 @@ def products_catalog_view(request):
 
     context = {
         "products": products,
-        "brands": brands,
+        "categories": categories,  # Теперь категории идут отдельно
+        "brands": brands,  # А бренды отдельно
         "selected_category": selected_category,
         "page_title": "Каталог товаров",
         "query": query,
@@ -52,7 +65,7 @@ def product_detail(request, pk):
     warehouse_id = warehouse.id if warehouse else None
 
     product = get_object_or_404(
-        Product.objects.with_balances(warehouse_id).select_related("category", "supplier"),
+        Product.objects.with_balances(warehouse_id).select_related("supplier").prefetch_related("category"),
         pk=pk,
     )
     # getattr нужен на случай, если склада нет
@@ -270,3 +283,26 @@ def upload_products(request):
 
     # Если это GET-запрос, просто отдаем HTML-форму
     return render(request, "inventory/upload_products.html")
+
+
+@test_mode_login_required
+@require_POST
+def update_product_category(request):
+    try:
+        data = json.loads(request.body)
+        product_id = data.get("product_id")
+        category_id = data.get("category_id")
+
+        product = get_object_or_404(Product, id=product_id)
+
+        if category_id:
+            category = get_object_or_404(Category, id=category_id)
+            product.category = category
+        else:
+            product.category = None
+
+        product.save(update_fields=["category"])
+
+        return JsonResponse({"status": "success"})
+    except Exception as e:
+        return JsonResponse({"status": "error", "message": str(e)}, status=400)
