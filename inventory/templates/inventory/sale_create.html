@@ -247,7 +247,7 @@ document.getElementById('ajaxCustomerForm').addEventListener('submit', function(
     e.preventDefault();
     let formData = new FormData(this);
 
-    fetch("{% url 'api_counterparty_create' %}", {
+    fetch("{% url 'api_customer_create' %}", {
         method: "POST",
         body: formData,
         headers: { "X-Requested-With": "XMLHttpRequest" }
