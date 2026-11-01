@@ -234,9 +234,7 @@ class SaleForm(forms.ModelForm):
         model = Sale
         fields = ["date", "warehouse", "customer", "comment", "delivery_expense"]
         widgets = {
-            "date": forms.DateTimeInput(
-                format="%Y-%m-%dT%H:%M", attrs={"type": "datetime-local", "class": "form-control"}
-            ),
+            "date": forms.DateTimeInput(format="%Y-%m-%dT%H:%M", attrs={"class": "form-control"}),
             "warehouse": forms.Select(attrs={"class": "form-select"}),
             "customer": forms.Select(
                 attrs={

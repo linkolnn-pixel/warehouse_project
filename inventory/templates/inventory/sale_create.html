@@ -6,6 +6,25 @@
 
 {% block content %}
 
+<!-- БЛОК ДЛЯ СТИЛЕЙ КАЛЕНДАРЯ -->
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/material_blue.css">
+<style>
+    .flatpickr-calendar {
+        width: auto !important;
+        transform: scale(1);
+        transform-origin: top left;
+        margin-top: 5px;
+    }
+    .flatpickr-day {
+        max-width: 45px !important;
+        height: 45px !important;
+        line-height: 45px !important;
+    }
+</style>
+{% endblock %}
+
 <style>
     .quantity-field {
         max-width: 120px;
@@ -529,4 +548,23 @@ function submitQuickCustomer() {
 }
 </script>
 
+{% endblock %}
+
+
+{% block extra_body %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Django автоматически дает полю 'date' ID 'id_date'
+        flatpickr("#id_date", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            locale: "ru",
+            time_24hr: true,
+            disableMobile: true // Отключает стандартный календарь на телефонах
+        });
+    });
+</script>
 {% endblock %}
