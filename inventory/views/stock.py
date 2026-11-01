@@ -4,7 +4,7 @@ from django.core.paginator import Paginator
 from django.shortcuts import render
 
 from inventory.decorators import test_mode_login_required
-from inventory.models import Category, Product, Transaction, Warehouse
+from inventory.models import Category, Product, Receipt, Sale, Transaction, Warehouse
 
 
 @test_mode_login_required
@@ -63,6 +63,30 @@ def stock_management_view(request):
 @test_mode_login_required
 def movement_report(request):
     op_type = request.GET.get("type")
+    if request.GET.get("status") == "draft":
+        docs = []
+        if op_type != "OUT":
+            docs += list(Receipt.objects.filter(posted=False))
+        if op_type != "IN":
+            docs += list(Sale.objects.filter(posted=False))
+
+        documents = [
+            {
+                "key": f"draft_{d.id}",
+                "date": d.date,
+                "type": "IN" if isinstance(d, Receipt) else "OUT",
+                "warehouse": d.warehouse,
+                "counterparty": getattr(d, "supplier", getattr(d, "customer", None)),
+                "document": d,
+                "doc_number": d.number,
+                "reference": d.comment,
+                "items": [{"product": i.product, "quantity": i.quantity} for i in d.items.all()],
+            }
+            for d in sorted(docs, key=lambda x: x.date, reverse=True)
+        ]
+
+        return render(request, "inventory/movement_report.html", {"documents": documents})
+
     transactions = Transaction.objects.select_related(
         "product",
         "warehouse",

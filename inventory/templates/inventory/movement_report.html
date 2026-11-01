@@ -26,6 +26,11 @@
                     Продажа
                 </a>
             </div>
+            <div class="btn-group shadow-sm" role="group">
+                <a href="?status=draft" class="btn {% if request.GET.status == 'draft' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                    <i></i> Непроведенные
+                </a>
+            </div>
         </div>
     </div>
 
