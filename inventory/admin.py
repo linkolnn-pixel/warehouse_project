@@ -82,6 +82,7 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(admin.ModelAdmin):
+    list_select_related = ("product", "warehouse", "receipt__supplier", "sale__customer")
     list_display = ("product", "warehouse", "type", "quantity", "date", "get_counterparty")
     list_filter = ("type", "warehouse")
     search_fields = (
