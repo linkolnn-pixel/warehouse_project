@@ -12,7 +12,7 @@ from rest_framework.generics import get_object_or_404
 from ..decorators import test_mode_login_required
 from ..exceptions import ExcelImportError
 from ..forms import CategoryForm, ProductEditForm, ProductForm
-from ..models import Category, Product, Transaction, Warehouse
+from ..models import Category, Product, Supplier, Transaction, Warehouse
 from ..services import import_products_from_excel
 
 
@@ -241,6 +241,15 @@ def product_picker(request):
 
     categories = Category.objects.all()
 
+    suppliers = Supplier.objects.all()
+    brands = (
+        Product.objects.exclude(brand__isnull=True)
+        .exclude(brand__exact="")
+        .order_by("brand")
+        .values_list("brand", flat=True)
+        .distinct()
+    )
+
     return render(
         request,
         "inventory/product_picker.html",
@@ -252,6 +261,8 @@ def product_picker(request):
             "target": target,
             "customer_id": customer_id,
             "supplier_id": supplier_id,
+            "suppliers": suppliers,
+            "brands": brands,
         },
     )
 

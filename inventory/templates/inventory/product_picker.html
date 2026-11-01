@@ -655,17 +655,17 @@ select.column-filter {
                                 >
                             </th>
 
-                            <!-- 6: CATEGORY -->
+                            <!-- 6: BRAND -->
                             <th class="col-category no-sort">
-                                <span class="column-title">Категория</span>
+                                <span class="column-title">Бренд</span>
                                 <select
                                     class="column-filter"
                                     data-column="6"
                                 >
                                     <option value="">Все</option>
-                                    {% for c in categories %}
-                                        <option value="{{ c.name }}">
-                                            {{ c.name }}
+                                    {% for brand in brands %}
+                                        <option value="{{ brand }}">
+                                            {{ brand }}
                                         </option>
                                     {% endfor %}
                                 </select>
@@ -767,10 +767,10 @@ select.column-filter {
                                     {{ product.sku|default:"—" }}
                                 </td>
 
-                                <!-- 6: CATEGORY -->
+                                <!-- 6: BRAND -->
                                 <td class="col-category text-truncate-cell">
-                                    {% if product.category %}
-                                        {{ product.category.name }}
+                                    {% if product.brand %}
+                                        {{ product.brand }}
                                     {% else %}
                                         —
                                     {% endif %}
@@ -881,7 +881,7 @@ $(function () {
             url: 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/ru.json'
         },
 
-        pageLength: 25,
+        pageLength: 100,
 
         lengthMenu: [
             [10, 25, 50, 100, -1],
