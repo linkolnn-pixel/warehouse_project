@@ -34,7 +34,7 @@ from .views.partners import (
     customers_list,
     supplier_create,
 )
-from .views.stock import movement_report, stock_management_view
+from .views.stock import movement_report, receipt_delete, sale_delete, stock_management_view
 
 router = DefaultRouter()
 router.register(r"products", ProductViewSet, basename="product")
@@ -66,12 +66,14 @@ urlpatterns = [
     path("receipt/<int:pk>/post/", receipt_post, name="receipt_post"),
     path("receipt/<int:pk>/unpost/", receipt_unpost, name="receipt_unpost"),
     path("receipt/<int:pk>/edit/", receipt_edit, name="receipt_edit"),
+    path("receipt/<int:pk>/delete/", receipt_delete, name="receipt_delete"),
     # Продажа
     path("sale/create/", sale_create, name="sale_create"),
     path("sale/<int:pk>/", sale_detail, name="sale_detail"),
     path("sale/<int:pk>/post/", sale_post, name="sale_post"),
     path("sale/<int:pk>/unpost/", sale_unpost, name="sale_unpost"),
     path("sale/<int:pk>/edit/", sale_edit, name="sale_edit"),
+    path("sale/<int:pk>/delete/", sale_delete, name="sale_delete"),
     # Операции и Аналитика
     path("report/", movement_report, name="movement_report"),
     path("dashboard/", dashboard_view, name="dashboard"),
