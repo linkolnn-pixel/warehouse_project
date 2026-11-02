@@ -108,7 +108,26 @@
 
                         <td>{{ doc.warehouse|default:"—" }}</td>
                         <td>{{ doc.counterparty|default:"—" }}</td>
-                        <td>{{ doc.reference|default:"—" }}</td>
+                        <td class="d-flex justify-content-between align-items-center">
+                            <span>{{ doc.reference|default:"—" }}</span>
+
+                            <!-- Показываем кнопку удаления только если это черновики -->
+                            {% if request.GET.status == 'draft' %}
+                                {% if doc.type == 'IN' %}
+                                    <a href="{% url 'receipt_delete' doc.document.id %}"
+                                       class="btn btn-sm btn-outline-danger"
+                                       onclick="event.stopPropagation(); return confirm('Удалить черновик прихода?');">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                {% elif doc.type == 'OUT' %}
+                                    <a href="{% url 'sale_delete' doc.document.id %}"
+                                       class="btn btn-sm btn-outline-danger"
+                                       onclick="event.stopPropagation(); return confirm('Удалить черновик продажи?');">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        </td>
                     </tr>
 
                     <!-- Скрытая строка с товарами (раскрывается при клике) -->

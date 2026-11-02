@@ -1,7 +1,9 @@
 from collections import OrderedDict
 
+from django.contrib import messages
 from django.core.paginator import Paginator
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from rest_framework.generics import get_object_or_404
 
 from inventory.decorators import test_mode_login_required
 from inventory.models import Category, Product, Receipt, Sale, Transaction, Warehouse
@@ -157,3 +159,26 @@ def movement_report(request):
         documents.append(doc)
 
     return render(request, "inventory/movement_report.html", {"documents": documents})
+
+
+@test_mode_login_required
+def receipt_delete(request, pk):
+    receipt = get_object_or_404(Receipt, pk=pk)
+    if not receipt.posted:
+        receipt.delete()
+        messages.success(request, f"Черновик прихода №{receipt.number} удален.")
+    else:
+        messages.error(request, "Нельзя удалить проведенный приход!")
+    # Возвращаемся на предыдущую страницу
+    return redirect(request.META.get("HTTP_REFERER", "stock_management"))
+
+
+@test_mode_login_required
+def sale_delete(request, pk):
+    sale = get_object_or_404(Sale, pk=pk)
+    if not sale.posted:
+        sale.delete()
+        messages.success(request, f"Черновик продажи №{sale.number} удален.")
+    else:
+        messages.error(request, "Нельзя удалить проведенную продажу!")
+    return redirect(request.META.get("HTTP_REFERER", "stock_management"))
