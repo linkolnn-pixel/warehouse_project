@@ -1,8 +1,8 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views.analysis import analysis_view
-from .views.analytics import abc_analysis_view, dashboard_view
+from .views.analysis import client_predictions_view
+from .views.analytics import dashboard_view
 from .views.api import ProductViewSet
 from .views.catalog import (
     category_create,
@@ -77,8 +77,7 @@ urlpatterns = [
     # Операции и Аналитика
     path("report/", movement_report, name="movement_report"),
     path("dashboard/", dashboard_view, name="dashboard"),
-    path("abc-analysis/", abc_analysis_view, name="abc_analysis"),
-    path("analysis/", analysis_view, name="analysis"),
+    path("client-predictions/", client_predictions_view, name="client_predictions"),
 ]
 
 urlpatterns += router.urls

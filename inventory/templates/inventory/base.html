@@ -120,37 +120,36 @@
 
             <ul class="navbar-nav">
 
-                <!-- Каталог -->
+<!--                &lt;!&ndash; Каталог &ndash;&gt;-->
+
+<!--                <li class="nav-item">-->
+
+<!--                    <a-->
+<!--                        href="{% url 'products_catalog' %}"-->
+<!--                        class="nav-link-->
+<!--                        {% if request.resolver_match.url_name == 'products_catalog' %}-->
+<!--                            active-->
+<!--                        {% endif %}"-->
+<!--                    >-->
+<!--                        <i class="fa-solid fa-box"></i>-->
+<!--                        Каталог-->
+<!--                    </a>-->
+
+<!--                </li>-->
+
+                <!-- Клиенты -->
 
                 <li class="nav-item">
 
                     <a
-                        href="{% url 'products_catalog' %}"
+                        href="{% url 'customers_list' %}"
                         class="nav-link
-                        {% if request.resolver_match.url_name == 'products_catalog' %}
+                        {% if request.resolver_match.url_name == 'customers_list' %}
                             active
                         {% endif %}"
                     >
-                        <i class="fa-solid fa-box"></i>
-                        Каталог
-                    </a>
-
-                </li>
-
-
-                <!-- Приход -->
-
-                <li class="nav-item">
-
-                    <a
-                        href="{% url 'receipt_create' %}"
-                        class="nav-link
-                        {% if request.resolver_match.url_name == 'receipt_create' %}
-                            active
-                        {% endif %}"
-                    >
-                        <i class="fa-solid fa-arrow-down"></i>
-                        Приход
+                        <i class="fa-solid fa-users"></i>
+                        Клиенты
                     </a>
 
                 </li>
@@ -174,19 +173,19 @@
                 </li>
 
 
-                <!-- Клиенты -->
+                <!-- Приход -->
 
                 <li class="nav-item">
 
                     <a
-                        href="{% url 'customers_list' %}"
+                        href="{% url 'receipt_create' %}"
                         class="nav-link
-                        {% if request.resolver_match.url_name == 'customers_list' %}
+                        {% if request.resolver_match.url_name == 'receipt_create' %}
                             active
                         {% endif %}"
                     >
-                        <i class="fa-solid fa-users"></i>
-                        Клиенты
+                        <i class="fa-solid fa-arrow-down"></i>
+                        Приход
                     </a>
 
                 </li>
@@ -222,17 +221,19 @@
                         Аналитика
                     </a>
 
+                </li>
+
                 <li class="nav-item">
 
                     <a
-                        href="{% url 'analysis' %}"
+                        href="{% url 'client_predictions' %}"
                         class="nav-link
-                        {% if request.resolver_match.url_name == 'analysis' %}
+                        {% if request.resolver_match.url_name == 'client_predictions' %}
                             active
                         {% endif %}"
                     >
                         <i class="fa-solid fa-list"></i>
-                        Анализ
+                        Прогноз
                     </a>
 
                 </li>

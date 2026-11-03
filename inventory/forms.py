@@ -37,7 +37,6 @@ class ProductForm(forms.ModelForm):
             "sku": forms.TextInput(attrs={"class": "form-control"}),
             "supplier": forms.Select(attrs={"class": "form-select"}),
             "brand": forms.TextInput(attrs={"class": "form-control"}),
-            "category": forms.Select(attrs={"class": "form-select"}),
             "unit": forms.TextInput(attrs={"class": "form-control"}),
             "quantity_value": forms.NumberInput(attrs={"class": "form-control"}),
             "measure_unit": forms.TextInput(attrs={"class": "form-control"}),
@@ -60,6 +59,7 @@ class ProductEditForm(forms.ModelForm):
             "unit",
             "quantity_value",
             "measure_unit",
+            "consumption_time",
         ]
         labels = {
             "name": "Наименование",
@@ -72,11 +72,11 @@ class ProductEditForm(forms.ModelForm):
             "quantity_value": "Объем / вес",
             "measure_unit": "Ед. измерения объема",
             "unit": "Единица учета",
+            "consumption_time": "Время расхода в месяцах",
         }
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "brand": forms.TextInput(attrs={"class": "form-control"}),
-            "category": forms.SelectMultiple(attrs={"class": "form-control"}),
             "supplier": forms.Select(attrs={"class": "form-select"}),
             "sku": forms.TextInput(attrs={"class": "form-control"}),
             "cost_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
@@ -84,6 +84,7 @@ class ProductEditForm(forms.ModelForm):
             "unit": forms.TextInput(attrs={"class": "form-control"}),
             "quantity_value": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
             "measure_unit": forms.Select(attrs={"class": "form-select"}),
+            "consumption_time": forms.NumberInput(attrs={"class": "form-control", "step": "0.1"}),
         }
 
 
