@@ -153,7 +153,7 @@ class Product(SoftDeleteModel):
     sku = models.CharField(max_length=50, blank=True, null=True, default="", verbose_name="Артикул")
     internal_code = models.CharField(max_length=20, unique=True, verbose_name="Внутренний код")
     name = models.CharField(max_length=200, verbose_name="Наименование")
-    category = models.ForeignKey(
+    category = TreeForeignKey(
         Category,
         on_delete=models.SET_NULL,
         null=True,
@@ -187,6 +187,9 @@ class Product(SoftDeleteModel):
         verbose_name="Поставщик",
     )
     average_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Средняя себестоимость")
+    consumption_time = models.DecimalField(
+        max_digits=10, decimal_places=1, default=0, verbose_name="Время расхода в месяцах"
+    )
     objects = ProductManager()  # type: ignore
 
     class Meta:

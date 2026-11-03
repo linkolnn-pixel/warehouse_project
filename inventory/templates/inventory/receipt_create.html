@@ -33,7 +33,11 @@
 </style>
 
 <div class="container mt-4">
-    <h2 class="mb-4 text-success">📥 Создание прихода</h2>
+    <div class="card text-white bg-success shadow-sm h-50">
+        <div class="card-body">
+            <h2 class="mb-4">📥 Создание прихода</h2>
+        </div>
+    </div>
     <form method="post" id="receipt-form">
         {% csrf_token %}
         <div class="card shadow p-4">

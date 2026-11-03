@@ -1,0 +1,91 @@
+{% extends 'inventory/base.html' %}
+
+{% block title %}Прогноз покупок клиентов{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-bullseye text-primary"></i> Прогноз покупок</h2>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Клиент</th>
+                            <th>Товар</th>
+                            <th>
+                                <span style="display: block; margin-bottom: 5px;">Бренд</span>
+                                <select class="column-filter form-select form-select-sm" data-column="1" style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
+                                    <option value="">Все</option>
+                                    {% for brand in brands %}
+                                        {% if brand %}
+                                            <option value="{{ brand }}">{{ brand }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                            </th>
+                            <th>Дата покупки</th>
+                            <th>Расход</th>
+                            <th>Ориентировочная дата окончания</th>
+                            <th>Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in predictions %}
+                        <tr>
+                            <td class="fw-bold">{{ p.customer }}</td>
+                            <td>{{ p.product.name }}</td>
+                            <td>{{ p.product.brand }}</td>
+                            <td>{{ p.purchase_date|date:"d.m.Y" }}</td>
+                            <td>{{ p.product.consumption_time }}</td>
+                            <td class="fw-bold">{{ p.exhaustion_date|date:"d.m.Y" }}</td>
+                            <td>
+                                {% if p.days_left < 0 %}
+                                    <span class="badge bg-danger">Товар закончился ({{ p.days_left|default:"0"|slugify|slice:"1:" }} дн. назад)</span>
+                                {% elif p.days_left <= 7 %}
+                                    <span class="badge bg-warning text-dark">Закончится через {{ p.days_left }} дн. (Пора звонить)</span>
+                                {% else %}
+                                    <span class="badge bg-success">Ещё есть на {{ p.days_left }} дн.</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">Нет данных для расчетов (убедитесь, что у проданных товаров заполнено "Время расхода")</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const brandSelect = document.querySelector('.column-filter');
+    const tableRows = document.querySelectorAll('tbody tr');
+
+    brandSelect.addEventListener('change', function() {
+        const selectedBrand = this.value.toLowerCase().trim();
+
+        tableRows.forEach(row => {
+            // Бренд находится в 3-й колонке (индекс 2, так как нумерация с нуля)
+            if (row.cells.length > 1) { // Пропускаем строку "Нет данных"
+                const rowBrand = row.cells[2].textContent.toLowerCase().trim();
+
+                if (selectedBrand === "" || rowBrand === selectedBrand) {
+                    row.style.display = ""; // Показываем
+                } else {
+                    row.style.display = "none"; // Скрываем
+                }
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}
