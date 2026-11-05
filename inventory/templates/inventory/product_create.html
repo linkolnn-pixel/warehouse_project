@@ -73,17 +73,14 @@
 
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Бренд</label>
-                            <div class="input-group">
                                 {{ form.brand }}
 
-                                <!-- Кнопка вызова модального окна для бренда -->
-                                <button type="button" class="btn btn-outline-secondary"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#addBrandModal"
-                                        title="Добавить новый бренд">
-                                    +
-                                </button>
-                            </div>
+                                <!-- Невидимый список подсказок для поля -->
+                                <datalist id="brandOptions">
+                                    {% for b in existing_brands %}
+                                        <option value="{{ b }}"></option>
+                                    {% endfor %}
+                                </datalist>
                         </div>
 
                         <div class="col-md-4 mb-3">
@@ -120,15 +117,19 @@
                         </div>
                     </div>
 
-                    <!-- Цены (в ряд) -->
+                    <!-- Цены и Время расхода (в ряд) -->
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Цена закупки <span class="text-danger">*</span></label>
                             {{ form.cost_price }}
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Цена продажи <span class="text-danger">*</span></label>
                             {{ form.sale_price }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Время расхода (мес.)</label>
+                            {{ form.consumption_time }}
                         </div>
                     </div>
 
@@ -188,37 +189,6 @@
 
         <!-- Скрытое поле: тип всегда будет "supplier" -->
         <input type="hidden" name="type" value="supplier">
-
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
-          <button type="submit" class="btn btn-success">Создать и вернуться</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- МОДАЛЬНОЕ ОКНО: Бренда -->
-<div class="modal fade" id="addBrandModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Бренд</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-
-      <!-- action ведет на category_create -->
-      <form
-          action="{% url 'category_create' %}?next=create_product&return_url={{ return_url }}{% for product_id in selected_products %}&products={{ product_id }}{% endfor %}"
-          method="post"
-          class="p-3"
-      >
-          {% csrf_token %}
-
-        <div class="mb-3">
-          <label class="form-label">Название бренда</label>
-          <input type="text" name="name" class="form-control" required placeholder="Например: DMK" autofocus>
-        </div>
 
         <div class="d-flex gap-2">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>

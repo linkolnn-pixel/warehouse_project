@@ -6,7 +6,7 @@ from .views.analytics import dashboard_view
 from .views.api import ProductViewSet
 from .views.catalog import (
     category_create,
-    create_product,
+    product_create,
     product_detail,
     product_edit,
     product_picker,
@@ -45,7 +45,7 @@ urlpatterns = [
     # Каталог товаров
     path("catalog/", products_catalog_view, name="products_catalog"),
     path("stock/", stock_management_view, name="stock_management"),
-    path("product/new/", create_product, name="create_product"),
+    path("product/new/", product_create, name="product_create"),
     path("products/upload/", upload_products, name="upload_products"),
     path("product/<int:pk>/", product_detail, name="product_detail"),
     path("product/<int:pk>/edit/", product_edit, name="product_edit"),
