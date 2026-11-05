@@ -519,8 +519,16 @@ select.column-filter {
         </h4>
         <div class="products-header-actions">
             {% if request.GET.target == 'receipt' %}
+
                 <a
-                    href="{% url 'create_product' %}?next=product_picker&target=receipt{% for id in selected_ids %}&products={{ id }}{% endfor %}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}"
+                    href="{% url 'upload_products' %}"
+                    class="btn btn-outline-secondary btn-sm"
+                >
+                    <i class="fa-solid fa-file-excel"></i>
+                    Excel
+                </a>
+                <a
+                    href="{% url 'product_create' %}?next=product_picker&target=receipt{% for id in selected_ids %}&products={{ id }}{% endfor %}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}"
                     class="btn btn-primary btn-sm"
                 >
                     <i class="fa-solid fa-plus me-1"></i>

@@ -106,7 +106,7 @@ def product_edit(request, pk):
 
 
 @test_mode_login_required
-def create_product(request):
+def product_create(request):
     next_name = request.GET.get("next", "products_catalog")
     target = request.GET.get("target", "")
     selected_products = request.GET.getlist("products")
@@ -147,14 +147,24 @@ def create_product(request):
             initial_data["category"] = category_id
 
         form = ProductForm(initial=initial_data)
+
+    existing_brands = (
+        Product.objects.exclude(brand__isnull=True)
+        .exclude(brand__exact="")
+        .values_list("brand", flat=True)
+        .order_by("brand")
+        .distinct()
+    )
+
     return render(
         request,
-        "inventory/create_product.html",
+        "inventory/product_create.html",
         {
             "form": form,
             "next_name": next_name,
             "target": target,
             "selected_products": selected_products,
+            "existing_brands": existing_brands,
         },
     )
 

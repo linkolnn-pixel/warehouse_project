@@ -2,6 +2,7 @@ from django import forms
 from django.forms import inlineformset_factory
 from django.utils import timezone
 from django_select2.forms import ModelSelect2Widget
+from mptt.forms import TreeNodeChoiceField
 
 from .models import (
     Category,
@@ -18,6 +19,13 @@ from .models import (
 
 # Формы для товаров и Excel
 class ProductForm(forms.ModelForm):
+    category = TreeNodeChoiceField(
+        queryset=Category.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+        label="Категория",
+    )
+
     class Meta:
         model = Product
         fields = [
@@ -31,21 +39,30 @@ class ProductForm(forms.ModelForm):
             "measure_unit",
             "cost_price",
             "sale_price",
+            "consumption_time",
         ]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
             "sku": forms.TextInput(attrs={"class": "form-control"}),
             "supplier": forms.Select(attrs={"class": "form-select"}),
-            "brand": forms.TextInput(attrs={"class": "form-control"}),
+            "brand": forms.TextInput(attrs={"class": "form-control", "list": "brandOptions", "autocomplete": "off"}),
             "unit": forms.TextInput(attrs={"class": "form-control"}),
             "quantity_value": forms.NumberInput(attrs={"class": "form-control"}),
             "measure_unit": forms.TextInput(attrs={"class": "form-control"}),
             "cost_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
             "sale_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "consumption_time": forms.NumberInput(attrs={"class": "form-control", "step": "0.1"}),
         }
 
 
 class ProductEditForm(forms.ModelForm):
+    category = TreeNodeChoiceField(
+        queryset=Category.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+        label="Категория",
+    )
+
     class Meta:
         model = Product
         fields = [
@@ -76,7 +93,7 @@ class ProductEditForm(forms.ModelForm):
         }
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control"}),
-            "brand": forms.TextInput(attrs={"class": "form-control"}),
+            "brand": forms.TextInput(attrs={"class": "form-control", "list": "brandOptions", "autocomplete": "off"}),
             "supplier": forms.Select(attrs={"class": "form-select"}),
             "sku": forms.TextInput(attrs={"class": "form-control"}),
             "cost_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
