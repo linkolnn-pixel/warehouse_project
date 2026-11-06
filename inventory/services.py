@@ -1,8 +1,7 @@
 from decimal import Decimal, InvalidOperation
 
-import models
 import pandas as pd
-from django.db import transaction
+from django.db import models, transaction
 
 from .exceptions import (
     DocumentAlreadyPostedError,
