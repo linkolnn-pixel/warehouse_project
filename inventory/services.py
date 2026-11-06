@@ -1,5 +1,6 @@
 from decimal import Decimal, InvalidOperation
 
+import models
 import pandas as pd
 from django.db import transaction
 
@@ -284,19 +285,26 @@ def process_receipt_post(receipt: Receipt):
             delivery_share = Decimal("0")
 
         # 2. Расчет скользящей средней (Moving Average)
-        current_qty = balance.quantity
-        new_qty = current_qty + item.quantity
+        total_current_qty = StockBalance.objects.filter(product=product).aggregate(total=models.Sum("quantity"))[
+            "total"
+        ] or Decimal("0")
 
-        total_value = (current_qty * product.average_cost) + (item.quantity * item.cost_price) + delivery_share
-        product.average_cost = total_value / new_qty if new_qty > 0 else Decimal("0")
+        total_new_qty = total_current_qty + Decimal(item.quantity)
+
+        total_value = (
+            (total_current_qty * product.average_cost) + (Decimal(item.quantity) * item.cost_price) + delivery_share
+        )
+
+        product.average_cost = total_value / total_new_qty if total_new_qty > 0 else Decimal("0")
 
         # Обновляем также последние закупочные/продажные цены
         product.cost_price = item.cost_price
         product.sale_price = item.sale_price
         products_to_update.append(product)
 
-        # 3. Обновляем остаток
-        balance.quantity = new_qty
+        # 3. Обновляем остаток на текущем складе
+        current_qty_on_warehouse = balance.quantity
+        balance.quantity = current_qty_on_warehouse + Decimal(item.quantity)
         balance.save(update_fields=["quantity"])
 
         transactions.append(
@@ -350,20 +358,25 @@ def process_receipt_unpost(receipt: Receipt):
             else:
                 delivery_share = Decimal("0")
 
-            current_qty = balance.quantity
-            new_qty = current_qty - item.quantity
+            total_current_qty = StockBalance.objects.filter(product=product).aggregate(total=models.Sum("quantity"))[
+                "total"
+            ] or Decimal("0")
 
-            # Общая стоимость на складе ДО отмены минус стоимость отменяемого прихода
-            # Используем max(0, ...), чтобы избежать отрицательных копеек из-за округлений
+            total_new_qty = total_current_qty - Decimal(item.quantity)
+
             total_value = max(
-                Decimal("0"), (current_qty * product.average_cost) - (item.quantity * item.cost_price) - delivery_share
+                Decimal("0"),
+                (total_current_qty * product.average_cost)
+                - (Decimal(item.quantity) * item.cost_price)
+                - delivery_share,
             )
 
-            product.average_cost = total_value / new_qty if new_qty > 0 else Decimal("0")
+            product.average_cost = total_value / total_new_qty if total_new_qty > 0 else Decimal("0")
             products_to_update.append(product)
 
-            # 2. Откатываем остаток
-            balance.quantity = new_qty
+            # 2. Откатываем остаток на складе
+            current_qty_on_warehouse = balance.quantity
+            balance.quantity = current_qty_on_warehouse - Decimal(item.quantity)
             balance.save(update_fields=["quantity"])
 
     if products_to_update:
