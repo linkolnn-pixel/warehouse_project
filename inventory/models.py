@@ -77,6 +77,7 @@ class Customer(SoftDeleteModel):
     class Meta:
         verbose_name = "Клиент"
         verbose_name_plural = "Клиенты"
+        ordering = ["last_name", "first_name"]
 
     def __str__(self):
         return f"{self.last_name} {self.first_name}"
