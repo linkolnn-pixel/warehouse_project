@@ -2,6 +2,7 @@ from django.db import transaction
 from rest_framework import serializers
 
 from .models import (
+    Category,
     Product,
     Receipt,
     ReceiptItem,
@@ -33,6 +34,12 @@ class ProductSerializer(serializers.ModelSerializer):
             "supplier",
             "supplier_name",
         ]
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ["id", "name"]
 
 
 class WarehouseSerializer(serializers.ModelSerializer):

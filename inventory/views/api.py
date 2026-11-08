@@ -1,13 +1,14 @@
 from django.db.models import Q
-from rest_framework import status
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from inventory.exceptions import InventoryError
-from inventory.models import Product, Receipt, Sale, Warehouse
+from inventory.models import Category, Product, Receipt, Sale, Warehouse
 from inventory.permissions import TestModeOrAuthenticated
 from inventory.serializers import (
+    CategorySerializer,
     ProductSerializer,
     ReceiptSerializer,
     SaleSerializer,
@@ -24,6 +25,11 @@ class ProductViewSet(ReadOnlyModelViewSet):
         "supplier",
     ).all()
     serializer_class = ProductSerializer
+
+
+class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
 
 
 class WarehouseViewSet(ReadOnlyModelViewSet):
