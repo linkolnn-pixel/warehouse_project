@@ -104,14 +104,16 @@ class ReceiptViewSet(ModelViewSet):
 
 class SaleViewSet(ModelViewSet):
     permission_classes = [TestModeOrAuthenticated]
-    queryset = (
-        Sale.objects.select_related(
-            "warehouse",
-            "customer",
-        )
-        .prefetch_related("items__product")
-        .all()
-    )
+    serializer_class = SaleSerializer
+
+    def get_queryset(self):
+        queryset = Sale.objects.select_related("warehouse", "customer").prefetch_related("items__product").all()
+
+        external_id = self.request.query_params.get("external_id")
+        if external_id:
+            queryset = queryset.filter(external_id=external_id)
+
+        return queryset
 
     serializer_class = SaleSerializer
 

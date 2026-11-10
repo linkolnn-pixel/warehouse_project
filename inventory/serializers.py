@@ -177,6 +177,7 @@ class SaleSerializer(serializers.ModelSerializer):
             "delivery_expense",
             "comment",
             "is_online",
+            "external_id",
             "posted",
             "items",
         ]
