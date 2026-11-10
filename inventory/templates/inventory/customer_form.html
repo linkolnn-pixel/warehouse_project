@@ -1,17 +1,88 @@
-{% extends "base.html" %}
+{% extends "inventory/base.html" %}
+
+{% block title %}Новый клиент{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h2>Новый клиент</h2>
-    <form method="post">
-        {% csrf_token %}
-        {% if form.errors %}
-            <div class="alert alert-danger">Пожалуйста, исправьте ошибки ниже.</div>
-        {% endif %}
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-white pb-0 border-bottom-0 mt-3">
+                    <h3 class="mb-0">Новый клиент</h3>
+                </div>
+                <div class="card-body">
 
-        {{ form.as_p }}
+                    <form method="post" novalidate>
+                        {% csrf_token %}
 
-        <button type="submit" class="btn btn-primary">Сохранить</button>
-        <a href="javascript:history.back()" class="btn btn-secondary">Отмена</a>
-    </form>
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                Пожалуйста, исправьте ошибки ниже.
+                            </div>
+                        {% endif %}
+
+                        <!-- Имя -->
+                        <div class="mb-3">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label fw-bold">Имя</label>
+                            <input type="text" name="{{ form.first_name.html_name }}"
+                                   id="{{ form.first_name.id_for_label }}"
+                                   class="form-control {% if form.first_name.errors %}is-invalid{% endif %}"
+                                   value="{{ form.first_name.value|default_if_none:'' }}"
+                                   required>
+                            {% if form.first_name.errors %}
+                                <div class="invalid-feedback">{{ form.first_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Фамилия -->
+                        <div class="mb-3">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label fw-bold">Фамилия</label>
+                            <input type="text" name="{{ form.last_name.html_name }}"
+                                   id="{{ form.last_name.id_for_label }}"
+                                   class="form-control {% if form.last_name.errors %}is-invalid{% endif %}"
+                                   value="{{ form.last_name.value|default_if_none:'' }}">
+                            {% if form.last_name.errors %}
+                                <div class="invalid-feedback">{{ form.last_name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Телефон -->
+                        <div class="mb-4">
+                            <label for="{{ form.phone.id_for_label }}" class="form-label fw-bold">Телефон</label>
+                            <input type="text" name="{{ form.phone.html_name }}"
+                                   id="{{ form.phone.id_for_label }}"
+                                   class="form-control {% if form.phone.errors %}is-invalid{% endif %}"
+                                   value="{{ form.phone.value|default_if_none:'' }}"
+                                   placeholder="+7 (___) ___-__-__">
+                            {% if form.phone.errors %}
+                                <div class="invalid-feedback">{{ form.phone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <hr>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="javascript:history.back()" class="btn btn-outline-secondary">Отмена</a>
+                            <button type="submit" class="btn btn-primary px-4">Сохранить</button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- Подключаем маску ввода для телефона -->
+<script src="https://unpkg.com/imask"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var phoneInput = document.getElementById('{{ form.phone.id_for_label }}');
+        if (phoneInput) {
+            IMask(phoneInput, {
+                mask: '+{7} (000) 000-00-00'
+            });
+        }
+    });
+</script>
 {% endblock %}

@@ -7,9 +7,15 @@
     <!-- Заголовок и кнопка назад -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Клиент</h2>
-        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">
-            <i class="fas fa-arrow-left"></i> Назад
-        </a>
+        <div>
+            <!-- Кнопка вызова модального окна -->
+            <button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#editCustomerModal">
+                <i class="fa-solid fa-pen"></i> Редактировать
+            </button>
+            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> Назад
+            </a>
+        </div>
     </div>
 
     <!-- Карточка с основной информацией -->
@@ -24,7 +30,19 @@
             </h4>
 
             <div class="row">
-                <div class="col-md-4">
+                <!-- ДОБАВЛЕН БЛОК С ТЕЛЕФОНОМ -->
+                <div class="col-md-4 mb-2">
+                    <strong>Телефон:</strong><br>
+                    {% if customer.phone %}
+                        <a href="tel:{{ customer.phone }}" class="text-decoration-none fw-bold text-primary">
+                            {{ customer.phone }}
+                        </a>
+                    {% else %}
+                        <span class="text-muted">—</span>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4 mb-2">
                     <strong>Количество продаж:</strong><br>
                     {{ sales_count }}
                 </div>
@@ -92,4 +110,53 @@
         </div>
     </div>
 </div>
+
+<!-- ========================================== -->
+<!-- МОДАЛЬНОЕ ОКНО ДЛЯ РЕДАКТИРОВАНИЯ КЛИЕНТА  -->
+<!-- ========================================== -->
+<div class="modal fade" id="editCustomerModal" tabindex="-1" aria-labelledby="editCustomerModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title" id="editCustomerModalLabel">Редактировать клиента</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+          </div>
+          <div class="modal-body">
+              <div class="mb-3">
+                  <label class="form-label fw-bold">Имя</label>
+                  <input type="text" name="first_name" class="form-control" value="{{ customer.first_name|default:'' }}" required>
+              </div>
+              <div class="mb-3">
+                  <label class="form-label fw-bold">Фамилия</label>
+                  <input type="text" name="last_name" class="form-control" value="{{ customer.last_name|default:'' }}">
+              </div>
+              <div class="mb-3">
+                  <label class="form-label fw-bold">Телефон</label>
+                  <input type="text" name="phone" id="modalPhoneInput" class="form-control" value="{{ customer.phone|default:'' }}" placeholder="+7 (___) ___-__-__">
+              </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Подключаем маску ввода для телефона -->
+<script src="https://unpkg.com/imask"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var phoneInput = document.getElementById('modalPhoneInput');
+        if (phoneInput) {
+            IMask(phoneInput, {
+                mask: '+{7} (000) 000-00-00'
+            });
+        }
+    });
+</script>
+
 {% endblock %}

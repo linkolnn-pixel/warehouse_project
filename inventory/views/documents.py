@@ -105,7 +105,6 @@ def sale_create(request):
     )
 
     if request.method == "POST":
-        # Копируем POST, чтобы клиент не потерялся при возврате формы с ошибками
         post_data = request.POST.copy()
         if not post_data.get("customer") and customer_id:
             post_data["customer"] = customer_id
@@ -144,7 +143,6 @@ def sale_create(request):
                     )
                     stock_error = True
 
-            # Если ошибок нет — сохраняем
             if not stock_error:
                 sale = form.save()
                 formset.instance = sale
@@ -177,7 +175,6 @@ def sale_create(request):
         sale = Sale()
         formset = SaleItemFormSetDynamic(instance=sale, initial=initial)
 
-    # === ЕДИНЫЙ БЛОК РАСЧЕТА ОСТАТКОВ ДЛЯ ВСЕХ СЦЕНАРИЕВ (GET / POST С ОШИБКОЙ) ===
     for form_item in formset:
         prod = None
         if hasattr(form_item, "cleaned_data") and form_item.cleaned_data and form_item.cleaned_data.get("product"):
@@ -220,7 +217,6 @@ def sale_edit(request, pk):
             sale = form.save()
             items = formset.save(commit=False)
             for item in items:
-                # Если себестоимость нулевая (например, добавили новый товар в существующий чек)
                 if not item.cost_price or item.cost_price == 0:
                     item.cost_price = (
                         item.product.average_cost if item.product.average_cost > 0 else item.product.cost_price
@@ -236,7 +232,6 @@ def sale_edit(request, pk):
         form = SaleForm(instance=sale)
         formset = SaleItemFormSetDynamic(instance=sale)
 
-    # === ЕДИНЫЙ БЛОК РАСЧЕТА ОСТАТКОВ ===
     for form_item in formset:
         prod = None
         if hasattr(form_item, "cleaned_data") and form_item.cleaned_data and form_item.cleaned_data.get("product"):
@@ -321,7 +316,6 @@ def sale_unpost(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     try:
         process_sale_unpost(sale)
-        messages.success(request, f"Проведение продажи №{sale.number} отменено.")
     except Exception as e:
         messages.error(request, f"Ошибка отмены: {str(e)}")
     return redirect("sale_detail", pk=pk)

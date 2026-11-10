@@ -124,7 +124,7 @@ class SupplierForm(forms.ModelForm):
 class CustomerForm(forms.ModelForm):
     class Meta:
         model = Customer
-        fields = ["last_name", "first_name"]
+        fields = ["last_name", "first_name", "phone"]
         widgets = {
             "first_name": forms.TextInput(attrs={"class": "form-control"}),
             "last_name": forms.TextInput(attrs={"class": "form-control"}),
@@ -137,9 +137,6 @@ class CustomerForm(forms.ModelForm):
 
         if not first_name:
             self.add_error("first_name", "Введите имя клиента")
-
-        if not last_name:
-            self.add_error("last_name", "Введите фамилию клиента")
 
         if first_name and last_name:
             exists = (

@@ -5,10 +5,11 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from inventory.exceptions import InventoryError
-from inventory.models import Category, Product, Receipt, Sale, Warehouse
+from inventory.models import Category, Customer, Product, Receipt, Sale, Warehouse
 from inventory.permissions import TestModeOrAuthenticated
 from inventory.serializers import (
     CategorySerializer,
+    CustomerSerializer,
     ProductSerializer,
     ReceiptSerializer,
     SaleSerializer,
@@ -128,3 +129,38 @@ class SaleViewSet(ModelViewSet):
             SaleSerializer(sale, context={"request": request}).data,
             status=status.HTTP_200_OK,
         )
+
+
+class CustomerViewSet(ModelViewSet):
+    permission_classes = [TestModeOrAuthenticated]
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        # Позволяем воркеру искать клиента по номеру телефона
+        phone = self.request.query_params.get("phone")
+        if phone:
+            phone = phone.replace(" ", "+").strip()
+            # На случай, если плюса вообще нет, но он должен быть
+            if not phone.startswith("+"):
+                phone = f"+{phone}"
+            queryset = queryset.filter(phone=phone)
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        print("REQUEST DATA:", request.data)
+
+        serializer = self.get_serializer(data=request.data)
+
+        if not serializer.is_valid():
+            print("VALIDATION ERRORS:", serializer.errors)
+            return Response(serializer.errors, status=400)
+
+        try:
+            self.perform_create(serializer)
+        except Exception as e:
+            print("SAVE ERROR:", repr(e))
+            raise
+
+        return Response(serializer.data, status=201)

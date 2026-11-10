@@ -1,3 +1,5 @@
+import re
+
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
@@ -72,12 +74,40 @@ class Supplier(SoftDeleteModel):
 
 class Customer(SoftDeleteModel):
     first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100, blank=True)
+
+    phone = models.CharField(max_length=20, unique=True, null=True, blank=True, verbose_name="Телефон")
 
     class Meta:
         verbose_name = "Клиент"
         verbose_name_plural = "Клиенты"
         ordering = ["last_name", "first_name"]
+
+    def normalize_phone(self):
+        if not self.phone:
+            self.phone = None
+            return
+
+        cleaned = re.sub(r"[^\d+]", "", self.phone)
+
+        if cleaned.startswith("8") and len(cleaned) == 11:
+            cleaned = "+7" + cleaned[1:]
+
+        elif cleaned.startswith("9") and len(cleaned) == 10:
+            cleaned = "+7" + cleaned
+
+        elif cleaned.startswith("7") and len(cleaned) == 11:
+            cleaned = "+" + cleaned
+
+        if not re.fullmatch(r"\+7\d{10}", cleaned):
+            raise ValidationError({"phone": "Введите телефон в формате +79999999999"})
+
+        self.phone = cleaned
+
+    def save(self, *args, **kwargs):
+        self.normalize_phone()
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.last_name} {self.first_name}"
@@ -315,6 +345,7 @@ class Sale(DocumentMixin):
     delivery_expense = models.DecimalField(
         max_digits=10, decimal_places=2, default=0, verbose_name="Расходы на доставку"
     )
+    is_online = models.BooleanField(default=False, verbose_name="Заказ с сайта")
 
     def __str__(self):
         return f"Продажа №{self.number}"

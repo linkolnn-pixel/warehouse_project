@@ -1,8 +1,11 @@
+import re
+
 from django.db import transaction
 from rest_framework import serializers
 
 from .models import (
     Category,
+    Customer,
     Product,
     Receipt,
     ReceiptItem,
@@ -14,7 +17,6 @@ from .models import (
 
 class ProductSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True, allow_null=True)
-
     supplier_name = serializers.CharField(source="supplier.company_name", read_only=True, allow_null=True)
 
     class Meta:
@@ -23,6 +25,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "id",
             "internal_code",
             "sku",
+            "brand",
             "name",
             "category",
             "category_name",
@@ -33,13 +36,16 @@ class ProductSerializer(serializers.ModelSerializer):
             "measure_unit",
             "supplier",
             "supplier_name",
+            "average_cost",
+            "consumption_time",
         ]
+        read_only_fields = ["internal_code"]  # Внутренний код генерируется автоматически
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ["id", "name"]
+        fields = ["id", "name", "slug"]
 
 
 class WarehouseSerializer(serializers.ModelSerializer):
@@ -67,6 +73,7 @@ class WarehouseStockSerializer(serializers.ModelSerializer):
         fields = [
             "product_id",
             "product_name",
+            "brand",
             "category_name",
             "internal_code",
             "sku",
@@ -82,9 +89,7 @@ class WarehouseStockSerializer(serializers.ModelSerializer):
 
 class ReceiptItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
-
     total_cost = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
-
     total_sale = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
     class Meta:
@@ -103,7 +108,7 @@ class ReceiptItemSerializer(serializers.ModelSerializer):
 
 class ReceiptSerializer(serializers.ModelSerializer):
     items = ReceiptItemSerializer(many=True)
-    supplier_name = serializers.CharField(source="supplier.company_name", read_only=True)
+    supplier_name = serializers.CharField(source="supplier.company_name", read_only=True, allow_null=True)
     warehouse_name = serializers.CharField(source="warehouse.name", read_only=True)
 
     class Meta:
@@ -116,6 +121,7 @@ class ReceiptSerializer(serializers.ModelSerializer):
             "warehouse_name",
             "supplier",
             "supplier_name",
+            "delivery_cost",
             "comment",
             "posted",
             "items",
@@ -139,7 +145,6 @@ class ReceiptSerializer(serializers.ModelSerializer):
 
 class SaleItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source="product.name", read_only=True)
-
     total = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
 
     class Meta:
@@ -169,11 +174,12 @@ class SaleSerializer(serializers.ModelSerializer):
             "warehouse_name",
             "customer",
             "customer_name",
+            "delivery_expense",
             "comment",
+            "is_online",
             "posted",
             "items",
         ]
-
         read_only_fields = [
             "id",
             "number",
@@ -184,14 +190,39 @@ class SaleSerializer(serializers.ModelSerializer):
     def get_customer_name(self, obj):
         if not obj.customer:
             return None
-        if obj.customer.type == "customer":
-            return f"{obj.customer.last_name} {obj.customer.first_name}".strip()
-        return obj.customer.company_name
+        return f"{obj.customer.last_name} {obj.customer.first_name}".strip()
 
+    @transaction.atomic
     def create(self, validated_data):
         items_data = validated_data.pop("items")
-
         sale = Sale.objects.create(**validated_data)
 
         SaleItem.objects.bulk_create([SaleItem(sale=sale, **item_data) for item_data in items_data])
         return sale
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ["id", "first_name", "last_name", "phone"]
+        read_only_fields = ["id"]
+
+    def validate_phone(self, value):
+        if not value:
+            return value
+
+        cleaned = re.sub(r"[^\d+]", "", value)
+
+        if cleaned.startswith("8") and len(cleaned) == 11:
+            cleaned = "+7" + cleaned[1:]
+
+        elif cleaned.startswith("9") and len(cleaned) == 10:
+            cleaned = "+7" + cleaned
+
+        elif cleaned.startswith("7") and len(cleaned) == 11:
+            cleaned = "+" + cleaned
+
+        if not re.match(r"^\+7\d{10}$", cleaned):
+            raise serializers.ValidationError("Введите телефон в формате +79999999999")
+
+        return cleaned

@@ -2,6 +2,7 @@ from rest_framework.routers import DefaultRouter
 
 from inventory.views.api import (
     CategoryViewSet,
+    CustomerViewSet,
     ProductViewSet,
     ReceiptViewSet,
     SaleViewSet,
@@ -19,5 +20,7 @@ router.register(r"receipts", ReceiptViewSet, basename="receipt")
 router.register(r"sales", SaleViewSet, basename="sale")
 
 router.register(r"categories", CategoryViewSet, basename="category")
+
+router.register(r"customers", CustomerViewSet, basename="customer")
 
 urlpatterns = router.urls

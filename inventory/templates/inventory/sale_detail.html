@@ -4,40 +4,53 @@
 Продажа №{{ sale.number }}
 {% endblock %}
 
-
 {% block content %}
 
 <div class="container mt-4">
-    <h2 class="mb-4">Продажа №{{ sale.number }}</h2>
-        <div class="card shadow p-4">
-            <div class="row">
-                <div class="col-md-6">
+    <!-- ДОБАВЛЕН БЛОК С БЕЙДЖИКОМ ИСТОЧНИКА ЗАКАЗА -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <h2 class="mb-0">Продажа №{{ sale.number }}</h2>
+
+        {% if sale.is_online %}
+            <span class="badge bg-info text-dark fs-6 border shadow-sm">
+                <i class="fa-solid fa-globe"></i> Заказ с сайта
+            </span>
+        {% else %}
+            <span class="badge bg-secondary fs-6 shadow-sm">
+                <i class="fa-solid fa-store"></i> Очная продажа
+            </span>
+        {% endif %}
+    </div>
+
+    <div class="card shadow p-4">
+        <div class="row">
+            <div class="col-md-6">
 
                 <p>
-                <strong>Дата:</strong><br>
-                {{ sale.date|date:"d.m.Y H:i" }}
+                    <strong>Дата:</strong><br>
+                    {{ sale.date|date:"d.m.Y H:i" }}
                 </p>
 
                 <p>
-                <strong>Клиент:</strong><br>
-                {% if sale.customer %}
-                    <a href="{% url 'customer_detail' sale.customer.pk %}" class="text-decoration-none">
-                    {{ sale.customer.first_name }}
-                    {{ sale.customer.last_name }}
-                    </a>
-                {% else %}
-                —
-                {% endif %}
+                    <strong>Клиент:</strong><br>
+                    {% if sale.customer %}
+                        <a href="{% url 'customer_detail' sale.customer.pk %}" class="text-decoration-none">
+                            {{ sale.customer.first_name }}
+                            {{ sale.customer.last_name }}
+                        </a>
+                    {% else %}
+                        —
+                    {% endif %}
                 </p>
 
                 <p>
-                <strong>Склад:</strong><br>
-                {{ sale.warehouse }}
+                    <strong>Склад:</strong><br>
+                    {{ sale.warehouse }}
                 </p>
 
-                </div>
-                <div class="col-md-6 text-end">
-                    {% if sale.posted %}
+            </div>
+            <div class="col-md-6 text-end">
+                {% if sale.posted %}
                     <div class="alert alert-success d-inline-block py-2 mb-2 px-3">
                         Продажа проведена
                     </div>
@@ -48,30 +61,28 @@
                             Отменить проведение
                         </button>
                     </form>
-                    {% else %}
-                        <div class="mb-3">
-                            <span class="badge bg-secondary fs-6">Черновик (не проведено)</span>
-                        </div>
+                {% else %}
+                    <div class="mb-3">
+                        <span class="badge bg-secondary fs-6">Черновик (не проведено)</span>
+                    </div>
 
-                        <a href="{% url 'sale_edit' sale.pk %}" class="btn btn-primary me-2">
-                            Редактировать
-                        </a>
+                    <a href="{% url 'sale_edit' sale.pk %}" class="btn btn-primary me-2">
+                        Редактировать
+                    </a>
 
-                        <form method="post" action="{% url 'sale_post' sale.pk %}" class="d-inline">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-success">
-                                Провести продажу
-                            </button>
-                        </form>
-                    {% endif %}
-                </div>
+                    <form method="post" action="{% url 'sale_post' sale.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success">
+                            Провести продажу
+                        </button>
+                    </form>
+                {% endif %}
             </div>
-
+        </div>
 
         <hr>
 
         <h4>Товары</h4>
-
 
         <table class="table table-bordered table-hover mt-3">
             <thead class="table-light">
@@ -99,7 +110,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="4" class="text-center">Товары отсутствуют</td>
+                        <td colspan="5" class="text-center">Товары отсутствуют</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -123,6 +134,7 @@
                     </td>
                     <td class="border-bottom-0 pb-3"></td>
                     <td class="text-danger align-middle border-bottom-0 pb-3">
+                        <!-- ИСПРАВЛЕН ПЕРЕНОС СТРОКИ ЗДЕСЬ -->
                         - {{ sale.delivery_expense|floatformat:"0"|default:"0" }} ₽
                     </td>
                 </tr>
@@ -141,43 +153,27 @@
 
         <hr>
 
-
-            <div class="d-flex justify-content-between">
-
-                <div>
-
-                    <a href="{% url 'sale_create' %}"
-                    class="btn btn-primary">
+        <div class="d-flex justify-content-between">
+            <div>
+                <a href="{% url 'sale_create' %}" class="btn btn-primary">
                     Новая продажа
-                    </a>
-
-                    <a href="{% url 'stock_management' %}"
-                    class="btn btn-secondary">
-                    Склад
-                    </a>
-
-                    <a href="{% url 'products_catalog' %}"
-                    class="btn btn-outline-secondary">
-                    Каталог
-                    </a>
-
-                </div>
-
-                <div>
-                <a href="javascript:history.back()"
-                class="btn btn-outline-dark">
-                ← Назад
                 </a>
-                </div>
-
-
+                <a href="{% url 'stock_management' %}" class="btn btn-secondary">
+                    Склад
+                </a>
+                <a href="{% url 'products_catalog' %}" class="btn btn-outline-secondary">
+                    Каталог
+                </a>
             </div>
 
-
+            <div>
+                <a href="javascript:history.back()" class="btn btn-outline-dark">
+                    ← Назад
+                </a>
+            </div>
         </div>
 
-
+    </div>
 </div>
-
 
 {% endblock %}

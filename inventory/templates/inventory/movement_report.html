@@ -35,22 +35,22 @@
     </div>
 
     <div class="card shadow-sm">
-        <div class="card-body p-0"> <!-- Убрали padding, чтобы таблица была на всю ширину карточки -->
+        <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0" style="table-layout: fixed; width: 100%; word-break: break-word;">
                     <colgroup>
-                        <col style="width: 50px;"> <!-- Иконка раскрытия -->
-                        <col style="width: 14%;">  <!-- Дата -->
-                        <col style="width: 12%;">  <!-- Тип -->
-                        <col style="width: 16%;">  <!-- Документ -->
-                        <col style="width: 15%;">  <!-- Склад -->
-                        <col style="width: 18%;">  <!-- Контрагент -->
-                        <col style="width: auto;"> <!-- Комментарий (займет всё оставшееся место) -->
+                        <col style="width: 50px;">
+                        <col style="width: 14%;">
+                        <col style="width: 12%;">
+                        <col style="width: 16%;">
+                        <col style="width: 15%;">
+                        <col style="width: 18%;">
+                        <col style="width: auto;">
                     </colgroup>
 
                     <thead class="table-light">
                         <tr>
-                            <th></th> <!-- Для иконки раскрытия -->
+                            <th></th>
                             <th>Дата</th>
                             <th>Тип</th>
                             <th>Документ</th>
@@ -86,7 +86,6 @@
 
                         <td>
                             {% if doc.type == 'IN' and doc.document %}
-                                <!-- Принудительный переход через window.location.href -->
                                 <a href="{% url 'receipt_detail' doc.document.id %}"
                                    onclick="event.stopPropagation(); window.location.href=this.href; return false;"
                                    class="fw-bold text-decoration-none text-primary">
@@ -94,12 +93,20 @@
                                 </a>
 
                             {% elif doc.type == 'OUT' and doc.document %}
-                                <!-- Принудительный переход через window.location.href -->
                                 <a href="{% url 'sale_detail' doc.document.id %}"
                                    onclick="event.stopPropagation(); window.location.href=this.href; return false;"
                                    class="fw-bold text-decoration-none text-primary">
                                     Продажа №{{ doc.doc_number }}
                                 </a>
+
+                                <!-- ДОБАВЛЕН МАРКЕР ЗАКАЗА С САЙТА -->
+                                {% if doc.document.is_online %}
+                                    <div class="mt-1">
+                                        <span class="badge bg-info text-dark border shadow-sm">
+                                            <i class="fa-solid fa-globe"></i> С сайта
+                                        </span>
+                                    </div>
+                                {% endif %}
 
                             {% else %}
                                 Ручное движение
@@ -108,25 +115,28 @@
 
                         <td>{{ doc.warehouse|default:"—" }}</td>
                         <td>{{ doc.counterparty|default:"—" }}</td>
-                        <td class="d-flex justify-content-between align-items-center">
-                            <span>{{ doc.reference|default:"—" }}</span>
+                        <td class="align-middle">
+                            <!-- Добавили внутренний div на всю ширину -->
+                            <div class="d-flex justify-content-between align-items-center w-100">
+                                <span class="text-break pe-2">{{ doc.reference|default:"—" }}</span>
 
-                            <!-- Показываем кнопку удаления только если это черновики -->
-                            {% if request.GET.status == 'draft' %}
-                                {% if doc.type == 'IN' %}
-                                    <a href="{% url 'receipt_delete' doc.document.id %}"
-                                       class="btn btn-sm btn-outline-danger"
-                                       onclick="event.stopPropagation(); return confirm('Удалить черновик прихода?');">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </a>
-                                {% elif doc.type == 'OUT' %}
-                                    <a href="{% url 'sale_delete' doc.document.id %}"
-                                       class="btn btn-sm btn-outline-danger"
-                                       onclick="event.stopPropagation(); return confirm('Удалить черновик продажи?');">
-                                        <i class="fa-solid fa-trash"></i>
-                                    </a>
+                                <!-- Показываем кнопку удаления только если это черновики -->
+                                {% if request.GET.status == 'draft' %}
+                                    {% if doc.type == 'IN' %}
+                                        <a href="{% url 'receipt_delete' doc.document.id %}"
+                                           class="btn btn-sm btn-outline-danger flex-shrink-0"
+                                           onclick="event.stopPropagation(); return confirm('Удалить черновик прихода?');">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </a>
+                                    {% elif doc.type == 'OUT' %}
+                                        <a href="{% url 'sale_delete' doc.document.id %}"
+                                           class="btn btn-sm btn-outline-danger flex-shrink-0"
+                                           onclick="event.stopPropagation(); return confirm('Удалить черновик продажи?');">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </a>
+                                    {% endif %}
                                 {% endif %}
-                            {% endif %}
+                            </div>
                         </td>
                     </tr>
 

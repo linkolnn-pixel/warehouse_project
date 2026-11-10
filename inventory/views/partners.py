@@ -6,10 +6,9 @@ from django.db import IntegrityError
 from django.db.models import DecimalField, F, Sum
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
-from rest_framework.generics import get_object_or_404
 
 from inventory.decorators import test_mode_login_required
 from inventory.forms import CustomerForm, SupplierForm
@@ -96,6 +95,18 @@ def customers_list(request):
 @test_mode_login_required
 def customer_detail(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
+
+    # Обработка сохранения данных из модального окна
+    if request.method == "POST":
+        customer.first_name = request.POST.get("first_name", customer.first_name)
+        customer.last_name = request.POST.get("last_name", customer.last_name)
+        customer.phone = request.POST.get("phone", customer.phone)
+        customer.save()
+
+        messages.success(request, "Данные клиента успешно обновлены.")
+        return redirect("customer_detail", pk=pk)
+
+    # Подсчет статистики и истории продаж
     sales = (
         Sale.objects.filter(customer=customer)
         .annotate(
@@ -142,11 +153,16 @@ def api_supplier_create(request):
 
 @require_POST
 def api_customer_create(request):
-    first_name = request.POST.get("first_name", "")
-    last_name = request.POST.get("last_name", "")
+    first_name = request.POST.get("first_name", "").strip()
+    last_name = request.POST.get("last_name", "").strip()
+    phone = request.POST.get("phone", "").strip()
 
-    if not first_name or not last_name:
-        return JsonResponse({"error": "Имя и фамилия обязательны"}, status=400)
+    if not first_name:
+        return JsonResponse({"error": "Имя обязательно"}, status=400)
 
-    obj = Customer.objects.create(first_name=first_name, last_name=last_name)
-    return JsonResponse({"id": obj.id, "name": f"{last_name} {first_name}".strip()})
+    try:
+        # Если телефон пустой, передаем None, чтобы не нарушать уникальность
+        obj = Customer.objects.create(first_name=first_name, last_name=last_name, phone=phone if phone else None)
+        return JsonResponse({"id": obj.id, "name": f"{last_name} {first_name}".strip()})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
