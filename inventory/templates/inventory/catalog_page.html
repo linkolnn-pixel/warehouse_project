@@ -152,7 +152,11 @@
                 active
             {% endif %}"
             data-category-id="{{ cat.id }}"
+            style="padding-left: calc(20px + {{ cat.level }} * 20px);"
         >
+            {% if cat.level > 0 %}
+                <span class="text-muted opacity-50" style="margin-right: 5px;">↳</span>
+            {% endif %}
             {{ cat.name }}
         </a>
     {% endfor %}

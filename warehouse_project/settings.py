@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 
+import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -47,6 +48,7 @@ else:
 ALLOWED_HOSTS = [
     "localhost",
     "127.0.0.1",
+    "host.docker.internal",
     "warehouse-mkhiln.msk1.amvera.tech",
     "workhouse-test-mkhiln.msk1.amvera.tech",
 ]
@@ -118,14 +120,26 @@ WSGI_APPLICATION = "warehouse_project.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-if AMVERA:
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+# 1. Если передан DATABASE_URL (например, из Docker), используем PostgreSQL
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
+    }
+# 2. Если это сервер Amvera без Postgres (оставляем для обратной совместимости)
+elif AMVERA:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": "/data/db.sqlite3",
         }
     }
-
+# 3. Локальная разработка без Docker (запасной вариант)
 else:
     DATABASES = {
         "default": {
@@ -133,7 +147,6 @@ else:
             "NAME": str(BASE_DIR / "db.sqlite3"),
         }
     }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -181,6 +194,8 @@ LOGOUT_REDIRECT_URL = "/"
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
-        "inventory.permissions.TestModeOrAuthenticated",
+        "inventory.permissions.IsServiceOrAuthenticated",
     ],
 }
+
+SERVICE_API_KEY = os.getenv("SERVICE_API_KEY")

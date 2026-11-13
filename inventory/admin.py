@@ -1,5 +1,6 @@
 from django.contrib import admin, messages
 from django.db.models import Sum
+from mptt.admin import DraggableMPTTAdmin
 
 from .models import Category, Customer, Product, Sale, SaleItem, StockBalance, Supplier, Transaction, Warehouse
 from .services import process_sale_post, process_sale_unpost
@@ -81,10 +82,19 @@ class ProductAdmin(admin.ModelAdmin):
 
 
 @admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("name", "parent", "slug")
-    list_filter = ("parent",)
-    search_fields = ("name",)
+class CategoryAdmin(DraggableMPTTAdmin):
+    # По какому полю делать отступ
+    mptt_indent_field = "name"
+
+    # Обязательно добавляем tree_actions для стрелочек перетаскивания
+    # и indented_title для красивых отступов
+    list_display = ("tree_actions", "indented_title", "slug")
+
+    # Клик по indented_title открывает редактирование
+    list_display_links = ("indented_title",)
+
+    # слаг сам генерировался из названия
+    prepopulated_fields = {"slug": ("name",)}
 
 
 @admin.register(Transaction)

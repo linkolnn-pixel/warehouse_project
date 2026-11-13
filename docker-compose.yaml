@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  warehouse:
+    build: .
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    command: sh -c "echo 'Запуск миграций...'; python manage.py migrate; echo 'Запуск сервера...'; python manage.py runserver 0.0.0.0:8001"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+    ports:
+      - "5440:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

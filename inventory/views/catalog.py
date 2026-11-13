@@ -19,7 +19,7 @@ from ..services import import_products_from_excel
 @test_mode_login_required
 def products_catalog_view(request):
     # 1. Получаем категории (для бокового меню)
-    categories = Category.objects.all().order_by("name")
+    categories = Category.objects.all()
 
     # 2. Получаем уникальные текстовые бренды (для выпадающего фильтра в таблице)
     brands = (

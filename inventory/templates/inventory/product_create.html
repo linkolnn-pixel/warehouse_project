@@ -221,6 +221,19 @@
           <input type="text" name="name" class="form-control" required placeholder="Например: Для лица" autofocus>
         </div>
 
+        <!-- Выбор родительской папки -->
+        <div class="mb-3">
+          <label class="form-label">Вложить в (необязательно)</label>
+          <select name="parent" class="form-select">
+              <option value="">--- Корневая категория ---</option>
+              {% for cat in form.category.field.queryset %}
+                  <option value="{{ cat.id }}">
+                      {% if cat.level > 0 %}{% for i in "x"|ljust:cat.level %}&nbsp;&nbsp;&nbsp;&nbsp;{% endfor %}↳ {% endif %}{{ cat.name }}
+                  </option>
+              {% endfor %}
+          </select>
+        </div>
+
         <div class="d-flex gap-2">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
           <button type="submit" class="btn btn-success">Создать и вернуться</button>

@@ -155,9 +155,17 @@ class CustomerForm(forms.ModelForm):
 
 
 class CategoryForm(forms.ModelForm):
+    parent = TreeNodeChoiceField(
+        queryset=Category.objects.all(),
+        required=False,
+        widget=forms.Select(attrs={"class": "form-select"}),
+        label="Родительская категория",
+        empty_label="Корневая категория",
+    )
+
     class Meta:
         model = Category
-        fields = ["name"]
+        fields = ["name", "parent"]
         widgets = {"name": forms.TextInput(attrs={"class": "form-control", "required": "required"})}
 
 

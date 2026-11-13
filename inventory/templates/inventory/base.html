@@ -120,22 +120,19 @@
 
             <ul class="navbar-nav">
 
-<!--                &lt;!&ndash; Каталог &ndash;&gt;-->
-
-<!--                <li class="nav-item">-->
-
-<!--                    <a-->
-<!--                        href="{% url 'products_catalog' %}"-->
-<!--                        class="nav-link-->
-<!--                        {% if request.resolver_match.url_name == 'products_catalog' %}-->
-<!--                            active-->
-<!--                        {% endif %}"-->
-<!--                    >-->
-<!--                        <i class="fa-solid fa-box"></i>-->
-<!--                        Каталог-->
-<!--                    </a>-->
-
-<!--                </li>-->
+                <!-- Каталог -->
+                <li class="nav-item">
+                    <a
+                        href="{% url 'products_catalog' %}"
+                        class="nav-link
+                        {% if request.resolver_match.url_name == 'products_catalog' %}
+                            active
+                        {% endif %}"
+                    >
+                        <i class="fa-solid fa-box"></i>
+                        Каталог
+                    </a>
+                </li>
 
                 <!-- Клиенты -->
 
