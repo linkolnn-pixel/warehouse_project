@@ -1,11 +1,12 @@
 from django.db.models import Q
 from rest_framework import status, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from inventory.exceptions import InventoryError
-from inventory.models import Category, Customer, Product, Receipt, Sale, Warehouse
+from inventory.models import Category, Customer, GiftCertificate, Product, PromoCode, Receipt, Sale, Warehouse
 from inventory.permissions import IsServiceOrAuthenticated
 from inventory.serializers import (
     CategorySerializer,
@@ -113,9 +114,15 @@ class SaleViewSet(ModelViewSet):
         if external_id:
             queryset = queryset.filter(external_id=external_id)
 
-        return queryset
+        phone = self.request.query_params.get("phone")
+        if phone:
+            phone = phone.replace(" ", "+").strip()
+            if not phone.startswith("+"):
+                phone = f"+{phone}"
+            # Фильтруем продажи по телефону связанного клиента
+            queryset = queryset.filter(customer__phone=phone)
 
-    serializer_class = SaleSerializer
+        return queryset
 
     @action(detail=True, methods=["post"], url_path="post")
     def post_sale(self, request, pk=None):
@@ -166,3 +173,60 @@ class CustomerViewSet(ModelViewSet):
             raise
 
         return Response(serializer.data, status=201)
+
+
+@api_view(["GET"])
+@permission_classes([IsServiceOrAuthenticated])
+def validate_promo_code_api(request):
+    """
+    Эндпоинт для проверки валидности промокода.
+    Использование: GET /api/promocodes/validate/?code=NEWYEAR27
+    """
+    code = request.GET.get("code", "").strip()
+
+    if not code:
+        return Response({"is_valid": False, "message": "Промокод не указан."}, status=400)
+
+    # Ищем промокод (iexact делает поиск независимым от регистра: newyear == NEWYEAR)
+    promo = PromoCode.objects.filter(code__iexact=code).first()
+
+    if not promo:
+        return Response({"is_valid": False, "message": "Такого промокода не существует."}, status=404)
+
+    # Используем наше свойство is_valid_now из модели
+    if not promo.is_valid_now:
+        return Response(
+            {"is_valid": False, "message": "Срок действия промокода истек или исчерпан лимит использований."},
+            status=400,
+        )
+
+    # Если всё отлично, отдаем параметры скидки
+    return Response(
+        {
+            "is_valid": True,
+            "code": promo.code,
+            "discount_type": promo.discount_type,
+            "discount_value": str(promo.discount_value),  # Переводим в строку для точности Decimal
+            "min_order_amount": str(promo.min_order_amount),
+        },
+        status=200,
+    )
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def validate_certificate_api(request):
+    code = request.GET.get("code")
+    if not code:
+        return Response({"is_valid": False, "message": "Код не передан"}, status=400)
+
+    try:
+        # Ищем сертификат (без учета регистра)
+        cert = GiftCertificate.objects.get(code__iexact=code.strip())
+
+        if not cert.is_active or cert.current_balance <= 0:
+            return Response({"is_valid": False, "message": "Сертификат исчерпан или неактивен"}, status=400)
+
+        return Response({"is_valid": True, "current_balance": cert.current_balance})
+    except GiftCertificate.DoesNotExist:
+        return Response({"is_valid": False, "message": "Сертификат не найден"}, status=404)

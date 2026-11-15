@@ -1,0 +1,16 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<form action="" method="post">
+    {% csrf_token %}
+
+    <div>
+        <h2>Введите параметры генерации:</h2>
+        {{ form.as_p }}
+    </div>
+
+    <input type="hidden" name="action" value="generate_multiple_certificates" />
+    <input type="submit" name="apply" value="Сгенерировать!" class="default" />
+    <a href="." class="button cancel-link">Отмена</a>
+</form>
+{% endblock %}

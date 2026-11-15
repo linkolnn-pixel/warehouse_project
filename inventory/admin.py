@@ -1,8 +1,23 @@
+from django import forms
 from django.contrib import admin, messages
 from django.db.models import Sum
+from django.http import HttpResponseRedirect
+from django.shortcuts import render
 from mptt.admin import DraggableMPTTAdmin
 
-from .models import Category, Customer, Product, Sale, SaleItem, StockBalance, Supplier, Transaction, Warehouse
+from .models import (
+    Category,
+    Customer,
+    GiftCertificate,
+    Product,
+    PromoCode,
+    Sale,
+    SaleItem,
+    StockBalance,
+    Supplier,
+    Transaction,
+    Warehouse,
+)
 from .services import process_sale_post, process_sale_unpost
 
 
@@ -83,17 +98,9 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(DraggableMPTTAdmin):
-    # По какому полю делать отступ
     mptt_indent_field = "name"
-
-    # Обязательно добавляем tree_actions для стрелочек перетаскивания
-    # и indented_title для красивых отступов
     list_display = ("tree_actions", "indented_title", "slug")
-
-    # Клик по indented_title открывает редактирование
     list_display_links = ("indented_title",)
-
-    # слаг сам генерировался из названия
     prepopulated_fields = {"slug": ("name",)}
 
 
@@ -169,14 +176,41 @@ def admin_unpost_sales(modeladmin, request, queryset):
 class SaleAdmin(admin.ModelAdmin):
     actions = [admin_post_sales, admin_unpost_sales]
     inlines = [SaleItemInline]
-
-    # Выводим is_online (Заказ с сайта), чтобы сразу видеть источник
-    list_display = ("number", "customer", "warehouse", "is_online", "get_total", "get_profit", "posted", "date")
-    list_filter = ("posted", "is_online", "warehouse", "date")
-    search_fields = ("customer__phone", "customer__last_name", "comment")
+    list_display = (
+        "number",
+        "customer",
+        "warehouse",
+        "is_online",
+        "get_subtotal",
+        "get_discount_info",
+        "get_total",
+        "get_profit",
+        "posted",
+        "date",
+    )
+    list_filter = ("posted", "is_online", "warehouse", "date", "promo_code")
+    search_fields = ("customer__phone", "customer__last_name", "comment", "promo_code__code", "gift_certificate__code")
     autocomplete_fields = ["customer"]
 
-    @admin.display(description="Сумма")
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.is_online:
+            # Блокируем и промокоды, и подарочные сертификаты для сайтовых заказов
+            return ("promo_code", "discount_amount", "gift_certificate", "certificate_amount_used")
+        return ()
+
+    @admin.display(description="Сумма товаров")
+    def get_subtotal(self, obj):
+        subtotal = sum(item.total for item in obj.items.all())
+        return f"{subtotal} руб."
+
+    @admin.display(description="Промокод / Скидка")
+    def get_discount_info(self, obj):
+        if obj.discount_amount and obj.discount_amount > 0:
+            code = obj.promo_code.code if obj.promo_code else "Ручная скидка"
+            return f"{code} (-{obj.discount_amount} руб.)"
+        return "-"
+
+    @admin.display(description="К оплате")
     def get_total(self, obj):
         return f"{obj.calculated_total} руб."
 
@@ -184,3 +218,96 @@ class SaleAdmin(admin.ModelAdmin):
     def get_profit(self, obj):
         prefix = "" if obj.posted else "~ "
         return f"{prefix}{obj.net_profit} руб."
+
+
+@admin.register(PromoCode)
+class PromoCodeAdmin(admin.ModelAdmin):
+    list_display = ("code", "discount_type", "discount_value", "get_status", "used_count", "usage_limit", "valid_to")
+    list_filter = ("is_active", "discount_type", "is_deleted")
+    search_fields = ("code",)
+    readonly_fields = ("used_count",)
+
+    fieldsets = (
+        ("Основная информация", {"fields": ("code", "is_active", "is_deleted")}),
+        ("Настройки скидки", {"fields": ("discount_type", "discount_value", "min_order_amount")}),
+        ("Ограничения", {"fields": ("valid_from", "valid_to", "usage_limit", "used_count")}),
+    )
+
+    @admin.display(description="Статус")
+    def get_status(self, obj):
+        if obj.is_deleted:
+            return "Удален"
+        if not obj.is_active:
+            return "Выключен"
+        if not obj.is_valid_now:
+            return "Истек / Исчерпан"
+        return "Активен"
+
+
+# ====================================================
+# ПОДАРОЧНЫЕ СЕРТИФИКАТЫ И ГЕНЕРАТОР
+# ====================================================
+
+
+class GenerateCertificatesForm(forms.Form):
+    _selected_action = forms.CharField(widget=forms.MultipleHiddenInput)
+    count = forms.IntegerField(label="Количество сертификатов", min_value=1, max_value=500, initial=50)
+    nominal = forms.DecimalField(label="Номинал (руб.)", min_value=100, max_value=100000, initial=5000)
+    prefix = forms.CharField(label="Префикс (необязательно)", max_length=10, initial="MDM-", required=False)  # type: ignore[assignment]
+
+
+@admin.register(GiftCertificate)
+class GiftCertificateAdmin(admin.ModelAdmin):
+    list_display = ("code", "initial_balance", "current_balance", "is_active", "created_at")
+    list_filter = ("is_active", "created_at", "initial_balance")
+    search_fields = ("code",)
+    readonly_fields = ("created_at",)
+
+    actions = ["generate_multiple_certificates"]
+
+    @admin.action(description="Сгенерировать новые сертификаты")
+    def generate_multiple_certificates(self, request, queryset):
+        # ИСПРАВЛЕНИЕ: Импортируем helpers прямо здесь
+        from django.contrib.admin import helpers
+
+        if "apply" in request.POST:
+            form = GenerateCertificatesForm(request.POST)
+            if form.is_valid():
+                count = form.cleaned_data["count"]
+                nominal = form.cleaned_data["nominal"]
+                prefix = form.cleaned_data["prefix"]
+
+                new_certs = []
+                for _ in range(count):
+                    new_code = GiftCertificate.generate_code(prefix=prefix)
+                    new_certs.append(
+                        GiftCertificate(code=new_code, initial_balance=nominal, current_balance=nominal, is_active=True)
+                    )
+
+                GiftCertificate.objects.bulk_create(new_certs)
+
+                self.message_user(
+                    request,
+                    f"Успешно сгенерировано {count} сертификатов номиналом {nominal} руб.",
+                    level=messages.SUCCESS,
+                )
+                return HttpResponseRedirect(request.get_full_path())
+        else:
+            form = GenerateCertificatesForm(
+                initial={
+                    # ИСПРАВЛЕНИЕ: Используем helpers.ACTION_CHECKBOX_NAME
+                    "_selected_action": request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
+                }
+            )
+
+        return render(
+            request,
+            "admin/generate_certificates.html",
+            {
+                "items": queryset,
+                "form": form,
+                "title": "Генерация подарочных сертификатов",
+                # ИСПРАВЛЕНИЕ: Используем helpers.ACTION_CHECKBOX_NAME
+                "action_checkbox_name": helpers.ACTION_CHECKBOX_NAME,
+            },
+        )

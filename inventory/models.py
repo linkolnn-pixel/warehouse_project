@@ -1,6 +1,9 @@
 import re
+import secrets
+import string
 
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.utils import timezone
 from django.utils.text import slugify
@@ -347,6 +350,16 @@ class Sale(DocumentMixin):
     )
     is_online = models.BooleanField(default=False, verbose_name="Заказ с сайта")
     external_id = models.CharField(max_length=50, unique=True, null=True, blank=True, verbose_name="ID заказа на сайте")
+    promo_code = models.ForeignKey(
+        "PromoCode", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Примененный промокод"
+    )
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Сумма скидки")
+    gift_certificate = models.ForeignKey(
+        "GiftCertificate", on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Подарочный сертификат"
+    )
+    certificate_amount_used = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, verbose_name="Списано с сертификата"
+    )
 
     def __str__(self):
         return f"Продажа №{self.number}"
@@ -354,11 +367,27 @@ class Sale(DocumentMixin):
     @property
     def net_profit(self):
         items_profit = sum((item.sale_price - item.cost_price) * item.quantity for item in self.items.all())
-        return items_profit - self.delivery_expense
+        return items_profit - self.delivery_expense - self.discount_amount
+
+    @property
+    def get_subtotal(self):
+        return sum(item.total for item in self.items.all())
 
     @property
     def calculated_total(self):
-        return sum(item.total for item in self.items.all())
+        subtotal = sum(item.total for item in self.items.all())
+        return subtotal - self.discount_amount
+
+    def delete(self, *args, **kwargs):
+        """Возвращаем деньги на сертификат при удалении заказа"""
+        if self.gift_certificate and self.certificate_amount_used > 0:
+            with transaction.atomic():
+                cert = self.gift_certificate
+                cert.current_balance += self.certificate_amount_used
+                if cert.current_balance > 0:
+                    cert.is_active = True
+                cert.save(update_fields=["current_balance", "is_active"])
+        super().delete(*args, **kwargs)
 
 
 class SaleItem(models.Model):
@@ -379,3 +408,108 @@ class SaleItem(models.Model):
     @property
     def profit(self):
         return self.total - self.total_cost
+
+
+class PromoCode(SoftDeleteModel):
+    class DiscountType(models.TextChoices):
+        PERCENT = "PERCENT", "Процент (%)"
+        FIXED = "FIXED", "Фиксированная сумма (руб.)"
+
+    code = models.CharField(
+        max_length=50, unique=True, db_index=True, verbose_name="Промокод", help_text="Например: NEWYEAR27"
+    )
+    discount_type = models.CharField(
+        max_length=10, choices=DiscountType.choices, default=DiscountType.PERCENT, verbose_name="Тип скидки"
+    )
+    discount_value = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        validators=[MinValueValidator(0.01)],
+        verbose_name="Значение скидки",
+        help_text="Процент (от 0 до 100) или сумма в рублях",
+    )
+    min_order_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        verbose_name="Минимальная сумма заказа",
+        help_text="Оставьте 0, если промокод действует на любую сумму",
+    )
+    valid_from = models.DateTimeField(default=timezone.now, verbose_name="Действует с")
+    valid_to = models.DateTimeField(
+        null=True, blank=True, verbose_name="Действует до", help_text="Оставьте пустым, если промокод бессрочный"
+    )
+    usage_limit = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Лимит использований",
+        help_text="Сколько раз всего можно применить промокод (пусто = безлимит)",
+    )
+    used_count = models.PositiveIntegerField(default=0, editable=False, verbose_name="Использован раз")
+    is_active = models.BooleanField(default=True, verbose_name="Активен", help_text="Ручной выключатель промокода")
+
+    class Meta:
+        verbose_name = "Промокод"
+        verbose_name_plural = "Промокоды"
+        ordering = ["-valid_from"]
+
+    def __str__(self):
+        sign = "%" if self.discount_type == self.DiscountType.PERCENT else "руб."
+        return f"{self.code} (-{self.discount_value} {sign})"
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.discount_type == self.DiscountType.PERCENT and self.discount_value > 100:
+            raise ValidationError({"discount_value": "Процентная скидка не может быть больше 100%"})
+
+        if self.valid_to and self.valid_from and self.valid_to <= self.valid_from:
+            raise ValidationError({"valid_to": "Дата окончания должна быть позже даты начала"})
+
+    @property
+    def is_valid_now(self) -> bool:
+        """Метод для быстрой проверки, жив ли промокод в данной момент"""
+        if not self.is_active or self.is_deleted:
+            return False
+
+        now = timezone.now()
+        if self.valid_from > now:
+            return False
+
+        if self.valid_to and self.valid_to < now:
+            return False
+
+        if self.usage_limit is not None and self.used_count >= self.usage_limit:
+            return False
+
+        return True
+
+
+class GiftCertificate(models.Model):
+    code = models.CharField(max_length=20, unique=True, db_index=True, verbose_name="Код сертификата")
+    initial_balance = models.DecimalField(
+        max_digits=10, decimal_places=2, validators=[MinValueValidator(0.01)], verbose_name="Начальный номинал"
+    )
+    current_balance = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Текущий остаток")
+    is_active = models.BooleanField(
+        default=True, verbose_name="Активен", help_text="Отключается автоматически, когда остаток становится 0"
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания")
+
+    class Meta:
+        verbose_name = "Подарочный сертификат"
+        verbose_name_plural = "Подарочные сертификаты"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.code} ({self.current_balance} / {self.initial_balance} руб.)"
+
+    @classmethod
+    def generate_code(cls, prefix="MDM-", length=8):
+        """Вспомогательный метод для генерации случайного кода типа MDM-A1B2C3D4"""
+        chars = string.ascii_uppercase + string.digits
+        while True:
+            random_str = "".join(secrets.choice(chars) for _ in range(length))
+            new_code = f"{prefix}{random_str}"
+            if not cls.objects.filter(code=new_code).exists():
+                return new_code

@@ -2,6 +2,7 @@ from decimal import Decimal, InvalidOperation
 
 import pandas as pd
 from django.db import models, transaction
+from django.db.models import F
 
 from .exceptions import (
     DocumentAlreadyPostedError,
@@ -12,6 +13,7 @@ from .exceptions import (
 from .models import (
     Category,
     Product,
+    PromoCode,
     Receipt,
     Sale,
     SaleItem,
@@ -468,6 +470,9 @@ def process_sale_post(sale: Sale):
     if transactions:
         Transaction.objects.bulk_create(transactions)
 
+    if sale.promo_code:
+        PromoCode.objects.filter(id=sale.promo_code.id).update(used_count=F("used_count") + 1)
+
     # 6. Завершаем проведение.
     sale.posted = True
     sale.save(update_fields=["posted"])
@@ -478,7 +483,8 @@ def process_sale_unpost(sale: Sale):
     """
     Отмена проведения продажи.
     Удаляет созданные этим документом OUT-транзакции
-    и переводит документ обратно в состояние draft.
+    и переводит документ обратно в состояние draft,
+    возвращает остатки на склад и откатывает счетчик промокода.
     """
     sale = Sale.objects.select_for_update().get(pk=sale.pk)
 
@@ -497,3 +503,11 @@ def process_sale_unpost(sale: Sale):
 
     sale.posted = False
     sale.save(update_fields=["posted"])
+
+    # Если в заказе был промокод, откатываем счетчик использований
+    if sale.promo_code:
+        # Уменьшаем атомарно, чтобы не уйти в минус
+        PromoCode.objects.filter(
+            id=sale.promo_code.id,
+            used_count__gt=0,  # Защита: отнимаем только если больше нуля
+        ).update(used_count=F("used_count") - 1)

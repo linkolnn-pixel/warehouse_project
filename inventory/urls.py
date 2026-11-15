@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views.analysis import client_predictions_view
 from .views.analytics import dashboard_view
-from .views.api import ProductViewSet
+from .views.api import ProductViewSet, validate_certificate_api, validate_promo_code_api
 from .views.catalog import (
     category_create,
     product_create,
@@ -74,6 +74,8 @@ urlpatterns = [
     path("sale/<int:pk>/unpost/", sale_unpost, name="sale_unpost"),
     path("sale/<int:pk>/edit/", sale_edit, name="sale_edit"),
     path("sale/<int:pk>/delete/", sale_delete, name="sale_delete"),
+    path("api/promocodes/validate/", validate_promo_code_api, name="api_promo_validate"),
+    path("api/certificates/validate/", validate_certificate_api, name="validate_certificate"),
     # Операции и Аналитика
     path("report/", movement_report, name="movement_report"),
     path("dashboard/", dashboard_view, name="dashboard"),

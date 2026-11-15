@@ -116,15 +116,40 @@
             </tbody>
 
             <tfoot style="border-top: 2px solid #dee2e6; border-bottom-style: hidden;">
-                <!-- Строка: Выручка (под колонкой Сумма) -->
+                <!-- НОВАЯ СТРОКА: Сумма товаров (до скидки) -->
+                {% if sale.discount_amount > 0 %}
                 <tr class="bg-light">
                     <td colspan="3" class="text-end align-middle text-secondary border-bottom-0 pt-3">
-                        Итого оплачено:
+                        Сумма товаров:
                     </td>
-                    <td class="fw-bold fs-6 align-middle border-bottom-0 pt-3">
-                        {{ sale.calculated_total|floatformat:"0"|default:"0" }} ₽
+                    <td class="align-middle border-bottom-0 pt-3 text-muted">
+                        <!-- Суммируем total всех item-ов -->
+                        {{ sale.get_subtotal|floatformat:"0" }} ₽
                     </td>
                     <td class="border-bottom-0 pt-3"></td>
+                </tr>
+
+                <!-- НОВАЯ СТРОКА: Промокод и Скидка -->
+                <tr class="bg-light">
+                    <td colspan="3" class="text-end align-middle text-secondary border-bottom-0">
+                        Скидка (промокод {% if sale.promo_code %}<strong>{{ sale.promo_code.code }}</strong>{% endif %}):
+                    </td>
+                    <td class="align-middle border-bottom-0 text-danger fw-bold">
+                        -{{ sale.discount_amount|floatformat:"0" }} ₽
+                    </td>
+                    <td class="border-bottom-0"></td>
+                </tr>
+                {% endif %}
+
+                <!-- Строка: Выручка (под колонкой Сумма) -->
+                <tr class="bg-light">
+                    <td colspan="3" class="text-end align-middle text-secondary border-bottom-0 {% if not sale.discount_amount %}pt-3{% endif %}">
+                        Итого оплачено:
+                    </td>
+                    <td class="fw-bold fs-6 align-middle border-bottom-0 {% if not sale.discount_amount %}pt-3{% endif %}">
+                        {{ sale.calculated_total|floatformat:"0"|default:"0" }} ₽
+                    </td>
+                    <td class="border-bottom-0 {% if not sale.discount_amount %}pt-3{% endif %}"></td>
                 </tr>
 
                 <!-- Строка: Доставка (под колонкой Прибыль) -->
@@ -134,8 +159,7 @@
                     </td>
                     <td class="border-bottom-0 pb-3"></td>
                     <td class="text-danger align-middle border-bottom-0 pb-3">
-                        <!-- ИСПРАВЛЕН ПЕРЕНОС СТРОКИ ЗДЕСЬ -->
-                        - {{ sale.delivery_expense|floatformat:"0"|default:"0" }} ₽
+                        -{{ sale.delivery_expense|floatformat:"0"|default:"0" }} ₽
                     </td>
                 </tr>
 

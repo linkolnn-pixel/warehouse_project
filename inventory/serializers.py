@@ -6,7 +6,9 @@ from rest_framework import serializers
 from .models import (
     Category,
     Customer,
+    GiftCertificate,
     Product,
+    PromoCode,
     Receipt,
     ReceiptItem,
     Sale,
@@ -163,6 +165,13 @@ class SaleSerializer(serializers.ModelSerializer):
     items = SaleItemSerializer(many=True)
     customer_name = serializers.SerializerMethodField()
     warehouse_name = serializers.CharField(source="warehouse.name", read_only=True)
+    promo_code = serializers.SlugRelatedField(
+        slug_field="code", queryset=PromoCode.objects.all(), allow_null=True, required=False
+    )
+    calculated_total = serializers.SerializerMethodField()
+    gift_certificate = serializers.SlugRelatedField(
+        slug_field="code", queryset=GiftCertificate.objects.all(), allow_null=True, required=False
+    )
 
     class Meta:
         model = Sale
@@ -180,6 +189,11 @@ class SaleSerializer(serializers.ModelSerializer):
             "external_id",
             "posted",
             "items",
+            "promo_code",
+            "discount_amount",
+            "calculated_total",
+            "gift_certificate",
+            "certificate_amount_used",
         ]
         read_only_fields = [
             "id",
@@ -193,12 +207,60 @@ class SaleSerializer(serializers.ModelSerializer):
             return None
         return f"{obj.customer.last_name} {obj.customer.first_name}".strip()
 
+    def get_calculated_total(self, obj):
+        # Считаем сумму всех товаров в чеке
+        items_sum = sum(item.sale_price * item.quantity for item in obj.items.all())
+        # Вычитаем скидку по промокоду (если она есть)
+        discount = obj.discount_amount or 0
+        # Возвращаем итоговую сумму к оплате
+        return items_sum - discount
+
     @transaction.atomic
     def create(self, validated_data):
         items_data = validated_data.pop("items")
+        gift_certificate = validated_data.get("gift_certificate")
         sale = Sale.objects.create(**validated_data)
 
-        SaleItem.objects.bulk_create([SaleItem(sale=sale, **item_data) for item_data in items_data])
+        sale_items = []
+        total_items_sum = 0
+        for item_data in items_data:
+            product = item_data["product"]
+            cost_price = product.average_cost if product.average_cost > 0 else product.cost_price
+            sale_price = item_data["sale_price"]
+            quantity = item_data["quantity"]
+
+            total_items_sum += sale_price * quantity
+
+            sale_items.append(SaleItem(sale=sale, cost_price=cost_price, **item_data))
+        SaleItem.objects.bulk_create(sale_items)
+
+        # ==========================================
+        # ЛОГИКА ОПЛАТЫ ПОДАРОЧНЫМ СЕРТИФИКАТОМ
+        # ==========================================
+        final_total_to_pay = total_items_sum - (sale.discount_amount or 0)
+
+        final_total_to_pay = total_items_sum - (sale.discount_amount or 0)
+
+        if gift_certificate:
+            # ПЕРЕЗАПРАШИВАЕМ СЕРТИФИКАТ С БЛОКИРОВКОЙ!
+            # Это гарантирует, что параллельные запросы встанут в очередь.
+            locked_cert = GiftCertificate.objects.select_for_update().get(id=gift_certificate.id)
+
+            if locked_cert.is_active and locked_cert.current_balance > 0:
+                amount_to_deduct = min(final_total_to_pay, locked_cert.current_balance)
+
+                if amount_to_deduct > 0:
+                    sale.certificate_amount_used = amount_to_deduct
+                    sale.save(update_fields=["certificate_amount_used"])
+
+                    locked_cert.current_balance -= amount_to_deduct
+                    if locked_cert.current_balance <= 0:
+                        locked_cert.is_active = False
+                    locked_cert.save(update_fields=["current_balance", "is_active"])
+            else:
+                # Если во время блокировки выяснилось, что деньги уже списал другой запрос
+                raise serializers.ValidationError({"gift_certificate": "Сертификат уже исчерпан или неактивен."})
+
         return sale
 
 
