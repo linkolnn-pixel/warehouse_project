@@ -119,10 +119,62 @@ class SaleViewSet(ModelViewSet):
             phone = phone.replace(" ", "+").strip()
             if not phone.startswith("+"):
                 phone = f"+{phone}"
-            # Фильтруем продажи по телефону связанного клиента
             queryset = queryset.filter(customer__phone=phone)
 
         return queryset
+
+    # ========================================================
+    # НОВЫЙ МЕТОД: Перехватываем создание продажи!
+    # ========================================================
+    def create(self, request, *args, **kwargs):
+        import copy
+
+        # Копируем данные, так как request.data может быть неизменяемым
+        data = copy.deepcopy(request.data)
+        raw_items = data.get("items", [])
+
+        physical_items = []
+        certificate_items = []
+
+        # 1. Сортируем: физические товары — налево, сертификаты — направо
+        for item in raw_items:
+            if str(item.get("product_id", "")).startswith("CERT_"):
+                certificate_items.append(item)
+            else:
+                physical_items.append(item)
+
+        # 2. Отдаем сериализатору ТОЛЬКО физические товары, чтобы он не ругался
+        data["items"] = physical_items
+
+        # 3. Сохраняем обычную продажу (даже если список items пуст, мы зафиксируем доход)
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        # 4. ГЕНЕРИРУЕМ НАСТОЯЩИЕ СЕРТИФИКАТЫ
+        generated_certs = []
+        for cert_item in certificate_items:
+            amount = cert_item.get("price")
+            # Создаем реальную запись в БД через твою модель
+            new_code = GiftCertificate.generate_code(prefix="MDM-")
+            GiftCertificate.objects.create(
+                code=new_code, initial_balance=amount, current_balance=amount, is_active=True
+            )
+            # Собираем данные, чтобы вернуть их воркеру
+            generated_certs.append(
+                {
+                    "code": new_code,
+                    "amount": str(amount),
+                    "name": cert_item.get("name", f"Подарочный сертификат на {amount} ₽"),
+                }
+            )
+
+        # 5. Формируем финальный ответ, подмешивая туда свежие промокоды
+        response_data = serializer.data
+        response_data["generated_certificates"] = generated_certs
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
     @action(detail=True, methods=["post"], url_path="post")
     def post_sale(self, request, pk=None):
@@ -230,3 +282,31 @@ def validate_certificate_api(request):
         return Response({"is_valid": True, "current_balance": cert.current_balance})
     except GiftCertificate.DoesNotExist:
         return Response({"is_valid": False, "message": "Сертификат не найден"}, status=404)
+
+
+@api_view(["POST"])
+@permission_classes([IsServiceOrAuthenticated])
+def create_certificate_api(request):
+    """
+    Эндпоинт для FastAPI: создает 1 сертификат при онлайн-покупке
+    """
+    # DRF сам парсит JSON, так что request.body и json.loads больше не нужны
+    amount = request.data.get("amount")
+
+    if not amount:
+        return Response({"error": "amount is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        new_code = GiftCertificate.generate_code(prefix="MDM-")
+
+        cert = GiftCertificate.objects.create(
+            code=new_code, initial_balance=amount, current_balance=amount, is_active=True
+        )
+
+        return Response(
+            {"status": "success", "code": cert.code, "balance": str(cert.initial_balance)},
+            status=status.HTTP_201_CREATED,
+        )
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

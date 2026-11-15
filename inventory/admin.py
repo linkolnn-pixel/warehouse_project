@@ -267,7 +267,6 @@ class GiftCertificateAdmin(admin.ModelAdmin):
 
     @admin.action(description="Сгенерировать новые сертификаты")
     def generate_multiple_certificates(self, request, queryset):
-        # ИСПРАВЛЕНИЕ: Импортируем helpers прямо здесь
         from django.contrib.admin import helpers
 
         if "apply" in request.POST:
@@ -294,10 +293,7 @@ class GiftCertificateAdmin(admin.ModelAdmin):
                 return HttpResponseRedirect(request.get_full_path())
         else:
             form = GenerateCertificatesForm(
-                initial={
-                    # ИСПРАВЛЕНИЕ: Используем helpers.ACTION_CHECKBOX_NAME
-                    "_selected_action": request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)
-                }
+                initial={"_selected_action": request.POST.getlist(helpers.ACTION_CHECKBOX_NAME)}
             )
 
         return render(
@@ -307,7 +303,6 @@ class GiftCertificateAdmin(admin.ModelAdmin):
                 "items": queryset,
                 "form": form,
                 "title": "Генерация подарочных сертификатов",
-                # ИСПРАВЛЕНИЕ: Используем helpers.ACTION_CHECKBOX_NAME
                 "action_checkbox_name": helpers.ACTION_CHECKBOX_NAME,
             },
         )
