@@ -1,4 +1,7 @@
+from datetime import timedelta
+
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -27,6 +30,19 @@ class ProductViewSet(ReadOnlyModelViewSet):
         "supplier",
     ).all()
     serializer_class = ProductSerializer
+
+    @action(detail=False, methods=["get"], url_path="new_arrivals")
+    def new_arrivals(self, request):
+        # Отсчитываем 60 дней назад от сегодняшнего дня
+        two_months_ago = timezone.now() - timedelta(days=60)
+
+        # Фильтруем товары (исключаем те, у которых created_at=None)
+        recent_products = (
+            self.get_queryset().filter(created_at__isnull=False, created_at__gte=two_months_ago).order_by("-created_at")
+        )
+
+        serializer = self.get_serializer(recent_products, many=True)
+        return Response(serializer.data)
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):

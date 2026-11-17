@@ -37,6 +37,8 @@ class SoftDeleteModel(models.Model):  # mixin
 
     is_deleted = models.BooleanField(default=False, verbose_name="Удален")
 
+    created_at = models.DateTimeField(auto_now_add=True, null=True, verbose_name="Дата создания")
+
     # Переопределяем стандартный objects, чтобы он отдавал только "живые" записи
     objects = ActiveManager()
     # Оставляем доступ ко всем записям (включая удаленные) для админки и отчетов
