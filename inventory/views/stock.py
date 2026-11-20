@@ -33,7 +33,8 @@ def stock_management_view(request):
     for p in products:
         balance = p.balance or 0
         if balance > 0:
-            total_quantity += balance
+            if p.name.strip().casefold() != "пакет":
+                total_quantity += balance
             total_cost += balance * p.cost_price
             total_retail += balance * p.sale_price
 

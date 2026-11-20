@@ -10,7 +10,7 @@
             👥 Клиенты
         </h2>
         <a
-            href="{% url 'customer_create' %}?next=customers_list"
+            href="{% url 'customer_create' %}?next=customers_list&return_to={{ request.get_full_path|urlencode:"" }}"
             class="btn btn-primary"
         >
             ➕ Добавить клиента
@@ -31,7 +31,7 @@
                     </thead>
                     <tbody>
                         {% for customer in customers %}
-                        <tr onclick="window.location.href='{% url 'customer_detail' customer.pk %}';" style="cursor: pointer;">
+                        <tr onclick="window.location.href='{% url 'customer_detail' customer.pk %}?return_to={{ request.get_full_path|urlencode:""|escapejs }}';" style="cursor: pointer;">
                             <td>
                                 <strong>
                                     {% if customer.company_name %}

@@ -170,9 +170,9 @@ USE_THOUSAND_SEPARATOR = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-LOGIN_URL = "/"
-LOGIN_REDIRECT_URL = "/inventory/"
-LOGOUT_REDIRECT_URL = "/"
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "home"
+LOGOUT_REDIRECT_URL = "login"
 
 
 REST_FRAMEWORK = {

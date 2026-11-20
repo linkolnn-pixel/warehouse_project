@@ -228,6 +228,9 @@
             </div>
 
             <!-- КНОПКА СОЗДАНИЯ -->
+            {% if is_edit %}
+                <a href="{{ detail_url }}" class="btn btn-outline-secondary mb-2">Отмена</a>
+            {% endif %}
             <button type="submit" class="btn btn-success w-100">
                 {% if is_edit %}
                     Сохранить изменения

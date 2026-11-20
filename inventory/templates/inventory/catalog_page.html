@@ -34,7 +34,7 @@
             Категории
         </span>
         <!-- Кнопка добавления категории -->
-        <a href="{% url 'category_create' %}?next=products_catalog" class="btn btn-sm btn-outline-primary" title="Добавить категорию">
+        <a href="{% url 'category_create' %}?next=products_catalog&return_to={{ request.get_full_path|urlencode:"" }}" class="btn btn-sm btn-outline-primary" title="Добавить категорию">
             <i class="fa-solid fa-plus"></i>
         </a>
     </div>
@@ -139,7 +139,7 @@
                         <!-- Наименование -->
                         <td>
                             <a
-                                href="{% url 'product_detail' product.id %}"
+                                href="{% url 'product_detail' product.id %}?return_to={{ request.get_full_path|urlencode:"" }}"
                                 class="text-decoration-none product-name"
                             >
                                 {{ product.name }}

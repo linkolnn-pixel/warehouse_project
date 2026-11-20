@@ -13,6 +13,7 @@ from rest_framework.generics import get_object_or_404
 from ..exceptions import ExcelImportError
 from ..forms import CategoryForm, ProductEditForm, ProductForm
 from ..models import Category, Product, Supplier, Transaction, Warehouse
+from ..navigation import return_destination, url_with_return, with_query_parameter
 from ..services import import_products_from_excel
 
 
@@ -59,6 +60,20 @@ def products_catalog_view(request):
     return render(request, "inventory/catalog_page.html", context)
 
 
+def _product_return_url(request):
+    return return_destination(
+        request,
+        reverse("products_catalog"),
+        "home",
+        "stock_management",
+        "products_catalog",
+        "dashboard",
+        "movement_report",
+        "receipt_detail",
+        "sale_detail",
+    )
+
+
 @login_required
 def product_detail(request, pk):
     warehouse = Warehouse.objects.first()
@@ -87,6 +102,7 @@ def product_detail(request, pk):
             "warehouse": warehouse,
             "balance": balance,
             "stock_profit": stock_profit,
+            "product_return_url": _product_return_url(request),
         },
     )
 
@@ -94,25 +110,30 @@ def product_detail(request, pk):
 @login_required
 def product_edit(request, pk):
     product = get_object_or_404(Product, pk=pk)
+    detail_url = reverse("product_detail", kwargs={"pk": product.pk})
+    detail_url = url_with_return(detail_url, _product_return_url(request))
     if request.method == "POST":
         form = ProductEditForm(request.POST, instance=product)
         if form.is_valid():
             form.save()
             messages.success(request, "Товар успешно обновлен")
-            return redirect("product_detail", pk=product.pk)
+            return redirect(detail_url)
     else:
         form = ProductEditForm(instance=product)
-    return render(request, "inventory/product_edit.html", {"form": form, "product": product})
+    return render(request, "inventory/product_edit.html", {"form": form, "product": product, "detail_url": detail_url})
 
 
 @login_required
 def product_create(request):
     next_name = request.GET.get("next", "products_catalog")
-    target = request.GET.get("target", "")
     selected_products = request.GET.getlist("products")
-    customer_id = request.GET.get("customer")
     supplier_id = request.GET.get("supplier")
     category_id = request.GET.get("category")
+
+    picker_params = request.GET.copy()
+    picker_params.pop("next", None)
+    picker_params.setlist("products", [item for item in selected_products if item.isdigit()])
+    picker_url = reverse("product_picker")
 
     if request.method == "POST":
         form = ProductForm(request.POST)
@@ -122,21 +143,11 @@ def product_create(request):
             messages.success(request, "Товар успешно создан!")
             # Если пришли из выбора товаров
             if next_name == "product_picker":
-                params = [
-                    f"target={target}",
-                    f"products={product.pk}",
-                ]
-                # Старые товары
-                for product_id in selected_products:
-                    if product_id != str(product.pk):
-                        params.append(f"products={product_id}")
-                # Клиент
-                if customer_id and customer_id.isdigit():
-                    params.append(f"customer={customer_id}")
-                # Поставщик
-                if supplier_id and supplier_id.isdigit():
-                    params.append(f"supplier={supplier_id}")
-                return redirect(f"{reverse('product_picker')}?" + "&".join(params))
+                picker_params.appendlist("products", str(product.pk))
+                # A search or category filter can hide the newly created product.
+                picker_params.pop("q", None)
+                picker_params.pop("category", None)
+                return redirect(f"{picker_url}?{picker_params.urlencode()}")
             return redirect("products_catalog")
         messages.error(request, "Исправьте ошибки в форме.")
     else:
@@ -162,8 +173,8 @@ def product_create(request):
         {
             "form": form,
             "next_name": next_name,
-            "target": target,
             "selected_products": selected_products,
+            "picker_url": f"{picker_url}?{picker_params.urlencode()}",
             "existing_brands": existing_brands,
         },
     )
@@ -183,6 +194,9 @@ def category_create(request):
                 messages.success(request, "Категория успешно создана!")
                 # Возвращаемся в create_product
                 # с сохранённым контекстом.
+                product_form_url = return_destination(request, "", "product_create")
+                if next_name == "product_create" and product_form_url:
+                    return redirect(with_query_parameter(product_form_url, "category", instance.pk))
                 url = reverse(next_name)
                 params = [f"category={instance.pk}"]
                 for product_id in selected_products:
@@ -198,7 +212,8 @@ def category_create(request):
             messages.error(request, "Исправьте ошибки в форме.")
     else:
         form = CategoryForm()
-    return render(request, "inventory/category_form.html", {"form": form})
+    cancel_url = return_destination(request, reverse("products_catalog"), "products_catalog", "product_create")
+    return render(request, "inventory/category_form.html", {"form": form, "cancel_url": cancel_url})
 
 
 @login_required
@@ -223,7 +238,9 @@ def product_picker(request):
         # Товары, выбранные на текущей странице
         selected = request.POST.getlist("products")
         # Все ранее выбранные + новые
-        all_products = selected_existing + selected_from_products + selected
+        all_products = selected
+        if request.POST.get("selection_complete") != "1":
+            all_products = selected_existing + selected_from_products + selected
         # Только ID
         all_products = [x for x in all_products if x.isdigit()]
         # Убираем дубли

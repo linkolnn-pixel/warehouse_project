@@ -86,14 +86,14 @@
 
                         <td>
                             {% if doc.type == 'IN' and doc.document %}
-                                <a href="{% url 'receipt_detail' doc.document.id %}"
+                                <a href="{% url 'receipt_detail' doc.document.id %}?return_to={{ request.get_full_path|urlencode:"" }}"
                                    onclick="event.stopPropagation(); window.location.href=this.href; return false;"
                                    class="fw-bold text-decoration-none text-primary">
                                     Приход №{{ doc.doc_number }}
                                 </a>
 
                             {% elif doc.type == 'OUT' and doc.document %}
-                                <a href="{% url 'sale_detail' doc.document.id %}"
+                                <a href="{% url 'sale_detail' doc.document.id %}?return_to={{ request.get_full_path|urlencode:"" }}"
                                    onclick="event.stopPropagation(); window.location.href=this.href; return false;"
                                    class="fw-bold text-decoration-none text-primary">
                                     Продажа №{{ doc.doc_number }}
@@ -157,7 +157,7 @@
                                             {% for item in doc.items %}
                                             <tr>
                                                 <td>
-                                                    <a href="{% url 'product_detail' item.product.pk %}" class="text-decoration-none">
+                                                    <a href="{% url 'product_detail' item.product.pk %}?return_to={{ request.get_full_path|urlencode:"" }}" class="text-decoration-none">
                                                         {{ item.product.name }}
                                                     </a>
                                                 </td>

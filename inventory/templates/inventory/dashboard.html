@@ -211,7 +211,7 @@
                             {% for sale in data.sales_list %}
                                 <div class="card mb-3 border-0 shadow-sm">
                                     <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
-                                        <a href="{% url 'sale_detail' sale.pk %}" class="text-decoration-none fw-bold">Продажа №{{ sale.number }}</a>
+                                        <a href="{% url 'sale_detail' sale.pk %}?return_to={{ request.get_full_path|urlencode:"" }}" class="text-decoration-none fw-bold">Продажа №{{ sale.number }}</a>
                                         <span class="text-muted small">{{ sale.date|date:"d.m.Y H:i" }}</span>
                                     </div>
                                     <div class="card-body p-0">
@@ -328,7 +328,7 @@
             <ul class="list-group list-group-flush">
                 {% for p in out_of_stock_products %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <a href="{% url 'product_detail' p.pk %}">{{ p.name }}</a>
+                        <a href="{% url 'product_detail' p.pk %}?return_to={{ request.get_full_path|urlencode:"" }}">{{ p.name }}</a>
                         {{ p.name }}
                         <span class="badge bg-secondary rounded-pill">0 шт.</span>
                     </li>

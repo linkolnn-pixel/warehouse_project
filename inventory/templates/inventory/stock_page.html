@@ -98,7 +98,7 @@
             {% for product in products %}
                 <tr>
                     <td>
-                        <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none fw-bold text-primary">
+                        <a href="{% url 'product_detail' product.pk %}?return_to={{ request.get_full_path|urlencode:"" }}" class="text-decoration-none fw-bold text-primary">
                             {{ product.name }}
                         </a>
                     </td>
