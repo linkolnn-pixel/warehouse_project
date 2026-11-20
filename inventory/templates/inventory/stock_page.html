@@ -4,147 +4,19 @@
 Управление остатками
 {% endblock %}
 
-{% block content %}
-
+{% block extra_head %}
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
 
-<style>
-    /* Страница */
-    body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        padding: 18px;
-        margin: 0;
-        background: #f4f6f9;
-        color: #333;
-    }
+{% endblock %}
 
-    /* Контент */
-    .stock-content {
-        padding: 10px 8px 20px 8px;
-    }
-
-    h1 {
-        color: #2c3e50;
-        margin: 0 0 8px 0;
-        font-size: 32px;
-    }
-
-    .controls {
-        margin-bottom: 8px;
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .btn {
-        padding: 8px 16px;
-        border: none;
-        cursor: pointer;
-        text-decoration: none;
-        border-radius: 4px;
-        font-size: 14px;
-        color: white;
-    }
-
-    .btn-success {
-        background: #2ecc71;
-    }
-
-    .btn-danger {
-        background: #e74c3c;
-    }
-
-    .btn-secondary {
-        background: #95a5a6;
-    }
-
-    table.dataTable {
-        font-size: 13px;
-    }
-
-    table.dataTable th,
-    table.dataTable td {
-        padding: 6px 8px;
-        white-space: nowrap;
-    }
-
-    th {
-        background: #ecf0f1;
-    }
-</style>
-
+{% block content %}
 <div class="stock-content">
 
-    <h1>Управление остатками</h1>
-
-    <table id="stock-table" class="display">
-        <thead>
-            <tr>
-                <!-- Поле поиска по Наименованию (колонка 0) -->
-                <th>
-                    <span style="display: block; margin-bottom: 5px;">Наименование</span>
-                    <input type="text" class="column-filter form-control form-control-sm" data-column="0" placeholder="Поиск..." style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
-                </th>
-
-                <!-- Выпадающий список Категорий (колонка 1) -->
-                <th>
-                    <span style="display: block; margin-bottom: 5px;">Бренд</span>
-                    <select class="column-filter form-select form-select-sm" data-column="1" style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
-                        <option value="">Все</option>
-                        {% for brand in brands %}
-                            {% if brand %}
-                                <option value="{{ brand }}">{{ brand }}</option>
-                            {% endif %}
-                        {% endfor %}
-                    </select>
-                </th>
-
-                <th>Остаток</th>
-                <th>Закупочная цена</th>
-                <th>Цена продажи</th>
-                <th>Прибыль</th>
-                <th>Внутренний код</th>
-                <th>Артикул</th>
-                <th>
-                    <span style="display: block; margin-bottom: 5px;">Склад</span>
-                    <select class="column-filter form-select form-select-sm" data-column="8" style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
-                        <option value="">Все</option>
-                        {% for w in warehouses %}
-                            <option value="{{ w.name }}">{{ w.name }}</option>
-                        {% endfor %}
-                    </select>
-                </th>
-            </tr>
-        </thead>
-
-        <tbody>
-        {% for product in products %}
-            <tr>
-                <td>
-                    <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none fw-bold text-primary">
-                        {{ product.name }}
-                    </a>
-                </td>
-                <td>{{ product.brand|default:"-" }}</td>
-                <td>{{ product.balance|default:"0" }} шт.</td>
-                <td>{{ product.cost_price }}</td>
-                <td>{{ product.sale_price }}</td>
-                <td>{{ product.profit_per_unit }}</td>
-                <td>{{ product.internal_code }}</td>
-                <td>{{ product.sku|default:"-" }}</td>
-                <td>{{ warehouse.name|default:"Нет складов" }}</td>
-            </tr>
-        {% empty %}
-            <tr>
-                <td colspan="10" style="text-align: center;">Товары не найдены</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    <h1 class="mb-4"><i class="fa-solid fa-boxes-stacked heading-icon" aria-hidden="true"></i>Управление остатками</h1>
 
     <!-- Сводная статистика склада -->
-    <div class="row mb-4 mt-4">
-        <div class="col-md-3 col-sm-6 mb-2">
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
             <div class="card bg-white shadow-sm h-100 border-0 border-start border-4 border-secondary">
                 <div class="card-body">
                     <h6 class="card-title text-muted mb-1"><i class="fas fa-boxes me-2"></i>Общий остаток</h6>
@@ -153,7 +25,7 @@
             </div>
         </div>
 
-        <div class="col-md-3 col-sm-6 mb-2">
+        <div class="col-md-3 col-sm-6">
             <div class="card bg-white shadow-sm h-100 border-0 border-start border-4 border-primary">
                 <div class="card-body">
                     <h6 class="card-title text-muted mb-1"><i class="fas fa-shopping-cart me-2"></i>В закупке</h6>
@@ -162,7 +34,7 @@
             </div>
         </div>
 
-        <div class="col-md-3 col-sm-6 mb-2">
+        <div class="col-md-3 col-sm-6">
             <div class="card bg-white shadow-sm h-100 border-0 border-start border-4 border-info">
                 <div class="card-body">
                     <h6 class="card-title text-muted mb-1"><i class="fas fa-tag me-2"></i>В рознице</h6>
@@ -171,7 +43,7 @@
             </div>
         </div>
 
-        <div class="col-md-3 col-sm-6 mb-2">
+        <div class="col-md-3 col-sm-6">
             <div class="card bg-white shadow-sm h-100 border-0 border-start border-4 border-success">
                 <div class="card-body">
                     <h6 class="card-title text-muted mb-1"><i class="fas fa-wallet me-2"></i>Прибыль</h6>
@@ -179,6 +51,73 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="panel table-scroll stock-panel" tabindex="0" aria-label="Таблица остатков">
+        <table id="stock-table" class="display">
+            <thead>
+                <tr>
+                    <!-- Поле поиска по Наименованию (колонка 0) -->
+                    <th>
+                        <span style="display: block; margin-bottom: 5px;">Наименование</span>
+                        <input type="text" class="column-filter form-control form-control-sm" data-column="0" placeholder="Поиск..." style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
+                    </th>
+
+                    <!-- Выпадающий список Категорий (колонка 1) -->
+                    <th>
+                        <span style="display: block; margin-bottom: 5px;">Бренд</span>
+                        <select class="column-filter form-select form-select-sm" data-column="1" style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
+                            <option value="">Все</option>
+                            {% for brand in brands %}
+                                {% if brand %}
+                                    <option value="{{ brand }}">{{ brand }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </th>
+
+                    <th>Остаток</th>
+                    <th>Закупочная цена</th>
+                    <th>Цена продажи</th>
+                    <th>Прибыль</th>
+                    <th>Внутренний код</th>
+                    <th>Артикул</th>
+                    <th>
+                        <span style="display: block; margin-bottom: 5px;">Склад</span>
+                        <select class="column-filter form-select form-select-sm" data-column="8" style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
+                            <option value="">Все</option>
+                            {% for w in warehouses %}
+                                <option value="{{ w.name }}">{{ w.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </th>
+                </tr>
+            </thead>
+
+            <tbody>
+            {% for product in products %}
+                <tr>
+                    <td>
+                        <a href="{% url 'product_detail' product.pk %}" class="text-decoration-none fw-bold text-primary">
+                            {{ product.name }}
+                        </a>
+                    </td>
+                    <td>{{ product.brand|default:"-" }}</td>
+                    <td>{{ product.balance|default:"0" }} шт.</td>
+                    <td>{{ product.cost_price }}</td>
+                    <td>{{ product.sale_price }}</td>
+                    <td>{{ product.profit_per_unit }}</td>
+                    <td>{{ product.internal_code }}</td>
+                    <td>{{ product.sku|default:"-" }}</td>
+                    <td>{{ warehouse.name|default:"Нет складов" }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="10" style="text-align: center;">Товары не найдены</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 

@@ -1,11 +1,11 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.forms import inlineformset_factory
 from django.shortcuts import redirect, render
 from rest_framework.generics import get_object_or_404
 
-from inventory.decorators import test_mode_login_required
 from inventory.forms import ReceiptForm, ReceiptItemForm, SaleForm, SaleItemForm
 from inventory.models import Product, Receipt, ReceiptItem, Sale, SaleItem, Warehouse
 from inventory.services import (
@@ -16,7 +16,7 @@ from inventory.services import (
 )
 
 
-@test_mode_login_required
+@login_required
 @transaction.atomic
 def receipt_create(request):
     warehouse = Warehouse.objects.first()
@@ -82,7 +82,7 @@ def receipt_create(request):
     )
 
 
-@test_mode_login_required
+@login_required
 @transaction.atomic
 def sale_create(request):
     warehouse = Warehouse.objects.first()
@@ -197,7 +197,7 @@ def sale_create(request):
     return render(request, "inventory/sale_create.html", {"form": form, "formset": formset, "customer_id": customer_id})
 
 
-@test_mode_login_required
+@login_required
 @transaction.atomic
 def sale_edit(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
@@ -256,7 +256,7 @@ def sale_edit(request, pk):
     )
 
 
-@test_mode_login_required
+@login_required
 @transaction.atomic
 def receipt_edit(request, pk):
     receipt = get_object_or_404(Receipt, pk=pk)
@@ -291,7 +291,7 @@ def receipt_edit(request, pk):
     )
 
 
-@test_mode_login_required
+@login_required
 def sale_post(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     try:
@@ -305,13 +305,13 @@ def sale_post(request, pk):
     return redirect("sale_detail", pk=pk)
 
 
-@test_mode_login_required
+@login_required
 def sale_detail(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     return render(request, "inventory/sale_detail.html", {"sale": sale})
 
 
-@test_mode_login_required
+@login_required
 def sale_unpost(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     try:
@@ -321,7 +321,7 @@ def sale_unpost(request, pk):
     return redirect("sale_detail", pk=pk)
 
 
-@test_mode_login_required
+@login_required
 def receipt_post(request, pk):
     receipt = get_object_or_404(Receipt, pk=pk)
     try:
@@ -332,13 +332,13 @@ def receipt_post(request, pk):
     return redirect("receipt_detail", pk=pk)
 
 
-@test_mode_login_required
+@login_required
 def receipt_detail(request, pk):
     receipt = get_object_or_404(Receipt, pk=pk)
     return render(request, "inventory/receipt_detail.html", {"receipt": receipt})
 
 
-@test_mode_login_required
+@login_required
 def receipt_unpost(request, pk):
     receipt = get_object_or_404(Receipt, pk=pk)
     try:

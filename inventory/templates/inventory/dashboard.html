@@ -215,6 +215,7 @@
                                         <span class="text-muted small">{{ sale.date|date:"d.m.Y H:i" }}</span>
                                     </div>
                                     <div class="card-body p-0">
+                                        <div class="table-scroll" tabindex="0" aria-label="Таблица">
                                         <table class="table table-sm table-borderless mb-0 align-middle">
                                             <thead class="table-light">
                                                 <tr>
@@ -244,6 +245,7 @@
                                                 </tr>
                                             </tfoot>
                                         </table>
+                                        </div>
                                     </div>
                                 </div>
                             {% endfor %}
@@ -264,6 +266,7 @@
 
         <div class="card shadow-sm">
             <div class="card-body p-0">
+                <div class="table-scroll" tabindex="0" aria-label="Таблица">
                 <table class="table table-hover mb-0 align-middle">
                     <thead class="table-light">
                         <tr>
@@ -300,6 +303,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
 

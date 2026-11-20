@@ -9,100 +9,6 @@
 
 {% block extra_head %}
 
-<style>
-
-    /* =========================
-       SIDEBAR БРЕНДОВ
-    ========================= */
-
-    .catalog-sidebar {
-        width: 240px;
-        position: fixed;
-        top: 172px;
-        bottom: 0;
-        left: 0;
-        background: white;
-        border-right: 1px solid #ddd;
-        overflow-y: auto;
-        z-index: 1000;
-    }
-
-    .sidebar-title {
-        padding: 20px;
-        font-weight: 700;
-        color: #495057;
-    }
-
-    .brand-link {
-        display: block;
-        padding: 10px 20px;
-        color: #495057;
-        text-decoration: none;
-    }
-
-    .brand-link:hover {
-        background: #f1f3f5;
-    }
-
-    .brand-link.active {
-        background: #e7f1ff;
-        color: #0d6efd;
-        border-left: 4px solid #0d6efd;
-        font-weight: 600;
-    }
-
-    .catalog-header {
-    position: sticky;
-    top: 0;
-    z-index: 1010;
-
-    background: #f4f6f9;
-    padding: 15px 0;
-    margin-bottom: 15px;
-
-    border-bottom: 1px solid #dee2e6;
-}
-
-    /* =========================
-       ОСНОВНАЯ ОБЛАСТЬ КАТАЛОГА
-    ========================= */
-
-    .catalog-main {
-        margin-left: 240px;
-    }
-
-
-    /* =========================
-       ТАБЛИЦА
-    ========================= */
-
-    table.dataTable thead th {
-        background: #f8f9fa;
-        font-size: 12px;
-        text-transform: uppercase;
-        color: #6c757d;
-    }
-
-    .table td {
-        vertical-align: middle;
-        font-size: 14px;
-    }
-
-    .product-name {
-        font-weight: 600;
-    }
-
-    .price-buy {
-        color: #6c757d;
-    }
-
-    .price-sale {
-        font-weight: 700;
-        color: #198754;
-    }
-
-</style>
-
 <!-- DataTables CSS -->
 
 <link
@@ -119,7 +25,8 @@
      SIDEBAR
 ========================= -->
 
-<div class="catalog-sidebar">
+<div class="catalog-layout">
+<aside class="catalog-sidebar panel" aria-label="Категории">
 
     <div class="sidebar-title d-flex justify-content-between align-items-center">
         <span>
@@ -156,7 +63,7 @@
             {{ cat.name }}
         </a>
     {% endfor %}
-</div>
+</aside>
 
 
 <!-- =========================
@@ -164,11 +71,11 @@
 ========================= -->
 
 <div class="catalog-main">
-    <div class="catalog-header d-flex justify-content-between align-items-center">
-        <h4 class="mb-0">
-            <i class="fa-solid fa-box"></i>
+    <div class="section-heading">
+        <h1>
+            <i class="fa-solid fa-box heading-icon" aria-hidden="true"></i>
             {{ page_title }}
-        </h4>
+        </h1>
         <div>
             <!-- Excel -->
             <a
@@ -209,7 +116,7 @@
          TABLE
     ========================= -->
 
-    <div class="card p-3">
+    <div class="card p-3 table-scroll" tabindex="0" aria-label="Таблица каталога">
         <table
             id="catalogTable"
             class="table table-hover"
@@ -299,6 +206,7 @@
             </tbody>
         </table>
     </div>
+</div>
 </div>
 
 {% endblock %}

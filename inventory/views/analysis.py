@@ -1,11 +1,13 @@
 from datetime import timedelta
 
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.utils import timezone
 
 from inventory.models import SaleItem
 
 
+@login_required
 def client_predictions_view(request):
     # Берем проведенные продажи с клиентами, где у товара указан срок расхода > 0
     sale_items = SaleItem.objects.select_related("sale", "sale__customer", "product").filter(

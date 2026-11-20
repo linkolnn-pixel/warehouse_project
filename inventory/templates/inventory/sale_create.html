@@ -4,9 +4,6 @@
 Создание продажи
 {% endblock %}
 
-{% block content %}
-
-<!-- БЛОК ДЛЯ СТИЛЕЙ КАЛЕНДАРЯ -->
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/material_blue.css">
@@ -25,6 +22,7 @@
 </style>
 {% endblock %}
 
+{% block content %}
 <style>
     .quantity-field {
         max-width: 120px;
@@ -32,11 +30,9 @@
 </style>
 
 <div class="container mt-4">
-    <div class="card text-white bg-danger shadow-sm h-50">
-        <div class="card-body">
-            <h2 class="mb-4">📤 Создание продажи</h2>
-        </div>
-    </div>
+    <header class="section-heading">
+        <h1><i class="fa-solid fa-arrow-up-right-from-square heading-icon" aria-hidden="true"></i>Создание продажи</h1>
+    </header>
     <form method="post" id="sale-form">
         {% csrf_token %}
         <div class="card shadow p-4">
@@ -114,6 +110,7 @@
             {% endif %}
 
             <!-- ТАБЛИЦА ТОВАРОВ -->
+            <div class="table-scroll" tabindex="0" aria-label="Таблица">
             <table class="table table-bordered align-middle">
                 <thead class="table-light">
                     <tr>
@@ -218,6 +215,7 @@
                 </tfoot>
 
             </table>
+            </div>
 
             <!-- ИТОГ -->
             <div class="alert alert-info mt-3 text-end">

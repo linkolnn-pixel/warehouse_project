@@ -1,8 +1,9 @@
-{% extends "base.html" %}
+{% extends "inventory/base.html" %}
+{% block title %}Новый поставщик{% endblock %}
 {% block content %}
-<div class="container mt-4">
-    <h2>Новый поставщик</h2>
-    <form method="post">
+<div class="form-shell panel p-4">
+    <h1 class="mb-4">Новый поставщик</h1>
+    <form method="post" class="field-stack">
         {% csrf_token %}
         <!-- Если форма вернулась с ошибками -->
         {% if form.errors %}

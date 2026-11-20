@@ -23,8 +23,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ============================================================
 AMVERA = os.getenv("AMVERA", "False") == "True"
 
-# Локально автоматически тестовый режим.
-
 if AMVERA:
     # НА СЕРВЕРЕ проверка. Если ключа нет - приложение падает при старте
     SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
@@ -33,12 +31,10 @@ if AMVERA:
 
     # По умолчанию всё выключено, пока явно не включим через переменные
     DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
-    TEST_MODE = os.getenv("TEST_MODE", "False") == "True"
 else:
     # ЛОКАЛЬНО: Мягкий режим для удобства разработки
     SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "django-insecure-local-dev-key")
     DEBUG = os.getenv("DJANGO_DEBUG", "True") == "True"
-    TEST_MODE = os.getenv("TEST_MODE", "True") == "True"
 
 # ============================================================
 # HOSTS / CSRF
@@ -181,6 +177,6 @@ LOGOUT_REDIRECT_URL = "/"
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
-        "inventory.permissions.TestModeOrAuthenticated",
+        "rest_framework.permissions.IsAuthenticated",
     ],
 }

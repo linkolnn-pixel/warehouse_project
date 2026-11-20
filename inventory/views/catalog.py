@@ -1,6 +1,7 @@
 import json
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.db.models import Q
 from django.http import JsonResponse
@@ -9,14 +10,13 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 from rest_framework.generics import get_object_or_404
 
-from ..decorators import test_mode_login_required
 from ..exceptions import ExcelImportError
 from ..forms import CategoryForm, ProductEditForm, ProductForm
 from ..models import Category, Product, Supplier, Transaction, Warehouse
 from ..services import import_products_from_excel
 
 
-@test_mode_login_required
+@login_required
 def products_catalog_view(request):
     # 1. Получаем категории (для бокового меню)
     categories = Category.objects.all().order_by("name")
@@ -59,7 +59,7 @@ def products_catalog_view(request):
     return render(request, "inventory/catalog_page.html", context)
 
 
-@test_mode_login_required
+@login_required
 def product_detail(request, pk):
     warehouse = Warehouse.objects.first()
     warehouse_id = warehouse.id if warehouse else None
@@ -91,7 +91,7 @@ def product_detail(request, pk):
     )
 
 
-@test_mode_login_required
+@login_required
 def product_edit(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == "POST":
@@ -105,7 +105,7 @@ def product_edit(request, pk):
     return render(request, "inventory/product_edit.html", {"form": form, "product": product})
 
 
-@test_mode_login_required
+@login_required
 def product_create(request):
     next_name = request.GET.get("next", "products_catalog")
     target = request.GET.get("target", "")
@@ -169,7 +169,7 @@ def product_create(request):
     )
 
 
-@test_mode_login_required
+@login_required
 def category_create(request):
     next_name = request.GET.get("next", "products_catalog")
     selected_products = request.GET.getlist("products")
@@ -201,7 +201,7 @@ def category_create(request):
     return render(request, "inventory/category_form.html", {"form": form})
 
 
-@test_mode_login_required
+@login_required
 def product_picker(request):
     query = request.GET.get("q", "")
     target = request.GET.get("target", "receipt")
@@ -277,7 +277,7 @@ def product_picker(request):
     )
 
 
-@test_mode_login_required
+@login_required
 def upload_products(request):
     if request.method == "POST" and request.FILES.get("file"):
         file = request.FILES["file"]
@@ -306,7 +306,7 @@ def upload_products(request):
     return render(request, "inventory/upload_products.html")
 
 
-@test_mode_login_required
+@login_required
 @require_POST
 def update_product_category(request):
     try:

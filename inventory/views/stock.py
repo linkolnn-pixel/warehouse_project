@@ -1,15 +1,15 @@
 from collections import OrderedDict
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import redirect, render
 from rest_framework.generics import get_object_or_404
 
-from inventory.decorators import test_mode_login_required
 from inventory.models import Category, Product, Receipt, Sale, Transaction, Warehouse
 
 
-@test_mode_login_required
+@login_required
 def stock_management_view(request):
     warehouse = Warehouse.objects.first()  # Берем первый склад для отображения
     categories = Category.objects.all()
@@ -62,7 +62,7 @@ def stock_management_view(request):
     )
 
 
-@test_mode_login_required
+@login_required
 def movement_report(request):
     op_type = request.GET.get("type")
     if request.GET.get("status") == "draft":
@@ -161,7 +161,7 @@ def movement_report(request):
     return render(request, "inventory/movement_report.html", {"documents": documents})
 
 
-@test_mode_login_required
+@login_required
 def receipt_delete(request, pk):
     receipt = get_object_or_404(Receipt, pk=pk)
     if not receipt.posted:
@@ -173,7 +173,7 @@ def receipt_delete(request, pk):
     return redirect(request.META.get("HTTP_REFERER", "stock_management"))
 
 
-@test_mode_login_required
+@login_required
 def sale_delete(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     if not sale.posted:

@@ -6,7 +6,6 @@ from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 
 from inventory.exceptions import InventoryError
 from inventory.models import Category, Customer, Product, Receipt, Sale, Warehouse
-from inventory.permissions import TestModeOrAuthenticated
 from inventory.serializers import (
     CategorySerializer,
     CustomerSerializer,
@@ -20,7 +19,6 @@ from inventory.services import process_receipt_post, process_sale_post
 
 
 class ProductViewSet(ReadOnlyModelViewSet):
-    permission_classes = [TestModeOrAuthenticated]
     queryset = Product.objects.select_related(
         "category",
         "supplier",
@@ -34,7 +32,6 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class WarehouseViewSet(ReadOnlyModelViewSet):
-    permission_classes = [TestModeOrAuthenticated]
     queryset = Warehouse.objects.all()
     serializer_class = WarehouseSerializer
 
@@ -74,7 +71,6 @@ class WarehouseViewSet(ReadOnlyModelViewSet):
 
 
 class ReceiptViewSet(ModelViewSet):
-    permission_classes = [TestModeOrAuthenticated]
     queryset = (
         Receipt.objects.select_related(
             "warehouse",
@@ -103,7 +99,6 @@ class ReceiptViewSet(ModelViewSet):
 
 
 class SaleViewSet(ModelViewSet):
-    permission_classes = [TestModeOrAuthenticated]
     serializer_class = SaleSerializer
 
     def get_queryset(self):
@@ -134,7 +129,6 @@ class SaleViewSet(ModelViewSet):
 
 
 class CustomerViewSet(ModelViewSet):
-    permission_classes = [TestModeOrAuthenticated]
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
 

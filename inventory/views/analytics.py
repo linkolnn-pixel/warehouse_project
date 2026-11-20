@@ -1,6 +1,7 @@
 from datetime import timedelta
 from decimal import Decimal
 
+from django.contrib.auth.decorators import login_required
 from django.db.models import DecimalField, F, Sum
 from django.shortcuts import render
 from django.utils import timezone
@@ -9,6 +10,7 @@ from django.utils.dateparse import parse_date
 from inventory.models import Customer, Product, Receipt, Sale, SaleItem, Transaction, Warehouse
 
 
+@login_required
 def dashboard_view(request):
     # --- 1. КАРТОЧКИ: Считаем текущие остатки ---
     warehouse = Warehouse.objects.first()

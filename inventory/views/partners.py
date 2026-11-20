@@ -2,6 +2,7 @@ from decimal import Decimal
 from urllib.parse import urlencode
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.db.models import DecimalField, F, Sum
 from django.db.models.functions import Coalesce
@@ -10,12 +11,11 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from inventory.decorators import test_mode_login_required
 from inventory.forms import CustomerForm, SupplierForm
 from inventory.models import Customer, Sale, Supplier
 
 
-@test_mode_login_required
+@login_required
 def supplier_create(request):
     next_name = request.GET.get("next", "products_catalog")
     selected_products = request.GET.getlist("products")
@@ -54,7 +54,7 @@ def supplier_create(request):
     return render(request, "inventory/supplier_form.html", {"form": form})
 
 
-@test_mode_login_required
+@login_required
 def customer_create(request):
     next_name = request.GET.get("next", "sale_create")
     selected_products = request.GET.getlist("products")
@@ -86,13 +86,13 @@ def customer_create(request):
     return render(request, "inventory/customer_form.html", {"form": form})
 
 
-@test_mode_login_required
+@login_required
 def customers_list(request):
     customers = Customer.objects.order_by("last_name", "first_name")
     return render(request, "inventory/customers.html", {"customers": customers})
 
 
-@test_mode_login_required
+@login_required
 def customer_detail(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
 
@@ -139,6 +139,7 @@ def customer_detail(request, pk):
     )
 
 
+@login_required
 @require_POST
 def api_supplier_create(request):
     company_name = request.POST.get("company_name")
@@ -151,6 +152,7 @@ def api_supplier_create(request):
     return JsonResponse({"id": obj.id, "name": obj.company_name})
 
 
+@login_required
 @require_POST
 def api_customer_create(request):
     first_name = request.POST.get("first_name", "").strip()

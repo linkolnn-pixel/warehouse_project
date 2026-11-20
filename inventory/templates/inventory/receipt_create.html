@@ -5,9 +5,6 @@
 {% endblock %}
 
 
-{% block content %}
-
-<!-- БЛОК ДЛЯ СТИЛЕЙ КАЛЕНДАРЯ -->
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/material_blue.css">
@@ -26,6 +23,7 @@
 </style>
 {% endblock %}
 
+{% block content %}
 <style>
     .quantity-field {
         max-width: 120px;
@@ -33,11 +31,9 @@
 </style>
 
 <div class="container mt-4">
-    <div class="card text-white bg-success shadow-sm h-50">
-        <div class="card-body">
-            <h2 class="mb-4">📥 Создание прихода</h2>
-        </div>
-    </div>
+    <header class="section-heading">
+        <h1><i class="fa-solid fa-arrow-down heading-icon" aria-hidden="true"></i>Создание прихода</h1>
+    </header>
     <form method="post" id="receipt-form">
         {% csrf_token %}
         <div class="card shadow p-4">
@@ -92,6 +88,7 @@
                 Добавить товары
             </a>
             {{ formset.management_form }}
+            <div class="table-scroll" tabindex="0" aria-label="Таблица">
             <table class="table table-bordered align-middle">
                 <thead class="table-light">
                     <tr>
@@ -167,6 +164,7 @@
                 </tfoot>
 
             </table>
+            </div>
             <button type="submit" class="btn btn-success w-100">
                 {% if is_edit %}
                     Сохранить изменения

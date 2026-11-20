@@ -1,48 +1,16 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Загрузка товаров</title>
-    <!-- Подключаем Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Иконки FontAwesome (опционально, для красоты значков) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-light">
+{% extends 'inventory/base.html' %}
 
-<div class="container mt-4">
-    <h2 class="mb-4">🚀 Загрузка базы товаров из Excel</h2>
+{% block title %}Загрузка товаров{% endblock %}
 
-    <!-- === БЛОК СООБЩЕНИЙ (ОБЯЗАТЕЛЬНО) === -->
-    {% if messages %}
-        <div class="alert alert-dismissible fade show" role="alert">
-            {% for message in messages %}
-                {% if message.tags == 'error' %}
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-circle"></i> {{ message }}
-                    </div>
-                {% elif message.tags == 'success' %}
-                    <div class="alert alert-success">
-                        <i class="fas fa-check-circle"></i> {{ message }}
-                    </div>
-                {% elif message.tags == 'warning' %}
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i> {{ message }}
-                    </div>
-                {% else %}
-                    <div class="alert alert-info">
-                        {{ message }}
-                    </div>
-                {% endif %}
-            {% endfor %}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    {% endif %}
-    <!-- ======================================= -->
+{% block content %}
+<div class="form-shell">
+    <h1 class="mb-4"><i class="fa-solid fa-file-excel heading-icon" aria-hidden="true"></i>Импорт товаров из Excel</h1>
+
+
 
     <!-- Блок с правилами -->
     <div class="alert alert-info border-start border-info" role="alert">
-        <h5 class="fw-bold">📋 Правила загрузки:</h5>
+        <h5 class="fw-bold">Правила загрузки</h5>
         <ul>
             <li><strong>Бренд (Колонка "Бренд"):</strong> <span class="text-danger">Обязательно!</span> Это создаст категорию (например, Angiopharm). Без бренда товар не загрузится.</li>
             <li><strong>Артикул (SKU):</strong> Если есть — обязательно заполни. Это главный ключ для поиска дублей.</li>
@@ -51,7 +19,7 @@
     </div>
 
     <!-- Форма загрузки -->
-    <form method="post" enctype="multipart/form-data" class="border p-4 rounded shadow-sm bg-white">
+    <form method="post" enctype="multipart/form-data" class="panel p-4">
         {% csrf_token %}
 
         <div class="mb-3">
@@ -73,6 +41,7 @@
     <div class="mt-5 p-3 bg-white border rounded">
         <h4 class="fw-bold">Пример структуры вашего Excel файла:</h4>
 
+        <div class="table-scroll" tabindex="0" aria-label="Таблица">
         <table class="table table-bordered table-sm">
             <thead class="table-dark">
                 <tr>
@@ -124,6 +93,7 @@
                 </tr>
             </tbody>
         </table>
+        </div>
 
         <p class="small text-muted mt-3">
             💡 <b>Важно:</b> В Excel используйте точку или запятую для дробных чисел (скрипт сам исправит запятые на точки).
@@ -133,7 +103,4 @@
 </div>
 
 <!-- Подключаем JS Bootstrap для работы кнопки закрытия alert -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-</body>
-</html>
+{% endblock %}
