@@ -3,10 +3,10 @@
 {% block title %}Клиент: {{ customer.company_name|default:customer.first_name }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="page-section">
     <!-- Заголовок и кнопка назад -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Клиент</h2>
+        <h1 class="page-title">Клиент</h1>
         <div>
             <!-- Кнопка вызова модального окна -->
             <button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#editCustomerModal">

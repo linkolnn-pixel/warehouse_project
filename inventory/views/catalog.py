@@ -20,7 +20,7 @@ from ..services import import_products_from_excel
 @login_required
 def products_catalog_view(request):
     # 1. Получаем категории (для бокового меню)
-    categories = Category.objects.all().order_by("name")
+    categories = Category.objects.order_by("tree_id", "lft")
 
     # 2. Получаем уникальные текстовые бренды (для выпадающего фильтра в таблице)
     brands = (
@@ -192,6 +192,8 @@ def category_create(request):
                 instance = form.save(commit=False)
                 instance.save()
                 messages.success(request, "Категория успешно создана!")
+                if next_name == "products_catalog":
+                    return redirect(with_query_parameter(reverse("products_catalog"), "cat", instance.pk))
                 # Возвращаемся в create_product
                 # с сохранённым контекстом.
                 product_form_url = return_destination(request, "", "product_create")
@@ -211,7 +213,8 @@ def category_create(request):
         else:
             messages.error(request, "Исправьте ошибки в форме.")
     else:
-        form = CategoryForm()
+        parent_id = request.GET.get("parent")
+        form = CategoryForm(initial={"parent": parent_id} if parent_id else None)
     cancel_url = return_destination(request, reverse("products_catalog"), "products_catalog", "product_create")
     return render(request, "inventory/category_form.html", {"form": form, "cancel_url": cancel_url})
 

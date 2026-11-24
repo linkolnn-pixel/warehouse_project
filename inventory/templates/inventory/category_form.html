@@ -7,7 +7,7 @@
     <div class="row justify-content-center mx-0">
         <div class="col-md-6">
             <div class="card p-4">
-                <h2 class="text-center mb-4"><i class="fas fa-tags me-2"></i>Новая категория</h2>
+                <h1 class="page-title mb-4">Новая категория</h1>
                 <hr class="my-4">
 
                 <!-- Вывод сообщений об ошибках или успехе -->
@@ -15,16 +15,22 @@
 
                 <form method="post">
                     {% csrf_token %}
+                    {{ form.non_field_errors }}
 
                     <!-- Поле Название (name) -->
                     <div class="mb-3">
-                        <label class="form-label">Название категории<span class="text-danger">*</span></label>
+                        <label class="form-label" for="{{ form.name.id_for_label }}">Название категории<span class="text-danger">*</span></label>
                         {{ form.name }}
                         {% if form.name.errors %}
                             <div class="text-danger small">{{ form.name.errors }}</div>
                         {% endif %}
                     </div>
 
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.parent.id_for_label }}">Родительская категория</label>
+                        {{ form.parent }}
+                        {{ form.parent.errors }}
+                    </div>
 
                     <!-- Кнопки -->
                     <div class="d-flex gap-2 mt-4">

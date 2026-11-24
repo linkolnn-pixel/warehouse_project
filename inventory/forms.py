@@ -157,8 +157,11 @@ class CustomerForm(forms.ModelForm):
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
-        fields = ["name"]
-        widgets = {"name": forms.TextInput(attrs={"class": "form-control", "required": "required"})}
+        fields = ["name", "parent"]
+        widgets = {
+            "name": forms.TextInput(attrs={"class": "form-control", "required": "required"}),
+            "parent": forms.Select(attrs={"class": "form-select"}),
+        }
 
 
 class ExcelUploadForm(forms.Form):
@@ -249,7 +252,9 @@ class SaleForm(forms.ModelForm):
         model = Sale
         fields = ["date", "warehouse", "customer", "comment", "delivery_expense"]
         widgets = {
-            "date": forms.DateTimeInput(format="%Y-%m-%dT%H:%M", attrs={"class": "form-control"}),
+            "date": forms.DateTimeInput(
+                format="%Y-%m-%dT%H:%M", attrs={"type": "datetime-local", "class": "form-control"}
+            ),
             "warehouse": forms.Select(attrs={"class": "form-select"}),
             "customer": forms.Select(
                 attrs={

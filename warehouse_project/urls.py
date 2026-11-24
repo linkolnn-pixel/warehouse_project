@@ -10,7 +10,7 @@ urlpatterns = [
     ),
     path("logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("admin/", admin.site.urls),
-    path("", include("inventory.urls")),
     path("api/", include("inventory.api_urls")),
     path("select2/", include("django_select2.urls")),
+    path("", include("inventory.urls")),
 ]

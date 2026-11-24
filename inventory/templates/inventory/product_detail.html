@@ -10,16 +10,16 @@
     .card {
         border: none;
         border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0,0,0,.05);
+        box-shadow: none;
     }
     .card-header {
         background: #fff;
         font-weight: 600;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid var(--border-light);
         padding: 15px 20px;
     }
     .info-label {
-        color: #6c757d;
+        color: var(--fg-secondary);
         font-size: 13px;
         margin-bottom: 6px;
         text-transform: uppercase;
@@ -29,10 +29,10 @@
         font-size: 22px;
         font-weight: 700;
     }
-    .sale-price { color: #198754; }
-    .buy-price { color: #6c757d; }
-    .profit-price { color: #0d6efd; }
-    .stock-profit { color: #198754; }
+    .sale-price { color: var(--accent-profit); }
+    .buy-price { color: var(--fg-secondary); }
+    .profit-price { color: var(--fg-main); }
+    .stock-profit { color: var(--accent-profit); }
     .product-title {
         font-size: 26px;
         font-weight: 700;
@@ -55,7 +55,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="page-section">
 
     <!-- Заголовок и кнопки -->
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -63,7 +63,7 @@
             <a href="{{ product_return_url }}" class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-arrow-left"></i> Назад
             </a>
-            <h2 class="product-title mt-3">{{ product.name|default:"Без названия" }}</h2>
+            <h1 class="page-title product-title mt-3">{{ product.name|default:"Без названия" }}</h1>
         </div>
         <a href="{% url 'product_edit' product.id %}?return_to={{ product_return_url|urlencode:"" }}" class="btn btn-primary">
             <i class="fas fa-edit"></i> Редактировать

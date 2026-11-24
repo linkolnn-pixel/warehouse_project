@@ -6,14 +6,12 @@
 
 {% block content %}
 
-<div class="container-fluid">
+<div class="page-section">
 
     <div class="mb-4">
         <div class="d-flex align-items-center gap-4 mb-2">
-            <h2 class="mb-0">
-                <i class="fa-solid fa-arrow-right-arrow-left"></i>
-                Операции
-            </h2>
+            <h1 class="page-title mb-0">Операции
+            </h1>
 
             <div class="btn-group shadow-sm" role="group" aria-label="Фильтр операций">
                 <a href="?" class="btn {% if not request.GET.type or request.GET.type == 'all' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">

@@ -34,8 +34,8 @@
             Категории
         </span>
         <!-- Кнопка добавления категории -->
-        <a href="{% url 'category_create' %}?next=products_catalog&return_to={{ request.get_full_path|urlencode:"" }}" class="btn btn-sm btn-outline-primary" title="Добавить категорию">
-            <i class="fa-solid fa-plus"></i>
+        <a href="{% url 'category_create' %}?next=products_catalog&amp;return_to={{ request.get_full_path|urlencode:"" }}{% if selected_category %}&amp;parent={{ selected_category.pk }}{% endif %}" class="btn btn-sm btn-outline-primary" title="{% if selected_category %}Добавить подкатегорию{% else %}Добавить категорию{% endif %}">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
         </a>
     </div>
 
@@ -60,7 +60,7 @@
             {% endif %}"
             data-category-id="{{ cat.id }}"
         >
-            {{ cat.name }}
+            {% if cat.level %}<span aria-hidden="true">↳</span>{% endif %} {{ cat.name }}
         </a>
     {% endfor %}
 </aside>
@@ -72,9 +72,7 @@
 
 <div class="catalog-main">
     <div class="section-heading">
-        <h1>
-            <i class="fa-solid fa-box heading-icon" aria-hidden="true"></i>
-            {{ page_title }}
+        <h1 class="page-title">{{ page_title }}
         </h1>
         <div>
             <!-- Excel -->
@@ -254,8 +252,8 @@ $(document).ready(function () {
 <style>
     /* Подсветка категории при наведении товара */
     .brand-link.drag-over {
-        background: #e7f1ff;
-        border: 2px dashed #0d6efd;
+        background: var(--bg-subtle);
+        border: 2px dashed var(--fg-main);
     }
 </style>
 

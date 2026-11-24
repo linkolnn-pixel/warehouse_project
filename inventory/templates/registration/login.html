@@ -5,8 +5,7 @@
 
 {% block content %}
 <section class="login-card panel" aria-labelledby="login-title">
-    <span class="brand-mark"><i class="fa-solid fa-warehouse" aria-hidden="true"></i></span>
-    <h1 class="mb-4" id="login-title">Вход в систему</h1>
+    <h1 class="page-title mb-4" id="login-title">Вход в систему</h1>
     <form method="post" class="field-stack">
         {% csrf_token %}
         {{ form.as_p }}

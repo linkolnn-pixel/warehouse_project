@@ -4,11 +4,11 @@
 Клиенты
 {% endblock %}
 {% block content %}
-<div class="container mt-4">
+<div class="page-section">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>
+        <h1 class="page-title">
             👥 Клиенты
-        </h2>
+        </h1>
         <a
             href="{% url 'customer_create' %}?next=customers_list&return_to={{ request.get_full_path|urlencode:"" }}"
             class="btn btn-primary"

@@ -6,91 +6,522 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+<style>
+    /* Делаем шапку сайта полностью непрозрачной и фиксированной высоты */
+    .workspace-nav {
+        background-color: #ffffff !important;
+        height: 57px;
+    }
 
+    .page-content {
+        padding-top: 18px !important;
+        padding-bottom: 40px !important;
+    }
+
+    .stock-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .stock-title {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+        color: var(--fg-main);
+        margin: 0;
+    }
+
+    /* Компактная сводка метрик */
+    .metrics-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 12px 44px;
+        border-top: 1px solid var(--border-light);
+        border-bottom: 1px solid var(--border-light);
+        padding: 12px 0;
+        margin-bottom: 14px;
+    }
+
+    .metric-block {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .metric-label {
+        font-size: 12px;
+        color: var(--fg-secondary);
+    }
+
+    .metric-value {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+        color: var(--fg-main);
+        line-height: 1.2;
+    }
+
+    .metric-value.is-profit {
+        color: var(--accent-profit);
+    }
+
+    .metric-unit {
+        font-size: 13px;
+        font-weight: 400;
+        color: var(--fg-muted);
+        margin-left: 3px;
+    }
+
+    /* Панель фильтров */
+    .filters-toolbar {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .filter-input-wrap {
+        position: relative;
+        flex: 1 1 260px;
+        max-width: 360px;
+    }
+
+    .filter-input-wrap svg {
+        position: absolute;
+        left: 11px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 15px;
+        height: 15px;
+        color: var(--fg-muted);
+        pointer-events: none;
+    }
+
+    .toolbar-control {
+        height: 36px;
+        background-color: var(--bg-subtle);
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 0 12px;
+        font-size: 13.5px;
+        color: var(--fg-main);
+        outline: none;
+        transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+    }
+
+    .filter-input-wrap .toolbar-control {
+        width: 100%;
+        padding-left: 34px;
+    }
+
+    select.toolbar-control {
+        min-width: 165px;
+        padding-right: 32px;
+        appearance: none;
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%235c606a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+    }
+
+    .toolbar-control:hover {
+        background-color: #eceef2;
+    }
+
+    .toolbar-control:focus {
+        background-color: var(--bg-main);
+        border-color: var(--fg-main);
+    }
+
+    .toolbar-control::placeholder {
+        color: var(--fg-muted);
+    }
+
+    /* Кнопка «Только в наличии» */
+    .filter-toggle {
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 0 13px;
+        border-radius: 8px;
+        border: 1px solid var(--border-light);
+        background: var(--bg-main);
+        color: var(--fg-secondary);
+        font-size: 13.5px;
+        font-weight: 500;
+        cursor: pointer;
+        user-select: none;
+        transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
+    }
+
+    .filter-toggle:hover {
+        background: var(--bg-subtle);
+        color: var(--fg-main);
+    }
+
+    .filter-toggle.is-active {
+        background: var(--fg-main);
+        border-color: var(--fg-main);
+        color: #ffffff;
+    }
+
+    .filter-toggle .toggle-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--fg-muted);
+        transition: background 140ms ease;
+    }
+
+    .filter-toggle.is-active .toggle-dot {
+        background: #34d399;
+    }
+
+    /* Кнопка сброса */
+    .filter-reset {
+        height: 36px;
+        padding: 0 10px;
+        border: none;
+        background: transparent;
+        color: var(--fg-secondary);
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        border-radius: 6px;
+        display: none;
+        transition: background 140ms ease, color 140ms ease;
+    }
+
+    .filter-reset.is-visible {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .filter-reset:hover {
+        background: var(--bg-subtle);
+        color: var(--fg-main);
+    }
+
+    /* Таблица: скролл всей страницы + липкая шапка под навигацией */
+    .stock-table-wrap {
+        overflow-x: clip;
+    }
+
+    .dataTables_wrapper {
+        font-size: 13.5px;
+        color: var(--fg-main);
+    }
+
+    table#stock-table.dataTable {
+        width: 100% !important;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-bottom: 1px solid var(--border-light);
+        margin: 0 !important;
+    }
+
+    table#stock-table.dataTable thead th {
+        position: sticky;
+        top: var(--nav-height, 56px);
+        z-index: 20;
+        background: #f8f9fb;
+        border-top: 1px solid var(--border-light);
+        border-bottom: 1px solid var(--border-light);
+        color: var(--fg-secondary);
+        font-size: 12px;
+        font-weight: 500;
+        padding: 10px 26px 10px 12px;
+        vertical-align: middle;
+        white-space: nowrap;
+        user-select: none;
+    }
+
+    table#stock-table.dataTable thead th.col-num {
+        text-align: right;
+        padding-right: 26px;
+    }
+
+    /* Ровные стрелки сортировки */
+    table#stock-table.dataTable thead th.sorting::before,
+    table#stock-table.dataTable thead th.sorting::after,
+    table#stock-table.dataTable thead th.sorting_asc::before,
+    table#stock-table.dataTable thead th.sorting_asc::after,
+    table#stock-table.dataTable thead th.sorting_desc::before,
+    table#stock-table.dataTable thead th.sorting_desc::after {
+        right: 10px !important;
+        font-size: 8px !important;
+        line-height: 8px !important;
+        opacity: 0.22;
+        color: var(--fg-main);
+    }
+
+    table#stock-table.dataTable thead th.sorting::before,
+    table#stock-table.dataTable thead th.sorting_asc::before,
+    table#stock-table.dataTable thead th.sorting_desc::before {
+        bottom: 50% !important;
+        margin-bottom: 1px;
+    }
+
+    table#stock-table.dataTable thead th.sorting::after,
+    table#stock-table.dataTable thead th.sorting_asc::after,
+    table#stock-table.dataTable thead th.sorting_desc::after {
+        top: 50% !important;
+        margin-top: 1px;
+    }
+
+    table#stock-table.dataTable thead th.sorting_asc::before,
+    table#stock-table.dataTable thead th.sorting_desc::after {
+        opacity: 1 !important;
+    }
+
+    table#stock-table.dataTable tbody tr {
+        background: var(--bg-main) !important;
+        transition: background 120ms ease;
+    }
+
+    table#stock-table.dataTable tbody tr:hover {
+        background: #f8f9fb !important;
+    }
+
+    table#stock-table.dataTable tbody td {
+        padding: 13px 12px;
+        border-top: 1px solid var(--border-light);
+        color: var(--fg-main);
+        vertical-align: middle;
+    }
+
+    table#stock-table.dataTable tbody tr:first-child td {
+        border-top: none;
+    }
+
+    /* Числа и бейдж остатка */
+    .col-num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .col-muted {
+        color: var(--fg-secondary) !important;
+        font-size: 13px;
+    }
+
+    .col-profit {
+        color: var(--accent-profit) !important;
+        font-weight: 500;
+    }
+
+    .stock-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 999px;
+        font-size: 12.5px;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        background: #edf7f5;
+        color: #0f766e;
+    }
+
+    .stock-badge.is-zero {
+        background: var(--bg-subtle);
+        color: var(--fg-muted);
+        font-weight: 400;
+    }
+
+    /* Ссылка на товар */
+    .product-link {
+        color: var(--fg-main);
+        font-weight: 500;
+        text-decoration: none;
+    }
+
+    .product-link:hover {
+        color: var(--fg-main);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+
+    /* Нижняя панель */
+    .dt-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        padding-top: 16px;
+    }
+
+    .dt-bottom-left {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .dt-bottom .dataTables_length,
+    .dt-bottom .dataTables_info {
+        float: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        font-size: 13px;
+        color: var(--fg-secondary);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .dt-bottom .dataTables_length select {
+        height: 30px;
+        background: var(--bg-subtle);
+        border: 1px solid transparent;
+        border-radius: 6px;
+        padding: 0 8px;
+        font-size: 13px;
+        color: var(--fg-main);
+        margin: 0 4px;
+        outline: none;
+    }
+
+    .dt-bottom .dataTables_length select:focus {
+        background: var(--bg-main);
+        border-color: var(--fg-main);
+    }
+
+    .dt-bottom .dataTables_paginate {
+        float: none !important;
+        padding: 0 !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border: none !important;
+        background: transparent !important;
+        border-radius: 6px !important;
+        padding: 5px 10px !important;
+        font-size: 13px;
+        font-variant-numeric: tabular-nums;
+        color: var(--fg-secondary) !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+        background: var(--bg-subtle) !important;
+        color: var(--fg-main) !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: var(--fg-main) !important;
+        color: #ffffff !important;
+        font-weight: 500;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+        opacity: 0.35;
+    }
+
+    /* На мобильных и планшетах включаем горизонтальный скролл таблицы */
+    @media (max-width: 992px) {
+        .stock-table-wrap {
+            overflow-x: auto;
+        }
+        table#stock-table.dataTable thead th {
+            position: static;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .metrics-row {
+            gap: 12px 24px;
+        }
+        .filter-input-wrap,
+        select.toolbar-control {
+            max-width: 100%;
+            width: 100%;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="stock-content">
+<div class="stock-page">
 
-    <h1 class="mb-4"><i class="fa-solid fa-boxes-stacked heading-icon" aria-hidden="true"></i>Управление остатками</h1>
+    <header class="stock-header">
+        <h1 class="stock-title">Управление остатками</h1>
+    </header>
 
-    <!-- Сводная статистика склада -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3 col-sm-6">
-            <div class="card bg-white shadow-sm h-100 border-0 border-start border-4 border-secondary">
-                <div class="card-body">
-                    <h6 class="card-title text-muted mb-1"><i class="fas fa-boxes me-2"></i>Общий остаток</h6>
-                    <h4 class="mb-0">{{ total_quantity }} <small class="text-muted fs-6">шт</small></h4>
-                </div>
-            </div>
+    <section class="metrics-row" aria-label="Сводная статистика склада">
+        <div class="metric-block">
+            <span class="metric-label">Общий остаток</span>
+            <span class="metric-value">{{ total_quantity }}<span class="metric-unit">шт</span></span>
         </div>
 
-        <div class="col-md-3 col-sm-6">
-            <div class="card bg-white shadow-sm h-100 border-0 border-start border-4 border-primary">
-                <div class="card-body">
-                    <h6 class="card-title text-muted mb-1"><i class="fas fa-shopping-cart me-2"></i>В закупке</h6>
-                    <h4 class="mb-0 text-primary">{{ total_cost|floatformat:2 }} ₽</h4>
-                </div>
-            </div>
+        <div class="metric-block">
+            <span class="metric-label">В закупке</span>
+            <span class="metric-value">{{ total_cost|floatformat:2 }}<span class="metric-unit">₽</span></span>
         </div>
 
-        <div class="col-md-3 col-sm-6">
-            <div class="card bg-white shadow-sm h-100 border-0 border-start border-4 border-info">
-                <div class="card-body">
-                    <h6 class="card-title text-muted mb-1"><i class="fas fa-tag me-2"></i>В рознице</h6>
-                    <h4 class="mb-0 text-info">{{ total_retail|floatformat:2 }} ₽</h4>
-                </div>
-            </div>
+        <div class="metric-block">
+            <span class="metric-label">В рознице</span>
+            <span class="metric-value">{{ total_retail|floatformat:2 }}<span class="metric-unit">₽</span></span>
         </div>
 
-        <div class="col-md-3 col-sm-6">
-            <div class="card bg-white shadow-sm h-100 border-0 border-start border-4 border-success">
-                <div class="card-body">
-                    <h6 class="card-title text-muted mb-1"><i class="fas fa-wallet me-2"></i>Прибыль</h6>
-                    <h4 class="mb-0 text-success">{{ total_profit|floatformat:2 }} ₽</h4>
-                </div>
-            </div>
+        <div class="metric-block">
+            <span class="metric-label">Прибыль</span>
+            <span class="metric-value is-profit">{{ total_profit|floatformat:2 }}<span class="metric-unit">₽</span></span>
         </div>
+    </section>
+
+    <!-- Единая панель фильтров -->
+    <div class="filters-toolbar">
+        <div class="filter-input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+            </svg>
+            <input type="text" id="global-search" class="toolbar-control" placeholder="Поиск по названию, артикулу, коду...">
+        </div>
+
+        <select class="column-filter toolbar-control" data-column="1" aria-label="Фильтр по бренду">
+            <option value="">Все бренды</option>
+            {% for brand in brands %}
+                {% if brand %}
+                    <option value="{{ brand }}">{{ brand }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+
+        <select class="column-filter toolbar-control" data-column="8" aria-label="Фильтр по складу">
+            <option value="">Все склады</option>
+            {% for w in warehouses %}
+                <option value="{{ w.name }}">{{ w.name }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="button" id="in-stock-toggle" class="filter-toggle" aria-pressed="false">
+            <span class="toggle-dot" aria-hidden="true"></span>
+            Только в наличии
+        </button>
+
+        <button type="button" id="reset-filters" class="filter-reset">
+            Сбросить
+        </button>
     </div>
 
-    <div class="panel table-scroll stock-panel" tabindex="0" aria-label="Таблица остатков">
+    <div class="stock-table-wrap" tabindex="0" aria-label="Таблица остатков">
         <table id="stock-table" class="display">
             <thead>
                 <tr>
-                    <!-- Поле поиска по Наименованию (колонка 0) -->
-                    <th>
-                        <span style="display: block; margin-bottom: 5px;">Наименование</span>
-                        <input type="text" class="column-filter form-control form-control-sm" data-column="0" placeholder="Поиск..." style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
-                    </th>
-
-                    <!-- Выпадающий список Категорий (колонка 1) -->
-                    <th>
-                        <span style="display: block; margin-bottom: 5px;">Бренд</span>
-                        <select class="column-filter form-select form-select-sm" data-column="1" style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
-                            <option value="">Все</option>
-                            {% for brand in brands %}
-                                {% if brand %}
-                                    <option value="{{ brand }}">{{ brand }}</option>
-                                {% endif %}
-                            {% endfor %}
-                        </select>
-                    </th>
-
-                    <th>Остаток</th>
-                    <th>Закупочная цена</th>
-                    <th>Цена продажи</th>
-                    <th>Прибыль</th>
-                    <th>Внутренний код</th>
+                    <th>Наименование</th>
+                    <th>Бренд</th>
+                    <th class="col-num">Остаток</th>
+                    <th class="col-num">Закупка</th>
+                    <th class="col-num">Продажа</th>
+                    <th class="col-num">Прибыль</th>
+                    <th>Код</th>
                     <th>Артикул</th>
-                    <th>
-                        <span style="display: block; margin-bottom: 5px;">Склад</span>
-                        <select class="column-filter form-select form-select-sm" data-column="8" style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
-                            <option value="">Все</option>
-                            {% for w in warehouses %}
-                                <option value="{{ w.name }}">{{ w.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </th>
+                    <th>Склад</th>
                 </tr>
             </thead>
 
@@ -98,22 +529,26 @@
             {% for product in products %}
                 <tr>
                     <td>
-                        <a href="{% url 'product_detail' product.pk %}?return_to={{ request.get_full_path|urlencode:"" }}" class="text-decoration-none fw-bold text-primary">
+                        <a href="{% url 'product_detail' product.pk %}?return_to={{ request.get_full_path|urlencode:"" }}" class="product-link">
                             {{ product.name }}
                         </a>
                     </td>
-                    <td>{{ product.brand|default:"-" }}</td>
-                    <td>{{ product.balance|default:"0" }} шт.</td>
-                    <td>{{ product.cost_price }}</td>
-                    <td>{{ product.sale_price }}</td>
-                    <td>{{ product.profit_per_unit }}</td>
-                    <td>{{ product.internal_code }}</td>
-                    <td>{{ product.sku|default:"-" }}</td>
-                    <td>{{ warehouse.name|default:"Нет складов" }}</td>
+                    <td class="col-muted">{{ product.brand|default:"—" }}</td>
+                    <td class="col-num" data-order="{{ product.balance|default:0 }}" data-balance="{{ product.balance|default:0 }}">
+                        <span class="stock-badge{% if not product.balance %} is-zero{% endif %}">
+                            {{ product.balance|default:"0" }} шт
+                        </span>
+                    </td>
+                    <td class="col-num" data-order="{{ product.cost_price|default:0 }}">{{ product.cost_price|floatformat:2 }} ₽</td>
+                    <td class="col-num" data-order="{{ product.sale_price|default:0 }}">{{ product.sale_price|floatformat:2 }} ₽</td>
+                    <td class="col-num col-profit" data-order="{{ product.profit_per_unit|default:0 }}">{{ product.profit_per_unit|floatformat:2 }} ₽</td>
+                    <td class="col-muted">{{ product.internal_code }}</td>
+                    <td class="col-muted">{{ product.sku|default:"—" }}</td>
+                    <td class="col-muted">{{ warehouse.name|default:"Нет складов" }}</td>
                 </tr>
             {% empty %}
                 <tr>
-                    <td colspan="10" style="text-align: center;">Товары не найдены</td>
+                    <td colspan="9" style="text-align: center; padding: 36px; color: var(--fg-secondary);">Товары не найдены</td>
                 </tr>
             {% endfor %}
             </tbody>
@@ -126,35 +561,53 @@
 
 <script>
 $(document).ready(function () {
+    var onlyInStock = false;
 
-    // 1. Инициализируем таблицу и сохраняем её в переменную table
+    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+        if (!onlyInStock || settings.nTable.id !== 'stock-table') {
+            return true;
+        }
+        var rowNode = settings.aoData[dataIndex].nTr;
+        var balanceCell = rowNode ? rowNode.querySelector('td[data-balance]') : null;
+        var balance = balanceCell ? parseFloat(balanceCell.getAttribute('data-balance')) : 0;
+        return balance > 0;
+    });
+
     var table = $('#stock-table').DataTable({
         pageLength: 50,
+        dom: 'rt<"dt-bottom"<"dt-bottom-left"li>p>',
         language: {
             processing: "Обработка...",
-            search: "Глобальный поиск:",
-            lengthMenu: "Показать _MENU_ записей",
-            info: "Показаны записи с _START_ по _END_ из _TOTAL_",
-            infoEmpty: "Записей нет",
-            infoFiltered: "(отфильтровано из _MAX_ записей)",
+            lengthMenu: "Показать _MENU_",
+            info: "_START_–_END_ из _TOTAL_",
+            infoEmpty: "Нет записей",
+            infoFiltered: "(из _MAX_)",
             loadingRecords: "Загрузка...",
             zeroRecords: "Совпадений не найдено",
             emptyTable: "В таблице нет данных",
             paginate: {
-                first: "Первая",
-                previous: "Предыдущая",
-                next: "Следующая",
-                last: "Последняя"
+                first: "«",
+                previous: "‹",
+                next: "›",
+                last: "»"
             }
         }
     });
 
-    // 2. Предотвращаем сортировку колонки при клике на фильтры внутри заголовка
-    $('.column-filter').on('click mousedown mouseup', function (event) {
-        event.stopPropagation();
+    function updateResetVisibility() {
+        var hasSearch = $('#global-search').val().trim() !== '';
+        var hasSelect = false;
+        $('select.column-filter').each(function () {
+            if ($(this).val() !== '') hasSelect = true;
+        });
+        $('#reset-filters').toggleClass('is-visible', hasSearch || hasSelect || onlyInStock);
+    }
+
+    $('#global-search').on('input', function () {
+        table.search($(this).val()).draw();
+        updateResetVisibility();
     });
 
-    // 3. Фильтрация для выпадающего списка (Категория - data-column="1")
     $('select.column-filter').on('change', function () {
         var columnIdx = $(this).data('column');
         var val = $(this).val();
@@ -164,15 +617,24 @@ $(document).ready(function () {
         } else {
             table.column(columnIdx).search('').draw();
         }
+        updateResetVisibility();
     });
 
-    // 4. Мгновенный поиск для текстового поля (Наименование - data-column="0")
-    $('input.column-filter').on('input', function () {
-        var columnIdx = $(this).data('column');
-        var val = $(this).val();
-        table.column(columnIdx).search(val).draw();
+    $('#in-stock-toggle').on('click', function () {
+        onlyInStock = !onlyInStock;
+        $(this).toggleClass('is-active', onlyInStock).attr('aria-pressed', onlyInStock);
+        table.draw();
+        updateResetVisibility();
     });
 
+    $('#reset-filters').on('click', function () {
+        $('#global-search').val('');
+        $('select.column-filter').val('');
+        onlyInStock = false;
+        $('#in-stock-toggle').removeClass('is-active').attr('aria-pressed', 'false');
+        table.search('').columns().search('').draw();
+        updateResetVisibility();
+    });
 });
 </script>
 

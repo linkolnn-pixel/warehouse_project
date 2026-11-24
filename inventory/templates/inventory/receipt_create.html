@@ -1,4 +1,5 @@
 {% extends 'inventory/base.html' %}
+{% load static %}
 
 {% block title %}
 Создание прихода
@@ -6,21 +7,7 @@
 
 
 {% block extra_head %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/material_blue.css">
-<style>
-    .flatpickr-calendar {
-        width: auto !important;
-        transform: scale(1);
-        transform-origin: top left;
-        margin-top: 5px;
-    }
-    .flatpickr-day {
-        max-width: 45px !important;
-        height: 45px !important;
-        line-height: 45px !important;
-    }
-</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
 {% endblock %}
 
 {% block content %}
@@ -30,17 +17,16 @@
     }
 </style>
 
-<div class="container mt-4">
+<div class="page-section">
     <header class="section-heading">
-        <h1><i class="fa-solid fa-arrow-down heading-icon" aria-hidden="true"></i>Создание прихода</h1>
+        <h1 class="page-title">Создание прихода</h1>
     </header>
     <form method="post" id="receipt-form">
         {% csrf_token %}
-        <div class="card shadow p-4">
-            <h5>Основная информация</h5>
-            <hr>
+        <div class="card p-3 p-sm-4">
+            <h2 class="h6 mb-3">Основная информация</h2>
 
-            <div class="col-md-4">
+            <div class="col-md-4 mb-3">
                 <label for="{{ form.date.id_for_label }}" class="form-label">Дата и время</label>
                 {{ form.date }}
                 {% if form.date.errors %}
@@ -78,15 +64,16 @@
 
             <hr>
 
-            <h5>Товары</h5>
-
-            <a
-                id="add-products-link"
-                href="{% url 'product_picker' %}?target=receipt"
-                class="btn btn-primary"
-            >
-                Добавить товары
-            </a>
+            <div class="section-heading">
+                <h2 class="h6 mb-0">Товары</h2>
+                <a
+                    id="add-products-link"
+                    href="{% url 'product_picker' %}?target=receipt"
+                    class="btn btn-primary"
+                >
+                    Добавить товары
+                </a>
+            </div>
             {{ formset.management_form }}
             <div class="table-scroll" tabindex="0" aria-label="Таблица">
             <table class="table table-bordered align-middle">
@@ -142,33 +129,24 @@
                     {% endfor %}
                 </tbody>
 
-                <tfoot class="table-light">
-                    <!-- Строка с полем доставки -->
-                    <tr>
-                        <td colspan="3" class="text-end fw-bold align-middle">
-                            Стоимость доставки:
-                        </td>
-                        <td style="width: 150px;">
-                            {{ form.delivery_cost }}
-                        </td>
-                        <td></td>
-                    </tr>
-                    <!-- Строка Итого -->
-                    <tr class="table-secondary">
-                        <td colspan="3" class="text-end fw-bold fs-5 align-middle">Итого по накладной:</td>
-                        <td class="fw-bold fs-5 text-nowrap">
-                            <span id="grand-total">0.00</span> ₽
-                        </td>
-                        <td></td>
-                    </tr>
-                </tfoot>
-
             </table>
             </div>
+
+            <div class="document-summary panel bg-light my-3">
+                <div class="document-delivery">
+                    <label class="form-label" for="{{ form.delivery_cost.id_for_label }}">Расходы на доставку</label>
+                    {{ form.delivery_cost }}
+                </div>
+                <p class="mb-0">
+                    Итого по накладной
+                    <strong><span id="grand-total">0.00</span> ₽</strong>
+                </p>
+            </div>
+
             {% if is_edit %}
                 <a href="{{ detail_url }}" class="btn btn-outline-secondary mb-2">Отмена</a>
             {% endif %}
-            <button type="submit" class="btn btn-success w-100">
+            <button type="submit" class="btn btn-primary w-100">
                 {% if is_edit %}
                     Сохранить изменения
                 {% else %}
@@ -475,19 +453,7 @@ function submitQuickSupplier() {
 
 
 {% block extra_body %}
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
-
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        // Django автоматически дает полю 'date' ID 'id_date'
-        flatpickr("#id_date", {
-            enableTime: true,
-            dateFormat: "Y-m-d H:i",
-            locale: "ru",
-            time_24hr: true,
-            disableMobile: true // Отключает стандартный календарь на телефонах
-        });
-    });
-</script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/l10n/ru.js"></script>
+<script src="{% static 'inventory/document-calendar.js' %}"></script>
 {% endblock %}
