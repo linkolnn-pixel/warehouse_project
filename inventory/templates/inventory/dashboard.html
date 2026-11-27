@@ -11,56 +11,124 @@
     <h1 class="visually-hidden">Аналитика склада</h1>
 
     <section class="analytics-grid" aria-label="Сводка остатков">
-        <article class="analytics-panel analytics-metric analytics-metric-profit">
-            <h2><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i> Ожидаемая прибыль</h2>
-            <p class="analytics-value">{{ total_expected_profit|floatformat:"2g" }} ₽</p>
-        </article>
         <article class="analytics-panel analytics-metric">
-            <h2><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i> В товарах заморожено</h2>
-            <p class="analytics-value">{{ total_stock_cost|floatformat:"2g" }} ₽</p>
+            <h2>В товарах заморожено</h2>
+            <p class="analytics-value">{{ total_stock_cost|floatformat:"-2g" }} ₽</p>
             <p class="analytics-note">На складе {{ total_units|floatformat:"-2g" }} шт.</p>
+            {% if stock_distribution %}
+                <div class="analytics-stock-bar" aria-hidden="true">
+                    {% for segment in stock_distribution %}
+                        {% if segment.percent %}
+                            <span class="analytics-stock-{{ segment.status }}" style="width: {{ segment.percent|floatformat:'4u' }}%;"></span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <ul class="analytics-stock-legend">
+                    {% for segment in stock_distribution %}
+                        <li><span class="analytics-dot analytics-stock-{{ segment.status }}" aria-hidden="true"></span> {{ segment.label }} <strong>{{ segment.percent|floatformat:0 }}%</strong></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </article>
+        <article class="analytics-panel analytics-metric analytics-metric-profit">
+            <h2>Ожидаемая прибыль <i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i></h2>
+            <p class="analytics-value">{{ total_expected_profit|floatformat:"-2g" }} ₽</p>
         </article>
         <article class="analytics-panel analytics-metric analytics-metric-stockout">
-            <h2><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Товар закончился</h2>
-            <p class="analytics-value">{{ out_of_stock_count|floatformat:"0g" }} поз.</p>
+            <h2>Товар закончился <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></h2>
+            <p class="analytics-value">{{ out_of_stock_count|floatformat:"0g" }} из {{ product_count|floatformat:"0g" }} поз.</p>
             <button type="button" class="analytics-stockout-link stretched-link" data-bs-toggle="modal" data-bs-target="#outOfStockModal">
                 Показать список <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
             </button>
         </article>
     </section>
 
-    <section class="analytics-grid" aria-label="Продажи за периоды">
-        {% for period in periods %}
-            <article class="analytics-panel analytics-period">
-                <h2>{{ period.label }}</h2>
-                <dl class="analytics-period-values">
-                    <div><dt>Выручка</dt><dd>{{ period.revenue|floatformat:"2g" }} ₽</dd></div>
-                    <div>
-                        <dt>Чистая прибыль</dt>
-                        <dd class="analytics-profit-value">
-                            {{ period.profit|floatformat:"2g" }} ₽
-                            {% if period.margin != None %}<span class="analytics-margin">Маржа {{ period.margin|floatformat:1 }}%</span>{% endif %}
-                        </dd>
-                    </div>
-                </dl>
-                <h3>Топ-3 продаваемых товаров</h3>
-                <ul class="analytics-top-list">
-                    {% for item in period.top_products %}
-                        <li><span>{{ item.product_name }}</span><span class="analytics-count">{{ item.total_sold }} шт.</span></li>
-                    {% empty %}
-                        <li class="analytics-note">Нет продаж</li>
+    <div class="analytics-sales-grid">
+        <section class="analytics-panel analytics-sales" aria-labelledby="analytics-sales-title">
+            <div class="analytics-section-heading">
+                <h2 id="analytics-sales-title">Выручка и чистая прибыль</h2>
+                <div class="analytics-switch" role="group" aria-label="Период продаж">
+                    {% for period in periods %}
+                        <button type="button" data-sales-period="{{ period.key }}" aria-pressed="{% if period.key == 'half-year' %}true{% else %}false{% endif %}">{{ period.label }}</button>
                     {% endfor %}
-                </ul>
-            </article>
-        {% endfor %}
-    </section>
+                </div>
+            </div>
+            <ul class="analytics-stock-legend">
+                <li><span class="analytics-dot analytics-revenue-color" aria-hidden="true"></span> Выручка</li>
+                <li><span class="analytics-dot analytics-profit-color" aria-hidden="true"></span> Чистая прибыль</li>
+            </ul>
+            {% for period in periods %}
+                <div data-chart-period="{{ period.key }}"{% if period.key != 'half-year' %} hidden{% endif %}>
+                    {% if period.has_sales %}
+                    <div class="analytics-plot-scroll">
+                        <div class="analytics-plot" style="--plot-columns: {{ period.points|length }}; --plot-zero: {{ period.zero_line|floatformat:'4u' }}%;">
+                            {% for point in period.points %}
+                                <div class="analytics-column" tabindex="0"
+                                     aria-label="{{ point.start|date:'d.m.Y' }} — {{ point.end|date:'d.m.Y' }}. Выручка {{ point.revenue|floatformat:'-2g' }} ₽. Чистая прибыль {{ point.profit|floatformat:'-2g' }} ₽.">
+                                    <div class="analytics-bars">
+                                        <span class="analytics-bar analytics-revenue-color" style="--bar-bottom: {{ point.revenue_bottom|floatformat:'4u' }}%; --bar-height: {{ point.revenue_height|floatformat:'4u' }}%;"></span>
+                                        <span class="analytics-bar analytics-profit-color" style="--bar-bottom: {{ point.profit_bottom|floatformat:'4u' }}%; --bar-height: {{ point.profit_height|floatformat:'4u' }}%;"></span>
+                                    </div>
+                                    <span class="analytics-tick">{% if period.key == 'month' %}{{ point.start|date:"d.m" }}{% else %}{{ point.start|date:"M" }}{% endif %}</span>
+                                    <div class="analytics-plot-tooltip" aria-hidden="true">
+                                        <strong>{{ point.start|date:"d.m" }}–{{ point.end|date:"d.m.Y" }}</strong>
+                                        <span>Выручка: {{ point.revenue|floatformat:"-2g" }} ₽</span>
+                                        <span>Чистая прибыль: {{ point.profit|floatformat:"-2g" }} ₽
+                                            {% if point.margin != None %}<strong class="analytics-profit-value">({{ point.margin|floatformat:1 }}%)</strong>{% endif %}
+                                        </span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                        <p class="analytics-note analytics-chart-empty">Нет продаж за выбранный период.</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </section>
 
-    <section class="analytics-clients" aria-labelledby="analytics-clients-title">
+        <section class="analytics-panel analytics-ranking" aria-labelledby="analytics-ranking-title">
+            <div class="analytics-section-heading">
+                <h2 id="analytics-ranking-title">Топ продаваемых товаров</h2>
+                <div class="analytics-switch" role="group" aria-label="Сортировка товаров">
+                    <button type="button" data-ranking-metric="units" aria-pressed="true">По штукам</button>
+                    <button type="button" data-ranking-metric="profit" aria-pressed="false">По прибыли</button>
+                </div>
+            </div>
+            {% for period in periods %}
+                {% for ranking in period.rankings %}
+                    <div data-ranking-period="{{ period.key }}" data-ranking-panel="{{ ranking.metric }}"{% if period.key != 'half-year' or ranking.metric != 'units' %} hidden{% endif %}>
+                        <ol class="analytics-ranking-list">
+                            {% for item in ranking.products %}
+                                <li>
+                                    <span>{{ item.product__name }}</span>
+                                    <div class="analytics-ranking-value">
+                                        <div class="analytics-ranking-track" aria-hidden="true">
+                                            <div class="{% if ranking.metric == 'profit' %}analytics-profit-color{% else %}analytics-revenue-color{% endif %}" style="width: {{ item.bar_width|floatformat:'4u' }}%;"></div>
+                                        </div>
+                                        <strong>{% if ranking.metric == 'profit' %}{{ item.value|floatformat:"-2g" }} ₽{% else %}{{ item.value|floatformat:"0g" }} шт.{% endif %}</strong>
+                                    </div>
+                                </li>
+                            {% empty %}
+                                <li class="analytics-note">Нет продаж за выбранный период.</li>
+                            {% endfor %}
+                        </ol>
+                        {% if ranking.metric == 'profit' and ranking.products %}
+                            <p class="analytics-note mt-2">Прибыль по товарам без расходов на доставку.</p>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </section>
+    </div>
+
+    <section class="analytics-panel analytics-clients" aria-labelledby="analytics-clients-title">
         <div class="analytics-section-heading">
             <h2 id="analytics-clients-title">Анализ по клиентам</h2>
             <span class="analytics-note">Клиентов: {{ analysis_data|length }}</span>
         </div>
-        <form method="GET" class="analytics-panel analytics-filters">
+        <form method="GET" class="analytics-filters">
             <div>
                 <label for="client_id" class="form-label small text-muted mb-1">Клиент</label>
                 <select name="client_id" id="client_id" class="form-select">
@@ -95,7 +163,7 @@
             </div>
         </form>
 
-        <div class="analytics-panel analytics-client-panel">
+        <div class="analytics-client-panel">
             <div class="analytics-client-grid analytics-client-head" aria-hidden="true">
                 <span>Клиент</span><span>Последний заказ</span><span>Покупок</span><span>Выручка</span><span>Прибыль</span>
             </div>
@@ -198,4 +266,36 @@
   </div>
 </div>
 {% endlanguage %}
+{% endblock %}
+
+{% block extra_body %}
+<script>
+    (() => {
+        const dashboard = document.querySelector('.analytics-dashboard');
+        const periodButtons = dashboard.querySelectorAll('[data-sales-period]');
+        const metricButtons = dashboard.querySelectorAll('[data-ranking-metric]');
+        const charts = dashboard.querySelectorAll('[data-chart-period]');
+        const rankings = dashboard.querySelectorAll('[data-ranking-panel]');
+        let period = 'half-year';
+        let metric = 'units';
+
+        function updateDashboard() {
+            periodButtons.forEach(button => button.setAttribute('aria-pressed', button.dataset.salesPeriod === period));
+            metricButtons.forEach(button => button.setAttribute('aria-pressed', button.dataset.rankingMetric === metric));
+            charts.forEach(chart => { chart.hidden = chart.dataset.chartPeriod !== period; });
+            rankings.forEach(ranking => {
+                ranking.hidden = ranking.dataset.rankingPeriod !== period || ranking.dataset.rankingPanel !== metric;
+            });
+        }
+
+        periodButtons.forEach(button => button.addEventListener('click', () => {
+            period = button.dataset.salesPeriod;
+            updateDashboard();
+        }));
+        metricButtons.forEach(button => button.addEventListener('click', () => {
+            metric = button.dataset.rankingMetric;
+            updateDashboard();
+        }));
+    })();
+</script>
 {% endblock %}
