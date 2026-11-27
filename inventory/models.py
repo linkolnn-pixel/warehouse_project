@@ -245,10 +245,11 @@ class Product(SoftDeleteModel):
         return balance.quantity if balance else 0
 
     def get_stock_profit(self, warehouse):
-        # Потенциальная прибыль со всего остатка
-        balance = self.get_balance(warehouse)
-
-        return balance * self.profit()
+        balance = self.balances.filter(warehouse=warehouse).first()
+        if balance is None:
+            return 0
+        stock_cost = balance.lots.aggregate(total=models.Sum("remaining_cost"))["total"] or 0
+        return balance.quantity * self.sale_price - stock_cost
 
     def save(self, *args, **kwargs):
         # Если код еще не установлен (новый товар)
@@ -368,7 +369,7 @@ class Sale(DocumentMixin):
 
     @property
     def net_profit(self):
-        items_profit = sum((item.sale_price - item.cost_price) * item.quantity for item in self.items.all())
+        items_profit = sum(item.profit for item in self.items.all())
         return items_profit - self.delivery_expense - self.discount_amount
 
     @property
@@ -398,6 +399,7 @@ class SaleItem(models.Model):
     quantity = models.PositiveIntegerField()
     sale_price = models.DecimalField(max_digits=10, decimal_places=2)
     cost_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    fifo_cost = models.DecimalField(max_digits=20, decimal_places=2, null=True, editable=False)
 
     @property
     def total(self):
@@ -405,7 +407,7 @@ class SaleItem(models.Model):
 
     @property
     def total_cost(self):
-        return self.quantity * self.cost_price
+        return self.fifo_cost if self.fifo_cost is not None else self.quantity * self.cost_price
 
     @property
     def profit(self):
@@ -515,3 +517,17 @@ class GiftCertificate(models.Model):
             new_code = f"{prefix}{random_str}"
             if not cls.objects.filter(code=new_code).exists():
                 return new_code
+
+
+class StockLot(models.Model):
+    balance = models.ForeignKey(StockBalance, on_delete=models.CASCADE, related_name="lots")
+    receipt_item = models.OneToOneField(ReceiptItem, on_delete=models.PROTECT, null=True)
+    remaining_quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    remaining_cost = models.DecimalField(max_digits=20, decimal_places=2)
+
+
+class StockAllocation(models.Model):
+    sale_item = models.ForeignKey(SaleItem, on_delete=models.PROTECT, related_name="stock_allocations")
+    lot = models.ForeignKey(StockLot, on_delete=models.PROTECT)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2)
+    cost = models.DecimalField(max_digits=20, decimal_places=2)

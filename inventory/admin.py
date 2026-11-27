@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib import admin, messages
+from django.db import transaction
 from django.db.models import Sum
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
@@ -48,8 +49,10 @@ class CustomerAdmin(admin.ModelAdmin):
 
 
 @admin.action(description="Пересчитать остатки")
+@transaction.atomic
 def recalculate_stock(modeladmin, request, queryset):
-    for product in queryset:
+    mismatches = 0
+    for product in queryset.select_for_update().order_by("pk"):
         for warehouse in Warehouse.objects.all():
             in_qty = (
                 Transaction.objects.filter(product=product, warehouse=warehouse, type="IN").aggregate(Sum("quantity"))[
@@ -65,9 +68,23 @@ def recalculate_stock(modeladmin, request, queryset):
                 or 0
             )
 
-            StockBalance.objects.update_or_create(
-                product=product, warehouse=warehouse, defaults={"quantity": in_qty - out_qty}
-            )
+            quantity = in_qty - out_qty
+            balance = StockBalance.objects.select_for_update().filter(product=product, warehouse=warehouse).first()
+            lot_quantity = (balance.lots.aggregate(total=Sum("remaining_quantity"))["total"] or 0) if balance else 0
+            if max(0, quantity) != lot_quantity:
+                mismatches += 1
+                continue
+            if balance:
+                balance.quantity = quantity
+                balance.save(update_fields=["quantity"])
+            else:
+                StockBalance.objects.create(product=product, warehouse=warehouse, quantity=quantity)
+    if mismatches:
+        modeladmin.message_user(
+            request,
+            f"Пропущено остатков с расхождением между движениями и партиями FIFO: {mismatches}.",
+            level=messages.WARNING,
+        )
 
 
 @admin.register(Product)
@@ -191,6 +208,13 @@ class SaleAdmin(admin.ModelAdmin):
     list_filter = ("posted", "is_online", "warehouse", "date", "promo_code")
     search_fields = ("customer__phone", "customer__last_name", "comment", "promo_code__code", "gift_certificate__code")
     autocomplete_fields = ["customer"]
+    readonly_fields = ("posted",)
+
+    def has_change_permission(self, request, obj=None):
+        return (obj is None or not obj.posted) and super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        return (obj is None or not obj.posted) and super().has_delete_permission(request, obj)
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.is_online:

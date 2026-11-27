@@ -1,10 +1,11 @@
 from django.db import models
 from django.db.models import (
     DecimalField,
-    ExpressionWrapper,
     F,
     IntegerField,
+    OuterRef,
     Q,
+    Subquery,
     Sum,
     Value,
 )
@@ -26,6 +27,8 @@ class ProductManager(ActiveManager):
         - profit_per_unit (прибыль с одной единицы)
         - stock_profit (общая прибыль остатков на складе)
         """
+        from .models import StockLot
+
         qs = self.get_queryset()
 
         if not warehouse_id:
@@ -33,12 +36,19 @@ class ProductManager(ActiveManager):
             return qs.annotate(
                 balance=Value(0, output_field=IntegerField()),
                 profit=F("sale_price") - F("cost_price"),
+                stock_cost=Value(0, output_field=DecimalField()),
                 stock_profit=Value(0.00, output_field=DecimalField()),
             )
 
         # Условия фильтрации транзакций по конкретному складу и типу
         in_q = Q(transactions__warehouse_id=warehouse_id, transactions__type="IN")
         out_q = Q(transactions__warehouse_id=warehouse_id, transactions__type="OUT")
+        lots = (
+            StockLot.objects.filter(balance__product_id=OuterRef("pk"), balance__warehouse_id=warehouse_id)
+            .values("balance_id")
+            .annotate(cost=Sum("remaining_cost"))
+            .values("cost")
+        )
 
         return qs.annotate(
             # Считаем сумму приходов
@@ -57,7 +67,7 @@ class ProductManager(ActiveManager):
             balance=F("in_qty") - F("out_qty"),
             # Прибыль = Цена продажи - Закупочная цена
             profit_per_unit=F("sale_price") - F("cost_price"),
+            stock_cost=Coalesce(Subquery(lots), Value(0), output_field=DecimalField()),
         ).annotate(
-            # Считаем ожидаемую прибыль с остатков на складе
-            stock_profit=ExpressionWrapper(F("balance") * F("profit_per_unit"), output_field=DecimalField())
+            stock_profit=F("balance") * F("sale_price") - F("stock_cost"),
         )

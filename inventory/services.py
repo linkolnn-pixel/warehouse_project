@@ -1,8 +1,8 @@
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 import pandas as pd
-from django.db import models, transaction
-from django.db.models import F
+from django.db import transaction
+from django.db.models import Case, F, Value, When
 
 from .exceptions import (
     DocumentAlreadyPostedError,
@@ -17,7 +17,9 @@ from .models import (
     Receipt,
     Sale,
     SaleItem,
+    StockAllocation,
     StockBalance,
+    StockLot,
     Supplier,
     Transaction,
 )
@@ -225,255 +227,191 @@ def import_products_from_excel(file_obj) -> tuple[int, int]:
     return len(products_to_create), skip_count
 
 
+def _money(value):
+    return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _lock_products(items):
+    ids = {item.product_id for item in items}
+    products = Product.all_objects.select_for_update().filter(pk__in=ids).order_by("pk")
+    return {product.pk: product for product in products}
+
+
+def _get_balance(product_id, warehouse_id):
+    balance, _ = StockBalance.objects.select_for_update().get_or_create(
+        product_id=product_id, warehouse_id=warehouse_id
+    )
+    return balance
+
+
 @transaction.atomic
 def process_receipt_post(receipt: Receipt):
-    """
-    Проведение прихода.
-    - Блокирует документ.
-    - Проверяет количество.
-    - Блокирует все товары в стабильном порядке.
-    - Создает IN-транзакции.
-    - Обновляет закупочную/продажную цену.
-    """
-    # 1. Блокируем документ самым первым действием.
     receipt = Receipt.objects.select_for_update().get(pk=receipt.pk)
-
     if receipt.posted:
         raise DocumentAlreadyPostedError("Приход", receipt.number)
 
-    # 2. Загружаем позиции один раз.
-    items = list(receipt.items.select_related("product"))
-
-    # 3. Проверяем количества до изменения БД.
+    items = list(receipt.items.select_related("product").order_by("pk"))
     for item in items:
         if item.quantity <= 0:
             raise InvalidQuantityError(item.product.name)
 
-    # 4. Получаем уникальные ID товаров
-    #    и сортируем их для стабильного порядка блокировок.
-    product_ids = sorted({item.product_id for item in items})
+    products = _lock_products(items)
+    total_goods = sum(item.total_cost for item in items)
+    weights = [item.total_cost if total_goods else item.quantity for item in items]
+    total_weight = sum(weights)
+    cumulative_weight = 0
+    allocated_delivery = Decimal("0")
+    balances = {}
+    lots = []
+    movements = []
 
-    # 5. Блокируем товары.
-    locked_products = {
-        product.id: product for product in (Product.objects.select_for_update().filter(id__in=product_ids))
-    }
+    for item, weight in zip(items, weights, strict=True):
+        product = products[item.product_id]
+        if product.pk not in balances:
+            balances[product.pk] = _get_balance(product.pk, receipt.warehouse_id)
+        balance = balances[product.pk]
 
-    # Защита от ситуации, когда товар был удален/не найден.
-    if len(locked_products) != len(product_ids):
-        missing_ids = set(product_ids) - set(locked_products)
-        raise ValueError(f"Не найдены товары: {sorted(missing_ids)}")
+        cumulative_weight += weight
+        delivery_to_date = _money(receipt.delivery_cost * cumulative_weight / total_weight)
+        lot_cost = item.total_cost + delivery_to_date - allocated_delivery
+        allocated_delivery = delivery_to_date
 
-    transactions = []
-    products_to_update = []
-
-    # 5.5 Считаем общую стоимость всех товаров для распределения доставки
-    total_receipt_sum = sum(item.quantity * item.cost_price for item in items)
-    delivery_cost = receipt.delivery_cost or Decimal("0")
-
-    # 6. Формируем движения.
-    for item in items:
-        product = locked_products[item.product_id]
-
-        # 1. Получаем и блокируем остаток
-        balance, _ = StockBalance.objects.select_for_update().get_or_create(
-            product=product, warehouse=receipt.warehouse, defaults={"quantity": Decimal("0")}
+        # A legacy negative balance absorbs part of the new receipt.
+        sellable = max(Decimal("0"), min(Decimal(item.quantity), balance.quantity + item.quantity))
+        lots.append(
+            StockLot(
+                balance=balance,
+                receipt_item=item,
+                remaining_quantity=sellable,
+                remaining_cost=_money(lot_cost * sellable / item.quantity),
+            )
         )
-
-        # Распределяем доставку пропорционально стоимости позиции
-        if total_receipt_sum > 0:
-            delivery_share = ((item.quantity * item.cost_price) / total_receipt_sum) * delivery_cost
-        else:
-            delivery_share = Decimal("0")
-
-        # 2. Расчет скользящей средней (Moving Average)
-        total_current_qty = StockBalance.objects.filter(product=product).aggregate(total=models.Sum("quantity"))[
-            "total"
-        ] or Decimal("0")
-
-        total_new_qty = total_current_qty + Decimal(item.quantity)
-
-        total_value = (
-            (total_current_qty * product.average_cost) + (Decimal(item.quantity) * item.cost_price) + delivery_share
-        )
-
-        product.average_cost = total_value / total_new_qty if total_new_qty > 0 else Decimal("0")
-
-        # Обновляем также последние закупочные/продажные цены
+        balance.quantity += item.quantity
         product.cost_price = item.cost_price
         product.sale_price = item.sale_price
-        products_to_update.append(product)
-
-        # 3. Обновляем остаток на текущем складе
-        current_qty_on_warehouse = balance.quantity
-        balance.quantity = current_qty_on_warehouse + Decimal(item.quantity)
-        balance.save(update_fields=["quantity"])
-
-        transactions.append(
+        movements.append(
             Transaction(
                 date=receipt.date,
                 type="IN",
                 product=product,
-                warehouse=receipt.warehouse,
+                warehouse_id=receipt.warehouse_id,
                 quantity=item.quantity,
                 receipt=receipt,
                 comment=f"Приход №{receipt.number}",
             )
         )
 
-    # 7. Массово создаем движения.
-    if transactions:
-        Transaction.objects.bulk_create(transactions)
-
-    # 8. Массово обновляем цены.
-    if products_to_update:
-        Product.objects.bulk_update(products_to_update, ["cost_price", "sale_price", "average_cost"])
-
-    # 9. Завершаем проведение.
+    StockBalance.objects.bulk_update(balances.values(), ["quantity"])
+    StockLot.objects.bulk_create(lots)
+    Transaction.objects.bulk_create(movements)
+    Product.all_objects.bulk_update(products.values(), ["cost_price", "sale_price"])
     receipt.posted = True
     receipt.save(update_fields=["posted"])
 
 
 @transaction.atomic
 def process_receipt_unpost(receipt: Receipt):
-    """
-    Отмена проведения прихода.
-    Откатывает остатки, пересчитывает среднюю себестоимость товара и удаляет транзакции.
-    """
     receipt = Receipt.objects.select_for_update().get(pk=receipt.pk)
-    items = list(receipt.items.select_related("product"))
+    if not receipt.posted:
+        raise ValueError(f"Приход №{receipt.number} не проведён.")
 
-    # Считаем общую стоимость прихода для правильного отката доли доставки
-    total_receipt_sum = sum(item.quantity * item.cost_price for item in items)
-    delivery_cost = receipt.delivery_cost or Decimal("0")
-
-    products_to_update = []
-
+    items = list(receipt.items.order_by("pk"))
+    _lock_products(items)
+    lots = {
+        lot.receipt_item_id: lot for lot in StockLot.objects.select_for_update().filter(receipt_item__receipt=receipt)
+    }
+    balances = {}
     for item in items:
-        product = Product.objects.select_for_update().get(pk=item.product_id)
-        balance = StockBalance.objects.select_for_update().filter(product=product, warehouse=receipt.warehouse).first()
+        lot = lots.get(item.pk)
+        if lot is None:
+            raise ValueError("Этот приход включён в начальный остаток FIFO. Отменить его проведение нельзя.")
+        if lot.remaining_quantity != item.quantity:
+            raise ValueError("Часть партии уже списана. Сначала отмените зависимые продажи.")
+        if item.product_id not in balances:
+            balances[item.product_id] = _get_balance(item.product_id, receipt.warehouse_id)
+        balances[item.product_id].quantity -= item.quantity
 
-        if balance:
-            # 1. Откатываем среднюю себестоимость (Moving Average)
-            if total_receipt_sum > 0:
-                delivery_share = ((item.quantity * item.cost_price) / total_receipt_sum) * delivery_cost
-            else:
-                delivery_share = Decimal("0")
-
-            total_current_qty = StockBalance.objects.filter(product=product).aggregate(total=models.Sum("quantity"))[
-                "total"
-            ] or Decimal("0")
-
-            total_new_qty = total_current_qty - Decimal(item.quantity)
-
-            total_value = max(
-                Decimal("0"),
-                (total_current_qty * product.average_cost)
-                - (Decimal(item.quantity) * item.cost_price)
-                - delivery_share,
-            )
-
-            product.average_cost = total_value / total_new_qty if total_new_qty > 0 else Decimal("0")
-            products_to_update.append(product)
-
-            # 2. Откатываем остаток на складе
-            current_qty_on_warehouse = balance.quantity
-            balance.quantity = current_qty_on_warehouse - Decimal(item.quantity)
-            balance.save(update_fields=["quantity"])
-
-    if products_to_update:
-        Product.objects.bulk_update(products_to_update, ["average_cost"])
-
+    StockBalance.objects.bulk_update(balances.values(), ["quantity"])
+    StockLot.objects.filter(pk__in=[lot.pk for lot in lots.values()]).delete()
     Transaction.objects.filter(receipt=receipt).delete()
-
     receipt.posted = False
     receipt.save(update_fields=["posted"])
 
 
+def _allocate_fifo(item, lots):
+    needed = Decimal(item.quantity)
+    allocations = []
+    for lot in lots:
+        if not lot.remaining_quantity:
+            continue
+        quantity = min(needed, lot.remaining_quantity)
+        cost = _money(lot.remaining_cost * quantity / lot.remaining_quantity)
+        allocations.append(StockAllocation(sale_item=item, lot=lot, quantity=quantity, cost=cost))
+        lot.remaining_quantity -= quantity
+        lot.remaining_cost -= cost
+        needed -= quantity
+        if not needed:
+            return allocations
+    raise ValueError(f"Остаток товара «{item.product.name}» не совпадает с остатком партий FIFO.")
+
+
 @transaction.atomic
 def process_sale_post(sale: Sale):
-    """
-    Проведение продажи.
-    - Блокирует документ.
-    - Проверяет позиции.
-    - Группирует одинаковые товары.
-    - Блокирует товары в стабильном порядке.
-    - Проверяет остатки.
-    - Создает OUT-транзакции.
-    """
-    # 1. Сначала блокируем сам документ.
     sale = Sale.objects.select_for_update().get(pk=sale.pk)
-
     if sale.posted:
         raise DocumentAlreadyPostedError("Продажа", sale.number)
 
-    # 2. Загружаем позиции один раз.
-    items = list(sale.items.select_related("product"))
-
-    # 3. Проверяем количество и агрегируем товары.
+    items = list(sale.items.select_related("product").order_by("pk"))
     quantities: dict[int, int] = {}
-
     for item in items:
         if item.quantity <= 0:
             raise InvalidQuantityError(item.product.name)
-
         quantities[item.product_id] = quantities.get(item.product_id, 0) + item.quantity
 
-    # 4. Блокируем товары в стабильном порядке.
-    locked_products = {}
+    products = _lock_products(items)
+    balances = {}
+    lots_by_product = {}
+    for product_id, quantity in quantities.items():
+        balance = _get_balance(product_id, sale.warehouse_id)
+        if quantity > balance.quantity:
+            raise InsufficientStockError(products[product_id].name, balance.quantity, quantity)
+        balances[product_id] = balance
+        lots_by_product[product_id] = list(
+            balance.lots.select_for_update()
+            .filter(remaining_quantity__gt=0)
+            .order_by(Case(When(receipt_item__isnull=True, then=Value(0)), default=Value(1)), "pk")
+        )
+        balance.quantity -= quantity
 
-    for product_id in sorted(quantities):
-        product = Product.objects.select_for_update().get(pk=product_id)
-
-        quantity_to_sell = quantities[product_id]
-
-        balance = StockBalance.objects.select_for_update().filter(product=product, warehouse=sale.warehouse).first()
-
-        current_stock = balance.quantity if balance else Decimal("0")
-
-        if quantity_to_sell > current_stock:
-            raise InsufficientStockError(product.name, current_stock, quantity_to_sell)
-
-        assert balance is not None
-
-        # Фактическое списание со склада
-        balance.quantity -= quantity_to_sell
-        balance.save(update_fields=["quantity"])
-
-        locked_products[product_id] = product
-
-    # 5. Создаем OUT-транзакции.
-    transactions = []
-    items_to_update = []
-
+    allocations = []
+    movements = []
     for item in items:
-        locked_product = locked_products[item.product_id]
-
-        # ФИКСИРУЕМ ПРИБЫЛЬ: Копируем среднюю себестоимость склада в документ
-        item.cost_price = locked_product.average_cost if locked_product.average_cost > 0 else locked_product.cost_price
-        items_to_update.append(item)
-
-        transactions.append(
+        consumed = _allocate_fifo(item, lots_by_product[item.product_id])
+        item.fifo_cost = sum(allocation.cost for allocation in consumed)
+        item.cost_price = _money(item.fifo_cost / item.quantity)
+        allocations.extend(consumed)
+        movements.append(
             Transaction(
                 date=sale.date,
                 type="OUT",
-                product=locked_product,
-                warehouse=sale.warehouse,
+                product_id=item.product_id,
+                warehouse_id=sale.warehouse_id,
                 quantity=item.quantity,
                 sale=sale,
                 comment=f"Продажа №{sale.number}",
             )
         )
-        # Массово сохраняем обновленные цены в строках документа
-    if items_to_update:
-        SaleItem.objects.bulk_update(items_to_update, ["cost_price"])
 
-    if transactions:
-        Transaction.objects.bulk_create(transactions)
-
-    if sale.promo_code:
-        PromoCode.objects.filter(id=sale.promo_code.id).update(used_count=F("used_count") + 1)
-
-    # 6. Завершаем проведение.
+    StockBalance.objects.bulk_update(balances.values(), ["quantity"])
+    StockLot.objects.bulk_update(
+        {allocation.lot_id: allocation.lot for allocation in allocations}.values(),
+        ["remaining_quantity", "remaining_cost"],
+    )
+    StockAllocation.objects.bulk_create(allocations)
+    SaleItem.objects.bulk_update(items, ["cost_price", "fifo_cost"])
+    Transaction.objects.bulk_create(movements)
+    if sale.promo_code_id:
+        PromoCode.objects.filter(pk=sale.promo_code_id).update(used_count=F("used_count") + 1)
     sale.posted = True
     sale.save(update_fields=["posted"])
 
@@ -487,20 +425,51 @@ def process_sale_unpost(sale: Sale):
     возвращает остатки на склад и откатывает счетчик промокода.
     """
     sale = Sale.objects.select_for_update().get(pk=sale.pk)
-
     if not sale.posted:
         raise ValueError(f"Продажа №{sale.number} не проведена.")
 
-    # Возвращаем товары на баланс склада
-    for item in sale.items.all():
-        balance, _ = StockBalance.objects.select_for_update().get_or_create(
-            product_id=item.product_id, warehouse_id=sale.warehouse_id, defaults={"quantity": Decimal("0")}
-        )
+    items = list(sale.items.order_by("pk"))
+    _lock_products(items)
+    balances = {}
+    opening_lots = []
+    restored_lots: dict[int, StockLot] = {}
+    allocations = StockAllocation.objects.filter(sale_item__sale=sale)
+    allocations_by_item: dict[int, list[StockAllocation]] = {}
+    for allocation in allocations.select_related("lot"):
+        allocations_by_item.setdefault(allocation.sale_item_id, []).append(allocation)
+
+    for item in items:
+        if item.product_id not in balances:
+            balances[item.product_id] = _get_balance(item.product_id, sale.warehouse_id)
+        balance = balances[item.product_id]
+        if item.fifo_cost is None:
+            # Legacy sales have no traceable lot; use their stored unit cost.
+            sellable = max(Decimal("0"), min(Decimal(item.quantity), balance.quantity + item.quantity))
+            if sellable:
+                opening_lots.append(
+                    StockLot(
+                        balance=balance,
+                        remaining_quantity=sellable,
+                        remaining_cost=_money(sellable * item.cost_price),
+                    )
+                )
+        else:
+            consumed = allocations_by_item.get(item.pk, [])
+            if sum(allocation.quantity for allocation in consumed) != item.quantity:
+                raise ValueError("Списания FIFO этой продажи не совпадают с количеством товаров.")
+            for allocation in consumed:
+                lot = restored_lots.setdefault(allocation.lot_id, allocation.lot)
+                lot.remaining_quantity += allocation.quantity
+                lot.remaining_cost += allocation.cost
         balance.quantity += item.quantity
-        balance.save(update_fields=["quantity"])
+        item.fifo_cost = None
 
+    StockBalance.objects.bulk_update(balances.values(), ["quantity"])
+    StockLot.objects.bulk_create(opening_lots)
+    StockLot.objects.bulk_update(restored_lots.values(), ["remaining_quantity", "remaining_cost"])
+    allocations.delete()
+    SaleItem.objects.bulk_update(items, ["fifo_cost"])
     Transaction.objects.filter(sale=sale).delete()
-
     sale.posted = False
     sale.save(update_fields=["posted"])
 
