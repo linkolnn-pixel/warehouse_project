@@ -2,6 +2,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.db.models import DecimalField, F, Sum
+from django.db.models.functions import Coalesce
 from django.shortcuts import render
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -15,7 +16,7 @@ def dashboard_view(request):
     warehouse_id = warehouse.id if warehouse else None
     products = Product.objects.with_balances(warehouse_id)
 
-    total_stock_cost = sum((p.balance or 0) * p.cost_price for p in products)
+    total_stock_cost = sum(p.stock_cost for p in products)
     total_expected_profit = sum((p.stock_profit or 0) for p in products)
     out_of_stock_products = [p for p in products if (p.balance or 0) <= 0]
     out_of_stock_count = len(out_of_stock_products)
@@ -34,7 +35,9 @@ def dashboard_view(request):
 
         profit_agg = base_query.aggregate(
             total=Sum(
-                (F("items__sale_price") - F("items__cost_price")) * F("items__quantity"), output_field=DecimalField()
+                F("items__sale_price") * F("items__quantity")
+                - Coalesce(F("items__fifo_cost"), F("items__cost_price") * F("items__quantity")),
+                output_field=DecimalField(),
             )
         )
         gross_profit = float(profit_agg["total"] or 0)

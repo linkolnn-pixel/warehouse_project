@@ -149,9 +149,7 @@ def sale_create(request):
                 items = formset.save(commit=False)
                 for item in items:
                     item.sale = sale
-                    item.cost_price = (
-                        item.product.average_cost if item.product.average_cost > 0 else item.product.cost_price
-                    )
+                    item.cost_price = item.product.cost_price
                     item.save()
                 for obj in formset.deleted_objects:
                     obj.delete()
@@ -200,7 +198,8 @@ def sale_create(request):
 @test_mode_login_required
 @transaction.atomic
 def sale_edit(request, pk):
-    sale = get_object_or_404(Sale, pk=pk)
+    sales = Sale.objects.select_for_update() if request.method == "POST" else Sale.objects.all()
+    sale = get_object_or_404(sales, pk=pk)
 
     if sale.posted:
         messages.error(request, "Нельзя редактировать проведенный документ. Сначала отмените проведение.")
@@ -218,9 +217,7 @@ def sale_edit(request, pk):
             items = formset.save(commit=False)
             for item in items:
                 if not item.cost_price or item.cost_price == 0:
-                    item.cost_price = (
-                        item.product.average_cost if item.product.average_cost > 0 else item.product.cost_price
-                    )
+                    item.cost_price = item.product.cost_price
                 item.save()
             for obj in formset.deleted_objects:
                 obj.delete()
@@ -259,7 +256,8 @@ def sale_edit(request, pk):
 @test_mode_login_required
 @transaction.atomic
 def receipt_edit(request, pk):
-    receipt = get_object_or_404(Receipt, pk=pk)
+    receipts = Receipt.objects.select_for_update() if request.method == "POST" else Receipt.objects.all()
+    receipt = get_object_or_404(receipts, pk=pk)
 
     if receipt.posted:
         messages.error(request, "Нельзя редактировать проведенный документ. Сначала отмените проведение.")
