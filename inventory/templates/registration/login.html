@@ -1,23 +1,15 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Вход — Склад</title>
-</head>
+{% extends 'inventory/base.html' %}
 
-<body>
+{% block title %}Вход — Склад{% endblock %}
+{% block navigation %}{% endblock %}
 
-<h2>Вход в систему</h2>
-
-<form method="post">
-    {% csrf_token %}
-
-    {{ form.as_p }}
-
-    <button type="submit">
-        Войти
-    </button>
-</form>
-
-</body>
-</html>
+{% block content %}
+<section class="login-card panel" aria-labelledby="login-title">
+    <h1 class="page-title mb-4" id="login-title">Вход в систему</h1>
+    <form method="post" class="field-stack">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary w-100 mt-2">Войти</button>
+    </form>
+</section>
+{% endblock %}

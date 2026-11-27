@@ -3,16 +3,16 @@
 {% block title %}Клиент: {{ customer.company_name|default:customer.first_name }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="page-section">
     <!-- Заголовок и кнопка назад -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Клиент</h2>
-        <div>
+    <div class="section-heading mb-4">
+        <h1 class="page-title">Клиент</h1>
+        <div class="heading-actions">
             <!-- Кнопка вызова модального окна -->
-            <button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#editCustomerModal">
+            <button type="button" class="btn btn-primary btn-sm me-md-2" data-bs-toggle="modal" data-bs-target="#editCustomerModal">
                 <i class="fa-solid fa-pen"></i> Редактировать
             </button>
-            <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">
+            <a href="{{ back_url }}" class="btn btn-outline-secondary btn-sm">
                 <i class="fas fa-arrow-left"></i> Назад
             </a>
         </div>
@@ -84,7 +84,7 @@
                         <tbody>
                             {% for sale in sales %}
                                 <!-- Делаем строку кликабельной -->
-                                <tr onclick="window.location.href='{% url 'sale_detail' sale.pk %}';" style="cursor: pointer;">
+                                <tr onclick="window.location.href='{% url 'sale_detail' sale.pk %}?return_to={{ request.get_full_path|urlencode:""|escapejs }}';" style="cursor: pointer;">
                                     <td>№{{ sale.number }}</td>
                                     <td>{{ sale.date|date:"d.m.Y H:i" }}</td>
                                     <td>

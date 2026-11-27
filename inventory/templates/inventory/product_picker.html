@@ -28,6 +28,7 @@
 
 .products-page {
     width: 100%;
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
 }
 
 /* =========================================================
@@ -41,7 +42,7 @@
     margin-bottom: 18px;
     padding: 15px 18px;
     background: #ffffff;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--border-light);
     border-radius: 7px;
 }
 
@@ -52,11 +53,11 @@
     margin: 0;
     font-size: 20px;
     font-weight: 600;
-    color: #343a40;
+    color: var(--fg-main);
 }
 
 .products-header-title i {
-    color: #0d6efd;
+    color: var(--fg-main);
 }
 
 .products-header-actions {
@@ -77,17 +78,17 @@
     margin-bottom: 12px;
     padding: 7px 14px;
     background: #ffffff;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--border-light);
     border-radius: 6px;
 }
 
 .selected-count {
     font-size: 14px;
-    color: #495057;
+    color: var(--fg-secondary);
 }
 
 .selected-count strong {
-    color: #0d6efd;
+    color: var(--fg-main);
     font-size: 15px;
 }
 
@@ -97,7 +98,7 @@
 
 .table-card {
     background: #ffffff;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--border-light);
     border-radius: 7px;
     overflow: hidden;
 }
@@ -113,24 +114,26 @@
 
 #productsTable {
     width: 100% !important;
+    min-width: 960px;
+    table-layout: fixed;
     margin: 0 !important;
     border-collapse: collapse !important;
 }
 
 #productsTable thead th {
-    background: #f8f9fa;
-    color: #495057;
+    background: var(--bg-hover);
+    color: var(--fg-secondary);
     font-size: 12px;
     font-weight: 600;
     vertical-align: top;
-    border-bottom: 1px solid #dee2e6;
+    border-bottom: 1px solid var(--border-light);
     padding: 8px 6px;
     white-space: nowrap;
     box-sizing: border-box;
 }
 
 #productsTable thead th:hover {
-    background: #f1f3f5;
+    background: var(--bg-subtle);
 }
 
 /* Название столбца */
@@ -148,10 +151,10 @@
     width: 100%;
     height: 30px;
     padding: 3px 20px 3px 7px;
-    border: 1px solid #ced4da;
+    border: 1px solid var(--border-light);
     border-radius: 4px;
     background: #ffffff;
-    color: #495057;
+    color: var(--fg-secondary);
     font-size: 12px;
     font-weight: 400;
     outline: none;
@@ -163,12 +166,12 @@ select.column-filter {
 }
 
 .column-filter:focus {
-    border-color: #86b7fe;
-    box-shadow: 0 0 0 0.12rem rgba(13, 110, 253, .12);
+    border-color: var(--border-focus);
+    box-shadow: none;
 }
 
 .column-filter::placeholder {
-    color: #adb5bd;
+    color: var(--fg-muted);
 }
 
 /* =========================================================
@@ -177,70 +180,52 @@ select.column-filter {
 
 /* 0: Чекбокс */
 .col-check {
-    width: 42px !important;
-    min-width: 42px !important;
-    max-width: 42px !important;
+    width: 36px;
     text-align: center !important;
 }
 
 /* 1: Наименование (забирает основное место) */
 .col-name {
-    min-width: 220px;
-    width: 350px;
     white-space: normal !important;
 }
 
 /* 2: Количество */
 .col-qty {
-    width: 105px !important;
-    min-width: 105px !important;
-    max-width: 105px !important;
+    width: 100px;
     text-align: center !important;
 }
 
 /* 3: Остаток */
 .col-balance {
-    width: 95px !important;
-    min-width: 95px !important;
-    max-width: 95px !important;
+    width: 78px;
     text-align: center !important;
 }
 
 /* 4: Объем */
 .col-volume {
-    width: 110px !important;
-    min-width: 110px !important;
-    max-width: 110px !important;
+    width: 68px;
     text-align: center !important;
 }
 
 /* 5: Артикул */
 .col-sku {
-    width: 130px !important;
-    min-width: 130px !important;
-    max-width: 130px !important;
+    width: 92px;
     text-align: center !important;
 }
 
 /* 6: Категория */
 .col-category {
-    width: 160px !important;
-    min-width: 150px !important;
-    max-width: 180px !important;
+    width: 112px;
 }
 
 /* 7: Поставщик */
 .col-supplier {
-    width: 160px !important;
-    min-width: 150px !important;
-    max-width: 180px !important;
+    width: 116px;
 }
 
 /* 8, 9: Закупка и Продажа */
 .col-price {
-    width: 115px !important;
-    min-width: 115px !important;
-    max-width: 115px !important;
+    width: 100px;
 }
 
 /* =========================================================
@@ -260,21 +245,21 @@ select.column-filter {
     margin: 0;
     padding: 0;
     cursor: pointer;
-    border: 1px solid #adb5bd;
+    border: 1px solid var(--fg-muted);
     border-radius: 3px;
     background-color: #ffffff;
     box-shadow: none;
 }
 
 #select-all:focus {
-    border-color: #86b7fe;
+    border-color: var(--border-focus);
     outline: none;
-    box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, .12);
+    box-shadow: none;
 }
 
 #select-all:checked {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
+    background-color: var(--fg-main);
+    border-color: var(--fg-main);
 }
 
 /* =========================================================
@@ -293,7 +278,7 @@ select.column-filter {
 }
 
 #productsTable tbody tr:hover {
-    background-color: #f8fbff;
+    background-color: var(--bg-hover);
 }
 
 #productsTable tbody tr.product-selected {
@@ -314,17 +299,17 @@ select.column-filter {
     margin: 0;
     cursor: pointer;
     vertical-align: middle;
-    border: 1px solid #adb5bd;
+    border: 1px solid var(--fg-muted);
     border-radius: 3px;
 }
 
 .product-check:checked {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
+    background-color: var(--fg-main);
+    border-color: var(--fg-main);
 }
 
 .product-check:focus {
-    box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, .12);
+    box-shadow: none;
 }
 
 .product-qty {
@@ -332,10 +317,10 @@ select.column-filter {
     max-width: 88px;
     height: 30px;
     padding: 3px 6px;
-    border: 1px solid #ced4da;
+    border: 1px solid var(--border-light);
     border-radius: 4px;
     background: #ffffff;
-    color: #212529;
+    color: var(--fg-main);
     font-size: 13px;
     font-weight: 500;
     text-align: center;
@@ -345,13 +330,13 @@ select.column-filter {
 }
 
 .product-qty:focus {
-    border-color: #86b7fe;
-    box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, .15);
+    border-color: var(--border-focus);
+    box-shadow: none;
 }
 
 /* Подсветка поля количества, если товар выбран */
 #productsTable tbody tr.product-selected .product-qty {
-    border-color: #198754;
+    border-color: var(--accent-profit);
     background-color: #ffffff;
     font-weight: 600;
 }
@@ -361,22 +346,22 @@ select.column-filter {
    ========================================================= */
 
 .product-name {
-    color: #212529;
+    color: var(--fg-main);
     font-weight: 600;
 }
 
 .balance-cell {
     font-weight: 600;
-    color: #495057;
+    color: var(--fg-secondary);
 }
 
 .price-buy {
-    color: #6c757d;
+    color: var(--fg-secondary);
     text-align: right;
 }
 
 .price-sale {
-    color: #198754;
+    color: var(--accent-profit);
     font-weight: 700;
     text-align: right;
 }
@@ -403,7 +388,7 @@ select.column-filter {
 }
 
 .dataTables_wrapper .dataTables_length {
-    color: #6c757d;
+    color: var(--fg-secondary);
     font-size: 13px;
     margin-bottom: 10px;
 }
@@ -412,7 +397,7 @@ select.column-filter {
     height: 32px;
     margin: 0 5px;
     padding: 3px 25px 3px 8px;
-    border: 1px solid #ced4da;
+    border: 1px solid var(--border-light);
     border-radius: 4px;
     background: #ffffff;
 }
@@ -423,7 +408,7 @@ select.column-filter {
 
 .dataTables_wrapper .dataTables_info {
     padding-top: 12px !important;
-    color: #6c757d;
+    color: var(--fg-secondary);
     font-size: 13px;
 }
 
@@ -441,8 +426,11 @@ select.column-filter {
    ========================================================= */
 
 .table-footer {
-    padding: 12px 15px;
-    border-top: 1px solid #dee2e6;
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 1020;
+    padding-block: 10px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border-light);
     background: #ffffff;
 }
 
@@ -463,7 +451,7 @@ select.column-filter {
     }
 
     .products-header-actions {
-        justify-content: flex-end;
+        justify-content: flex-start;
     }
 }
 
@@ -513,10 +501,10 @@ select.column-filter {
          ===================================================== -->
 
     <div class="products-header">
-        <h4 class="products-header-title">
+        <h1 class="page-title products-header-title">
             <i class="fa-solid fa-box"></i>
             Товары
-        </h4>
+        </h1>
         <div class="products-header-actions">
             {% if request.GET.target == 'receipt' %}
 
@@ -528,7 +516,8 @@ select.column-filter {
                     Excel
                 </a>
                 <a
-                    href="{% url 'product_create' %}?next=product_picker&target=receipt{% for id in selected_ids %}&products={{ id }}{% endfor %}{% if request.GET.supplier %}&supplier={{ request.GET.supplier }}{% endif %}"
+                    id="create-product-link"
+                    href="{% url 'product_create' %}{% querystring next="product_picker" target=target products=selected_ids selected=None customer=customer_id supplier=supplier_id %}"
                     class="btn btn-primary btn-sm"
                 >
                     <i class="fa-solid fa-plus me-1"></i>
@@ -591,7 +580,7 @@ select.column-filter {
              ================================================= -->
 
         <div class="table-card">
-            <div class="table-wrapper">
+            <div class="table-wrapper" tabindex="0" aria-label="Таблица подбора товаров">
                 <table
                     id="productsTable"
                     class="table table-hover align-middle"
@@ -808,15 +797,11 @@ select.column-filter {
                 </table>
             </div>
 
-            <!-- =================================================
-                 FOOTER
-                 ================================================= -->
-            <div class="table-footer">
-                <button
-                    type="submit"
-                    class="btn btn-success w-100"
-                >
-                    <i class="fa-solid fa-check-circle me-2"></i>
+        </div>
+
+        <div class="table-footer">
+            <div class="workspace-width">
+                <button type="submit" class="btn btn-primary w-100">
                     Добавить выбранные товары
                 </button>
             </div>
@@ -846,7 +831,7 @@ $(function () {
        SELECTED PRODUCTS (ID -> QUANTITY)
        ========================================================= */
 
-    const targetParam = "{{ request.GET.target|default:'sale' }}";
+    const targetParam = "{{ target|escapejs }}";
     const STORAGE_KEY = "picker_quantities_" + targetParam;
     const urlParams = new URLSearchParams(window.location.search);
 
@@ -903,14 +888,10 @@ $(function () {
         autoWidth: false,
 
         columnDefs: [
-            { targets: 0, width: '42px',  orderable: false, searchable: false },
-            { targets: 2, width: '105px', orderable: false, searchable: false },
-            { targets: 3, width: '95px' },
-            { targets: 4, width: '110px' },
-            { targets: 5, width: '130px' },
-            { targets: 6, width: '160px', orderable: false },
-            { targets: 7, width: '160px', orderable: false },
-            { targets: [8, 9], width: '115px' }
+            { targets: 0, orderable: false, searchable: false },
+            { targets: 2, orderable: false, searchable: false },
+            { targets: 6, orderable: false },
+            { targets: 7, orderable: false }
         ]
 
     });
@@ -974,8 +955,19 @@ $(function () {
         sessionStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
     }
 
+    const createProductLink = document.getElementById('create-product-link');
+
     function updateCounter() {
         $('#selected-count').text(selectedProducts.size);
+        if (!createProductLink) return;
+
+        const createUrl = new URL(createProductLink.href);
+        createUrl.searchParams.delete('products');
+        selectedProducts.forEach(function (quantity, id) {
+            createUrl.searchParams.append('products', id);
+            createUrl.searchParams.set('quantity_' + id, quantity);
+        });
+        createProductLink.href = createUrl.href;
     }
 
     function updateRow(row) {
@@ -1171,7 +1163,11 @@ $(function () {
 
     $('#products-form').on('submit', function () {
         const container = $('#selected-products');
-        container.empty();
+        container.empty().append($('<input>', {
+            type: 'hidden',
+            name: 'selection_complete',
+            value: '1'
+        }));
 
         syncStorage();
 

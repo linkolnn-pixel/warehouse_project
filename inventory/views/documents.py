@@ -1,13 +1,15 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.forms import inlineformset_factory
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from rest_framework.generics import get_object_or_404
 
-from inventory.decorators import test_mode_login_required
 from inventory.forms import ReceiptForm, ReceiptItemForm, SaleForm, SaleItemForm
 from inventory.models import Product, Receipt, ReceiptItem, Sale, SaleItem, Warehouse
+from inventory.navigation import return_destination, url_with_return
 from inventory.services import (
     process_receipt_post,
     process_receipt_unpost,
@@ -16,7 +18,17 @@ from inventory.services import (
 )
 
 
-@test_mode_login_required
+def _document_return_url(request):
+    return return_destination(
+        request, reverse("movement_report"), "movement_report", "home", "dashboard", "customer_detail", "product_detail"
+    )
+
+
+def _document_detail_url(request, route, pk):
+    return url_with_return(reverse(route, kwargs={"pk": pk}), _document_return_url(request))
+
+
+@login_required
 @transaction.atomic
 def receipt_create(request):
     warehouse = Warehouse.objects.first()
@@ -82,7 +94,7 @@ def receipt_create(request):
     )
 
 
-@test_mode_login_required
+@login_required
 @transaction.atomic
 def sale_create(request):
     warehouse = Warehouse.objects.first()
@@ -195,7 +207,7 @@ def sale_create(request):
     return render(request, "inventory/sale_create.html", {"form": form, "formset": formset, "customer_id": customer_id})
 
 
-@test_mode_login_required
+@login_required
 @transaction.atomic
 def sale_edit(request, pk):
     sales = Sale.objects.select_for_update() if request.method == "POST" else Sale.objects.all()
@@ -203,7 +215,7 @@ def sale_edit(request, pk):
 
     if sale.posted:
         messages.error(request, "Нельзя редактировать проведенный документ. Сначала отмените проведение.")
-        return redirect("sale_detail", pk=sale.pk)
+        return redirect(_document_detail_url(request, "sale_detail", pk))
 
     warehouse = sale.warehouse
     SaleItemFormSetDynamic = inlineformset_factory(Sale, SaleItem, form=SaleItemForm, extra=0, can_delete=True)
@@ -222,7 +234,7 @@ def sale_edit(request, pk):
             for obj in formset.deleted_objects:
                 obj.delete()
             messages.success(request, f"Продажа №{sale.number} успешно обновлена.")
-            return redirect("sale_detail", pk=sale.pk)
+            return redirect(_document_detail_url(request, "sale_detail", pk))
         else:
             messages.error(request, "Ошибка сохранения! Проверьте данные.")
     else:
@@ -249,11 +261,19 @@ def sale_edit(request, pk):
             form_item.initial["balance"] = 0
 
     return render(
-        request, "inventory/sale_create.html", {"form": form, "formset": formset, "is_edit": True, "sale": sale}
+        request,
+        "inventory/sale_create.html",
+        {
+            "form": form,
+            "formset": formset,
+            "is_edit": True,
+            "sale": sale,
+            "detail_url": _document_detail_url(request, "sale_detail", pk),
+        },
     )
 
 
-@test_mode_login_required
+@login_required
 @transaction.atomic
 def receipt_edit(request, pk):
     receipts = Receipt.objects.select_for_update() if request.method == "POST" else Receipt.objects.all()
@@ -261,7 +281,7 @@ def receipt_edit(request, pk):
 
     if receipt.posted:
         messages.error(request, "Нельзя редактировать проведенный документ. Сначала отмените проведение.")
-        return redirect("receipt_detail", pk=receipt.pk)
+        return redirect(_document_detail_url(request, "receipt_detail", pk))
 
     ReceiptItemFormSetDynamic = inlineformset_factory(
         Receipt, ReceiptItem, form=ReceiptItemForm, extra=0, can_delete=True
@@ -275,7 +295,7 @@ def receipt_edit(request, pk):
             receipt = form.save()
             formset.save()
             messages.success(request, f"Приход №{receipt.id} успешно обновлен.")
-            return redirect("receipt_detail", pk=receipt.pk)
+            return redirect(_document_detail_url(request, "receipt_detail", pk))
         else:
             messages.error(request, "Ошибка сохранения! Проверьте данные.")
     else:
@@ -285,11 +305,17 @@ def receipt_edit(request, pk):
     return render(
         request,
         "inventory/receipt_create.html",
-        {"form": form, "formset": formset, "is_edit": True, "receipt": receipt},
+        {
+            "form": form,
+            "formset": formset,
+            "is_edit": True,
+            "receipt": receipt,
+            "detail_url": _document_detail_url(request, "receipt_detail", pk),
+        },
     )
 
 
-@test_mode_login_required
+@login_required
 def sale_post(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     try:
@@ -300,26 +326,26 @@ def sale_post(request, pk):
         messages.error(request, error_msg)
     except Exception as e:
         messages.error(request, f"Ошибка при проведении: {str(e)}")
-    return redirect("sale_detail", pk=pk)
+    return redirect(_document_detail_url(request, "sale_detail", pk))
 
 
-@test_mode_login_required
+@login_required
 def sale_detail(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
-    return render(request, "inventory/sale_detail.html", {"sale": sale})
+    return render(request, "inventory/sale_detail.html", {"sale": sale, "back_url": _document_return_url(request)})
 
 
-@test_mode_login_required
+@login_required
 def sale_unpost(request, pk):
     sale = get_object_or_404(Sale, pk=pk)
     try:
         process_sale_unpost(sale)
     except Exception as e:
         messages.error(request, f"Ошибка отмены: {str(e)}")
-    return redirect("sale_detail", pk=pk)
+    return redirect(_document_detail_url(request, "sale_detail", pk))
 
 
-@test_mode_login_required
+@login_required
 def receipt_post(request, pk):
     receipt = get_object_or_404(Receipt, pk=pk)
     try:
@@ -327,16 +353,18 @@ def receipt_post(request, pk):
         messages.success(request, "Приход проведен")
     except Exception as e:
         messages.error(request, str(e))
-    return redirect("receipt_detail", pk=pk)
+    return redirect(_document_detail_url(request, "receipt_detail", pk))
 
 
-@test_mode_login_required
+@login_required
 def receipt_detail(request, pk):
     receipt = get_object_or_404(Receipt, pk=pk)
-    return render(request, "inventory/receipt_detail.html", {"receipt": receipt})
+    return render(
+        request, "inventory/receipt_detail.html", {"receipt": receipt, "back_url": _document_return_url(request)}
+    )
 
 
-@test_mode_login_required
+@login_required
 def receipt_unpost(request, pk):
     receipt = get_object_or_404(Receipt, pk=pk)
     try:
@@ -344,4 +372,4 @@ def receipt_unpost(request, pk):
         messages.success(request, f"Проведение прихода №{receipt.number} отменено.")
     except Exception as e:
         messages.error(request, f"Ошибка отмены: {str(e)}")
-    return redirect("receipt_detail", pk=pk)
+    return redirect(_document_detail_url(request, "receipt_detail", pk))

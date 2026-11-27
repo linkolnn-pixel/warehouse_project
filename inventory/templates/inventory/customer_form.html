@@ -3,12 +3,12 @@
 {% block title %}Новый клиент{% endblock %}
 
 {% block content %}
-<div class="container mt-4 mb-5">
+<div class="page-section mb-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="card shadow">
                 <div class="card-header bg-white pb-0 border-bottom-0 mt-3">
-                    <h3 class="mb-0">Новый клиент</h3>
+                    <h1 class="page-title mb-0">Новый клиент</h1>
                 </div>
                 <div class="card-body">
 
@@ -62,7 +62,7 @@
                         <hr>
 
                         <div class="d-flex justify-content-between mt-4">
-                            <a href="javascript:history.back()" class="btn btn-outline-secondary">Отмена</a>
+                            <a href="{{ cancel_url }}" class="btn btn-outline-secondary">Отмена</a>
                             <button type="submit" class="btn btn-primary px-4">Сохранить</button>
                         </div>
                     </form>

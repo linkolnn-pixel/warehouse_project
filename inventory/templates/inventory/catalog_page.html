@@ -9,100 +9,6 @@
 
 {% block extra_head %}
 
-<style>
-
-    /* =========================
-       SIDEBAR БРЕНДОВ
-    ========================= */
-
-    .catalog-sidebar {
-        width: 240px;
-        position: fixed;
-        top: 172px;
-        bottom: 0;
-        left: 0;
-        background: white;
-        border-right: 1px solid #ddd;
-        overflow-y: auto;
-        z-index: 1000;
-    }
-
-    .sidebar-title {
-        padding: 20px;
-        font-weight: 700;
-        color: #495057;
-    }
-
-    .brand-link {
-        display: block;
-        padding: 10px 20px;
-        color: #495057;
-        text-decoration: none;
-    }
-
-    .brand-link:hover {
-        background: #f1f3f5;
-    }
-
-    .brand-link.active {
-        background: #e7f1ff;
-        color: #0d6efd;
-        border-left: 4px solid #0d6efd;
-        font-weight: 600;
-    }
-
-    .catalog-header {
-    position: sticky;
-    top: 0;
-    z-index: 1010;
-
-    background: #f4f6f9;
-    padding: 15px 0;
-    margin-bottom: 15px;
-
-    border-bottom: 1px solid #dee2e6;
-}
-
-    /* =========================
-       ОСНОВНАЯ ОБЛАСТЬ КАТАЛОГА
-    ========================= */
-
-    .catalog-main {
-        margin-left: 240px;
-    }
-
-
-    /* =========================
-       ТАБЛИЦА
-    ========================= */
-
-    table.dataTable thead th {
-        background: #f8f9fa;
-        font-size: 12px;
-        text-transform: uppercase;
-        color: #6c757d;
-    }
-
-    .table td {
-        vertical-align: middle;
-        font-size: 14px;
-    }
-
-    .product-name {
-        font-weight: 600;
-    }
-
-    .price-buy {
-        color: #6c757d;
-    }
-
-    .price-sale {
-        font-weight: 700;
-        color: #198754;
-    }
-
-</style>
-
 <!-- DataTables CSS -->
 
 <link
@@ -119,7 +25,8 @@
      SIDEBAR
 ========================= -->
 
-<div class="catalog-sidebar">
+<div class="catalog-layout">
+<aside class="catalog-sidebar panel" aria-label="Категории">
 
     <div class="sidebar-title d-flex justify-content-between align-items-center">
         <span>
@@ -127,8 +34,8 @@
             Категории
         </span>
         <!-- Кнопка добавления категории -->
-        <a href="{% url 'category_create' %}?next=products_catalog" class="btn btn-sm btn-outline-primary" title="Добавить категорию">
-            <i class="fa-solid fa-plus"></i>
+        <a href="{% url 'category_create' %}?next=products_catalog&amp;return_to={{ request.get_full_path|urlencode:"" }}{% if selected_category %}&amp;parent={{ selected_category.pk }}{% endif %}" class="btn btn-sm btn-outline-primary" title="{% if selected_category %}Добавить подкатегорию{% else %}Добавить категорию{% endif %}">
+            <i class="fa-solid fa-plus" aria-hidden="true"></i>
         </a>
     </div>
 
@@ -153,10 +60,10 @@
             {% endif %}"
             data-category-id="{{ cat.id }}"
         >
-            {{ cat.name }}
+            {% if cat.level %}<span aria-hidden="true">↳</span>{% endif %} {{ cat.name }}
         </a>
     {% endfor %}
-</div>
+</aside>
 
 
 <!-- =========================
@@ -164,12 +71,10 @@
 ========================= -->
 
 <div class="catalog-main">
-    <div class="catalog-header d-flex justify-content-between align-items-center">
-        <h4 class="mb-0">
-            <i class="fa-solid fa-box"></i>
-            {{ page_title }}
-        </h4>
-        <div>
+    <div class="section-heading">
+        <h1 class="page-title">{{ page_title }}
+        </h1>
+        <div class="heading-actions">
             <!-- Excel -->
             <a
                 href="{% url 'upload_products' %}"
@@ -182,7 +87,7 @@
             <!-- Добавить -->
             <a
                 href="{% url 'product_create' %}"
-                class="btn btn-primary btn-sm ms-2"
+                class="btn btn-primary btn-sm ms-md-2"
             >
                 <i class="fa-solid fa-plus"></i>
                 Добавить
@@ -209,7 +114,7 @@
          TABLE
     ========================= -->
 
-    <div class="card p-3">
+    <div class="card p-3 table-scroll" tabindex="0" aria-label="Таблица каталога">
         <table
             id="catalogTable"
             class="table table-hover"
@@ -232,7 +137,7 @@
                         <!-- Наименование -->
                         <td>
                             <a
-                                href="{% url 'product_detail' product.id %}"
+                                href="{% url 'product_detail' product.id %}?return_to={{ request.get_full_path|urlencode:"" }}"
                                 class="text-decoration-none product-name"
                             >
                                 {{ product.name }}
@@ -300,6 +205,7 @@
         </table>
     </div>
 </div>
+</div>
 
 {% endblock %}
 
@@ -346,8 +252,8 @@ $(document).ready(function () {
 <style>
     /* Подсветка категории при наведении товара */
     .brand-link.drag-over {
-        background: #e7f1ff;
-        border: 2px dashed #0d6efd;
+        background: var(--bg-subtle);
+        border: 2px dashed var(--fg-main);
     }
 </style>
 

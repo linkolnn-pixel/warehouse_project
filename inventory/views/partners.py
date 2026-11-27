@@ -2,6 +2,7 @@ from decimal import Decimal
 from urllib.parse import urlencode
 
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.db.models import DecimalField, F, Sum
 from django.db.models.functions import Coalesce
@@ -10,12 +11,12 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from inventory.decorators import test_mode_login_required
 from inventory.forms import CustomerForm, SupplierForm
 from inventory.models import Customer, Sale, Supplier
+from inventory.navigation import return_destination, url_with_return, with_query_parameter
 
 
-@test_mode_login_required
+@login_required
 def supplier_create(request):
     next_name = request.GET.get("next", "products_catalog")
     selected_products = request.GET.getlist("products")
@@ -29,6 +30,9 @@ def supplier_create(request):
                 supplier.save()
                 messages.success(request, f"Поставщик «{supplier.company_name}» создан.")
 
+                product_form_url = return_destination(request, "", "product_create")
+                if next_name == "product_create" and product_form_url:
+                    return redirect(with_query_parameter(product_form_url, "supplier", supplier.pk))
                 url = reverse(next_name)
 
                 params = [f"supplier={supplier.pk}"]
@@ -51,10 +55,13 @@ def supplier_create(request):
     else:
         form = SupplierForm()
 
-    return render(request, "inventory/supplier_form.html", {"form": form})
+    cancel_url = return_destination(
+        request, reverse("products_catalog"), "products_catalog", "product_create", "receipt_create"
+    )
+    return render(request, "inventory/supplier_form.html", {"form": form, "cancel_url": cancel_url})
 
 
-@test_mode_login_required
+@login_required
 def customer_create(request):
     next_name = request.GET.get("next", "sale_create")
     selected_products = request.GET.getlist("products")
@@ -83,18 +90,25 @@ def customer_create(request):
                 messages.error(request, "Такой клиент уже существует.")
     else:
         form = CustomerForm()
-    return render(request, "inventory/customer_form.html", {"form": form})
+    cancel_url = return_destination(
+        request,
+        reverse("sale_create" if next_name == "sale_create" else "customers_list"),
+        "customers_list",
+        "sale_create",
+    )
+    return render(request, "inventory/customer_form.html", {"form": form, "cancel_url": cancel_url})
 
 
-@test_mode_login_required
+@login_required
 def customers_list(request):
     customers = Customer.objects.order_by("last_name", "first_name")
     return render(request, "inventory/customers.html", {"customers": customers})
 
 
-@test_mode_login_required
+@login_required
 def customer_detail(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
+    back_url = return_destination(request, reverse("customers_list"), "customers_list", "sale_detail")
 
     # Обработка сохранения данных из модального окна
     if request.method == "POST":
@@ -104,7 +118,7 @@ def customer_detail(request, pk):
         customer.save()
 
         messages.success(request, "Данные клиента успешно обновлены.")
-        return redirect("customer_detail", pk=pk)
+        return redirect(url_with_return(reverse("customer_detail", kwargs={"pk": pk}), back_url))
 
     # Подсчет статистики и истории продаж
     sales = (
@@ -135,10 +149,12 @@ def customer_detail(request, pk):
             "sales_count": sales_count,
             "total_sales": total_sales,
             "total_profit": total_profit,
+            "back_url": back_url,
         },
     )
 
 
+@login_required
 @require_POST
 def api_supplier_create(request):
     company_name = request.POST.get("company_name")
@@ -151,6 +167,7 @@ def api_supplier_create(request):
     return JsonResponse({"id": obj.id, "name": obj.company_name})
 
 
+@login_required
 @require_POST
 def api_customer_create(request):
     first_name = request.POST.get("first_name", "").strip()

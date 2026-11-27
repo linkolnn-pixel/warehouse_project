@@ -1,0 +1,18 @@
+{% extends "inventory/base.html" %}
+
+{% block title %}Страница не найдена (404){% endblock %}
+
+{% block content %}
+<div class="card login-card text-center">
+    <div class="card-body">
+        <div class="display-4 fw-bold mb-2">404</div>
+        <h1 class="page-title mb-3">Страница не найдена</h1>
+        <p class="text-muted mb-4">
+            Возможно, ссылка устарела или страница была перемещена.
+        </p>
+        <a href="{% url 'home' %}" class="btn btn-primary">
+            Вернуться на главную
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import URLPattern, URLResolver, path
 from rest_framework.routers import DefaultRouter
 
 from .views.analysis import client_predictions_view
@@ -39,9 +39,9 @@ from .views.stock import movement_report, receipt_delete, sale_delete, stock_man
 router = DefaultRouter()
 router.register(r"products", ProductViewSet, basename="product")
 
-urlpatterns = [
+urlpatterns: list[URLPattern | URLResolver] = [
     # Главная = склад
-    path("", stock_management_view, name="home"),
+    path("", dashboard_view, name="home"),
     # Каталог товаров
     path("catalog/", products_catalog_view, name="products_catalog"),
     path("stock/", stock_management_view, name="stock_management"),
