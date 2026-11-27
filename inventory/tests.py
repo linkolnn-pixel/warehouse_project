@@ -11,6 +11,8 @@ from inventory.models import (
     ReceiptItem,
     Sale,
     SaleItem,
+    StockAllocation,
+    StockLot,
     Supplier,
     Transaction,
     Warehouse,
@@ -19,6 +21,7 @@ from inventory.services import (
     process_receipt_post,
     process_receipt_unpost,
     process_sale_post,
+    process_sale_unpost,
 )
 
 
@@ -27,8 +30,8 @@ class StockBalanceTestCase(TestCase):
         # Подготавливаем чистые данные для теста
         self.warehouse = Warehouse.objects.create(name="Основной склад")
 
-        self.supplier = Supplier.objects.create(type="supplier", company_name="Поставщик ООО")
-        self.customer = Customer.objects.create(type="customer", first_name="Иван", last_name="Иванов")
+        self.supplier = Supplier.objects.create(company_name="Поставщик ООО")
+        self.customer = Customer.objects.create(first_name="Иван", last_name="Иванов")
 
         self.product = Product.objects.create(name="Ceramide repair cream 50 мл")
 
@@ -71,8 +74,8 @@ class InventoryServicesTests(TestCase):
         """Создаем базовые данные для всех тестов (склад, клиенты, товары)"""
         self.warehouse = Warehouse.objects.create(name="Основной склад")
 
-        self.supplier = Supplier.objects.create(type="supplier", company_name="ООО Ромашка", inn="1234567890")
-        self.customer = Customer.objects.create(type="customer", first_name="Иван", last_name="Иванов")
+        self.supplier = Supplier.objects.create(company_name="ООО Ромашка", inn="1234567890")
+        self.customer = Customer.objects.create(first_name="Иван", last_name="Иванов")
 
         self.category = Category.objects.create(name="Напитки")
 
@@ -215,3 +218,64 @@ class InventoryServicesTests(TestCase):
         # это доказывает, что наша группировка работает!
         with self.assertRaises(InsufficientStockError):
             process_sale_post(sale)
+
+
+class FIFOStockTests(TestCase):
+    def setUp(self):
+        self.warehouse = Warehouse.objects.create(name="FIFO")
+        self.product = Product.objects.create(name="FIFO product")
+
+    def receive(self, quantity, price, delivery="0", warehouse=None):
+        receipt = Receipt.objects.create(warehouse=warehouse or self.warehouse, delivery_cost=Decimal(delivery))
+        ReceiptItem.objects.create(
+            receipt=receipt, product=self.product, quantity=quantity, cost_price=Decimal(price), sale_price=30
+        )
+        process_receipt_post(receipt)
+        return receipt
+
+    def test_sale_consumes_oldest_lots_and_restores_them_on_unpost(self):
+        self.receive(10, "1", warehouse=Warehouse.objects.create(name="Other"))
+        first = self.receive(3, "10", delivery="0.02")
+        second = self.receive(2, "20")
+        sale = Sale.objects.create(warehouse=self.warehouse, delivery_expense=2)
+        lines = [SaleItem.objects.create(sale=sale, product=self.product, quantity=2, sale_price=30) for _ in range(2)]
+
+        process_sale_post(sale)
+
+        costs = list(sale.items.order_by("pk").values_list("fifo_cost", flat=True))
+        self.assertEqual(costs, [Decimal("20.01"), Decimal("30.01")])
+        self.assertEqual(sale.net_profit, Decimal("67.98"))
+        self.assertEqual(StockAllocation.objects.filter(sale_item__in=lines).count(), 3)
+        self.assertEqual(self.product.get_balance(self.warehouse), 1)
+        stock = Product.objects.with_balances(self.warehouse.pk).get(pk=self.product.pk)
+        self.assertEqual(stock.stock_cost, Decimal("20.00"))
+        with self.assertRaises(ValueError):
+            process_receipt_unpost(first)
+
+        process_sale_unpost(sale)
+
+        self.assertFalse(StockAllocation.objects.filter(sale_item__in=lines).exists())
+        self.assertEqual(self.product.get_balance(self.warehouse), 5)
+        self.assertEqual(
+            list(
+                StockLot.objects.filter(balance__warehouse=self.warehouse)
+                .order_by("pk")
+                .values_list("remaining_cost", flat=True)
+            ),
+            [Decimal("30.02"), Decimal("40.00")],
+        )
+        process_receipt_unpost(second)
+        self.assertEqual(self.product.get_balance(self.warehouse), 3)
+
+    def test_legacy_sale_keeps_saved_cost_and_returns_stock_at_that_cost(self):
+        sale = Sale.objects.create(warehouse=self.warehouse, delivery_expense=1, posted=True)
+        item = SaleItem.objects.create(sale=sale, product=self.product, quantity=2, sale_price=30, cost_price=8)
+        self.assertEqual(item.total_cost, Decimal("16"))
+        self.assertEqual(sale.net_profit, Decimal("43"))
+
+        process_sale_unpost(sale)
+
+        restored = StockLot.objects.get(balance__warehouse=self.warehouse)
+        self.assertEqual(restored.remaining_quantity, 2)
+        self.assertEqual(restored.remaining_cost, Decimal("16"))
+        self.assertEqual(self.product.get_balance(self.warehouse), 2)
