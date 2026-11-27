@@ -1,13 +1,90 @@
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import DecimalField, F, Sum
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Coalesce, TruncDate
 from django.shortcuts import render
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 
-from inventory.models import Customer, Product, Receipt, Sale, Transaction, Warehouse
+from inventory.models import Customer, Product, Sale, SaleItem, Warehouse
+
+
+def _sales_periods(now):
+    today = timezone.localdate(now)
+    first_day = today - timedelta(days=364)
+    start = timezone.make_aware(datetime.combine(first_day, time.min))
+    sales = Sale.objects.filter(posted=True, date__range=(start, now)).order_by()
+    items = SaleItem.objects.filter(sale__in=sales).order_by()
+    revenue = F("quantity") * F("sale_price")
+    profit = revenue - Coalesce(F("fifo_cost"), F("cost_price") * F("quantity"))
+    daily_items = {
+        row["day"]: (row["revenue"], row["profit"])
+        for row in items.annotate(day=TruncDate("sale__date"))
+        .values("day")
+        .annotate(revenue=Sum(revenue, output_field=DecimalField()), profit=Sum(profit, output_field=DecimalField()))
+    }
+    daily_delivery = dict(
+        sales.annotate(day=TruncDate("date"))
+        .values("day")
+        .annotate(delivery=Sum("delivery_expense"))
+        .values_list("day", "delivery")
+    )
+
+    periods = []
+    for key, days, label in (("month", 30, "30 дней"), ("half-year", 180, "Полгода"), ("year", 365, "Год")):
+        first = today - timedelta(days=days - 1)
+        buckets = {}
+        for offset in range(days):
+            day = first + timedelta(days=offset)
+            bucket_start = first + timedelta(days=offset // 7 * 7) if days == 30 else day.replace(day=1)
+            bucket = buckets.setdefault(
+                bucket_start, {"start": day, "end": day, "revenue": 0, "profit": 0, "has_sales": False}
+            )
+            line_revenue, line_profit = daily_items.get(day, (0, 0))
+            delivery = daily_delivery.get(day, 0)
+            bucket["end"] = day
+            bucket["revenue"] += line_revenue - delivery
+            bucket["profit"] += line_profit - delivery
+            bucket["has_sales"] |= day in daily_items or day in daily_delivery
+
+        points = list(buckets.values())
+        values = [point[metric] for point in points for metric in ("revenue", "profit")]
+        lower, upper = min(0, min(values)), max(0, max(values))
+        scale = upper - lower or 1
+        for point in points:
+            for metric in ("revenue", "profit"):
+                value = point[metric]
+                point[f"{metric}_bottom"] = (min(0, value) - lower) / scale * 100
+                point[f"{metric}_height"] = abs(value) / scale * 100
+            point["margin"] = point["profit"] / point["revenue"] * 100 if point["revenue"] > 0 else None
+
+        period_items = (
+            items.filter(sale__date__gte=timezone.make_aware(datetime.combine(first, time.min)))
+            .exclude(product__name__icontains="Пакет")
+            .values("product_id", "product__name")
+            .annotate(units=Sum("quantity"), profit=Sum(profit, output_field=DecimalField()))
+        )
+        rankings = []
+        for metric in ("units", "profit"):
+            ranked = list(period_items.order_by(f"-{metric}", "product__name", "product_id")[:4])
+            peak = max(ranked[0][metric], 0) if ranked else 0
+            for row in ranked:
+                row["value"] = row[metric]
+                row["bar_width"] = max(row["value"], 0) / peak * 100 if peak else 0
+            rankings.append({"metric": metric, "products": ranked})
+
+        periods.append(
+            {
+                "key": key,
+                "label": label,
+                "points": points,
+                "has_sales": any(point["has_sales"] for point in points),
+                "zero_line": -lower / scale * 100,
+                "rankings": rankings,
+            }
+        )
+    return periods
 
 
 @login_required
@@ -18,68 +95,22 @@ def dashboard_view(request):
     products = Product.objects.with_balances(warehouse_id)
 
     total_stock_cost = sum(p.stock_cost for p in products)
-    total_units = sum(max(p.balance or 0, 0) for p in products)
+    total_units = sum(max(p.balance or 0, 0) for p in products if p.name.strip().casefold() != "пакет")
     total_expected_profit = sum((p.stock_profit or 0) for p in products)
     out_of_stock_products = [p for p in products if (p.balance or 0) <= 0]
     out_of_stock_count = len(out_of_stock_products)
 
-    # --- 2. ВЫРУЧКА, ПРИБЫЛЬ, ТОП ТОВАРОВ И ЛОГИСТИКА ЗА ПЕРИОДЫ ---
-    now = timezone.now()
-
-    def get_stats_since(days):
-        start_date = now - timedelta(days=days)
-        base_query = Sale.objects.filter(posted=True, date__gte=start_date)
-
-        revenue_agg = base_query.aggregate(
-            total=Sum(F("items__quantity") * F("items__sale_price"), output_field=DecimalField())
+    product_count = len(products)
+    low_stock_count = sum(0 < (p.balance or 0) <= 3 for p in products)
+    stock_distribution = [
+        {"status": status, "label": label, "percent": count / product_count * 100}
+        for status, label, count in (
+            ("available", "В наличии", product_count - low_stock_count - out_of_stock_count),
+            ("low", "Мало (до 3 шт.)", low_stock_count),
+            ("empty", "Закончился", out_of_stock_count),
         )
-        gross_revenue = float(revenue_agg["total"] or 0)
-
-        profit_agg = base_query.aggregate(
-            total=Sum(
-                F("items__sale_price") * F("items__quantity")
-                - Coalesce(F("items__fifo_cost"), F("items__cost_price") * F("items__quantity")),
-                output_field=DecimalField(),
-            )
-        )
-        gross_profit = float(profit_agg["total"] or 0)
-
-        top_products = (
-            base_query.values(product_name=F("items__product__name"))
-            .annotate(total_sold=Sum("items__quantity"))
-            .exclude(product_name__isnull=True)
-            .exclude(product_name__icontains="Пакет")
-            .order_by("-total_sold")[:3]
-        )
-
-        del_out_agg = base_query.aggregate(total=Sum("delivery_expense"))
-        del_in_agg = Receipt.objects.filter(posted=True, date__gte=start_date).aggregate(total=Sum("delivery_cost"))
-
-        delivery_out = float(del_out_agg["total"] or 0)
-        delivery_in = float(del_in_agg["total"] or 0)
-        total_delivery = delivery_out + delivery_in
-
-        revenue = gross_revenue - delivery_out
-        net_profit = gross_profit - delivery_out
-
-        return revenue, net_profit, list(top_products), delivery_in, delivery_out, total_delivery
-
-    periods = []
-    for days, label in ((30, "За 30 дней"), (180, "За полгода"), (365, "За год")):
-        revenue, profit, top_products, *_ = get_stats_since(days)
-        periods.append(
-            {
-                "label": label,
-                "revenue": revenue,
-                "profit": profit,
-                "margin": profit / revenue * 100 if revenue > 0 else None,
-                "top_products": top_products,
-            }
-        )
-
-    recent_transactions = Transaction.objects.select_related(
-        "product", "warehouse", "receipt__supplier", "sale__customer"
-    ).order_by("-date")[:5]
+        if product_count
+    ]
 
     # --- 4. АНАЛИЗ ПО КЛИЕНТАМ ---
     client_id = request.GET.get("client_id")
@@ -141,8 +172,9 @@ def dashboard_view(request):
         "total_expected_profit": total_expected_profit,
         "out_of_stock_count": out_of_stock_count,
         "out_of_stock_products": out_of_stock_products,
-        "recent_transactions": recent_transactions,
-        "periods": periods,
+        "product_count": product_count,
+        "stock_distribution": stock_distribution,
+        "periods": _sales_periods(timezone.now()),
         # Переменные для блока анализа клиентов
         "analysis_data": analysis_data,
         "all_clients": all_clients,
