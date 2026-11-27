@@ -18,7 +18,7 @@ def dashboard_view(request):
     products = Product.objects.with_balances(warehouse_id)
 
     total_stock_cost = sum(p.stock_cost for p in products)
-    total_units = sum(max(p.balance or 0, 0) for p in products)
+    total_units = sum(max(p.balance or 0, 0) for p in products if p.name.strip().casefold() != "пакет")
     total_expected_profit = sum((p.stock_profit or 0) for p in products)
     out_of_stock_products = [p for p in products if (p.balance or 0) <= 0]
     out_of_stock_count = len(out_of_stock_products)
