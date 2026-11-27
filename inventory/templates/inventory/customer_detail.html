@@ -5,11 +5,11 @@
 {% block content %}
 <div class="page-section">
     <!-- Заголовок и кнопка назад -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="section-heading mb-4">
         <h1 class="page-title">Клиент</h1>
-        <div>
+        <div class="heading-actions">
             <!-- Кнопка вызова модального окна -->
-            <button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#editCustomerModal">
+            <button type="button" class="btn btn-primary btn-sm me-md-2" data-bs-toggle="modal" data-bs-target="#editCustomerModal">
                 <i class="fa-solid fa-pen"></i> Редактировать
             </button>
             <a href="{{ back_url }}" class="btn btn-outline-secondary btn-sm">

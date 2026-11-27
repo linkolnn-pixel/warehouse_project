@@ -7,30 +7,9 @@
 {% block extra_head %}
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
 <style>
-    /* Делаем шапку сайта полностью непрозрачной и фиксированной высоты */
-    .workspace-nav {
-        background-color: #ffffff !important;
-        height: 57px;
-    }
-
     .page-content {
         padding-top: 18px !important;
         padding-bottom: 40px !important;
-    }
-
-    .stock-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 12px;
-    }
-
-    .stock-title {
-        font-size: 22px;
-        font-weight: 600;
-        letter-spacing: -0.025em;
-        color: var(--fg-main);
-        margin: 0;
     }
 
     /* Компактная сводка метрик */
@@ -447,8 +426,8 @@
 {% block content %}
 <div class="stock-page">
 
-    <header class="stock-header">
-        <h1 class="stock-title">Управление остатками</h1>
+    <header class="section-heading">
+        <h1 class="page-title">Управление остатками</h1>
     </header>
 
     <section class="metrics-row" aria-label="Сводная статистика склада">
