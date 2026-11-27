@@ -34,7 +34,7 @@ def stock_management_view(request):
         balance = p.balance or 0
         if balance > 0:
             total_quantity += balance
-            total_cost += balance * p.cost_price
+            total_cost += p.stock_cost
             total_retail += balance * p.sale_price
 
     total_profit = total_retail - total_cost
