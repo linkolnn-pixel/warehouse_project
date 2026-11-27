@@ -1,0 +1,13 @@
+.git
+.venv
+venv
+**/__pycache__
+.mypy_cache
+.ruff_cache
+.pytest_cache
+.idea
+.vscode
+.env
+.env.*
+*.sqlite3
+data_backup*.json
