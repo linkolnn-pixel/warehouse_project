@@ -11,14 +11,22 @@
     <div class="card shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                <table id="predictions-table" class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th>Клиент</th>
+                            <th>
+                                <label for="prediction-customer" class="d-block mb-1">Клиент</label>
+                                <select id="prediction-customer" class="form-select form-select-sm" style="font-weight: 400; font-size: 12px; padding: 2px 5px;">
+                                    <option value="">Все</option>
+                                    {% for customer in customers %}
+                                        <option value="{{ customer.pk }}">{{ customer }}</option>
+                                    {% endfor %}
+                                </select>
+                            </th>
                             <th>Товар</th>
                             <th>
-                                <span style="display: block; margin-bottom: 5px;">Бренд</span>
-                                <select class="column-filter form-select form-select-sm" data-column="1" style="font-weight: 400; font-size: 12px; padding: 2px 5px; height: auto;">
+                                <label for="prediction-brand" class="d-block mb-1">Бренд</label>
+                                <select id="prediction-brand" class="form-select form-select-sm" style="font-weight: 400; font-size: 12px; padding: 2px 5px;">
                                     <option value="">Все</option>
                                     {% for brand in brands %}
                                         {% if brand %}
@@ -35,7 +43,7 @@
                     </thead>
                     <tbody>
                         {% for p in predictions %}
-                        <tr>
+                        <tr data-customer-id="{{ p.customer.pk }}" data-brand="{{ p.product.brand|default_if_none:'' }}">
                             <td class="fw-bold">{{ p.customer }}</td>
                             <td>{{ p.product.name }}</td>
                             <td>{{ p.product.brand }}</td>
@@ -54,9 +62,14 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="6" class="text-center text-muted py-4">Нет данных для расчетов (убедитесь, что у проданных товаров заполнено "Время расхода")</td>
+                            <td colspan="7" class="text-center text-muted py-4">Нет данных для расчетов (убедитесь, что у проданных товаров заполнено "Время расхода")</td>
                         </tr>
                         {% endfor %}
+                        {% if predictions %}
+                        <tr id="predictions-no-matches" hidden>
+                            <td colspan="7" class="text-center text-muted py-4">По выбранным фильтрам покупок нет</td>
+                        </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
@@ -66,25 +79,29 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    const brandSelect = document.querySelector('.column-filter');
-    const tableRows = document.querySelectorAll('tbody tr');
+    const customerSelect = document.getElementById('prediction-customer');
+    const brandSelect = document.getElementById('prediction-brand');
+    const tableRows = document.querySelectorAll('#predictions-table tbody tr[data-customer-id]');
+    const noMatches = document.getElementById('predictions-no-matches');
 
-    brandSelect.addEventListener('change', function() {
-        const selectedBrand = this.value.toLowerCase().trim();
-
+    function filterPredictions() {
+        const customer = customerSelect.value;
+        const brand = brandSelect.value.trim().toLowerCase();
+        let hasMatch = false;
         tableRows.forEach(row => {
-            // Бренд находится в 3-й колонке (индекс 2, так как нумерация с нуля)
-            if (row.cells.length > 1) { // Пропускаем строку "Нет данных"
-                const rowBrand = row.cells[2].textContent.toLowerCase().trim();
-
-                if (selectedBrand === "" || rowBrand === selectedBrand) {
-                    row.style.display = ""; // Показываем
-                } else {
-                    row.style.display = "none"; // Скрываем
-                }
-            }
+            const matchesCustomer = !customer || row.dataset.customerId === customer;
+            const matchesBrand = !brand || row.dataset.brand.trim().toLowerCase() === brand;
+            row.hidden = !matchesCustomer || !matchesBrand;
+            hasMatch ||= !row.hidden;
         });
-    });
+        if (noMatches) {
+            noMatches.hidden = hasMatch;
+        }
+    }
+
+    customerSelect.addEventListener('change', filterPredictions);
+    brandSelect.addEventListener('change', filterPredictions);
+    filterPredictions();
 });
 </script>
 

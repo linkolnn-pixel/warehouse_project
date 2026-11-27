@@ -39,6 +39,7 @@ def client_predictions_view(request):
     # Сортируем: сначала те, у кого товар заканчивается прямо сейчас или уже закончился
     predictions.sort(key=lambda x: x["exhaustion_date"])
     brands = set(item.product.brand for item in sale_items if item.product.brand)
+    customers = {item.sale.customer_id: item.sale.customer for item in sale_items}
 
     return render(
         request,
@@ -46,5 +47,6 @@ def client_predictions_view(request):
         {
             "predictions": predictions,
             "brands": sorted(brands),
+            "customers": sorted(customers.values(), key=lambda customer: str(customer).casefold()),
         },
     )
