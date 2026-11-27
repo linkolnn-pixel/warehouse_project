@@ -41,7 +41,7 @@ router.register(r"products", ProductViewSet, basename="product")
 
 urlpatterns: list[URLPattern | URLResolver] = [
     # Главная = склад
-    path("", stock_management_view, name="home"),
+    path("", dashboard_view, name="home"),
     # Каталог товаров
     path("catalog/", products_catalog_view, name="products_catalog"),
     path("stock/", stock_management_view, name="stock_management"),

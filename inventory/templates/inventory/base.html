@@ -59,20 +59,6 @@
             min-height: calc(var(--nav-height) - 1px);
         }
 
-        .workspace-nav .navbar-brand {
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-            color: var(--fg-main);
-            margin-right: 32px;
-            padding: 12px 0;
-        }
-
-        .workspace-nav .navbar-brand:hover {
-            color: var(--fg-main);
-            opacity: 0.75;
-        }
-
         .workspace-nav .navbar-nav {
             gap: 4px;
         }
@@ -186,7 +172,12 @@
             border-left-color: var(--accent-profit);
         }
 
-        @media (max-width: 1199px) {
+        @media (max-width: 1199.98px) {
+            .workspace-nav .workspace-width {
+                justify-content: flex-end;
+                padding-inline-end: 8px;
+            }
+
             .workspace-nav .navbar-collapse {
                 padding: 12px 0;
                 border-top: 1px solid var(--border-light);
@@ -202,8 +193,7 @@
 {% block navigation %}
 <nav class="navbar navbar-expand-xl workspace-nav" aria-label="Основная навигация">
     <div class="container-fluid workspace-width">
-        <a class="navbar-brand" href="{% url 'stock_management' %}">Склад</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
+        <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavigation"
                 aria-controls="mainNavigation" aria-expanded="false" aria-label="Открыть меню">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -211,28 +201,44 @@
             {% with route=request.resolver_match.url_name %}
             <ul class="navbar-nav">
                 <li class="nav-item">
-                    <a href="{% url 'stock_management' %}" class="nav-link{% if route == 'stock_management' or route == 'home' %} active{% endif %}"{% if route == 'stock_management' %} aria-current="page"{% endif %}>Остатки</a>
+                    <a href="{% url 'stock_management' %}" class="nav-link{% if route == 'stock_management' %} active{% endif %}"{% if route == 'stock_management' %} aria-current="page"{% endif %}>
+                        <i class="fa-solid fa-warehouse fa-fw me-1" aria-hidden="true"></i>Склад
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'products_catalog' %}" class="nav-link{% if route == 'products_catalog' or route == 'product_create' or route == 'product_edit' or route == 'product_detail' or route == 'category_create' or route == 'upload_products' or route == 'supplier_create' %} active{% endif %}"{% if route == 'products_catalog' %} aria-current="page"{% endif %}>Каталог</a>
+                    <a href="{% url 'home' %}" class="nav-link{% if route == 'home' or route == 'dashboard' %} active{% endif %}"{% if route == 'home' or route == 'dashboard' %} aria-current="page"{% endif %}>
+                        <i class="fa-solid fa-chart-column fa-fw me-1" aria-hidden="true"></i>Аналитика
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'customers_list' %}" class="nav-link{% if route == 'customers_list' or route == 'customer_create' or route == 'customer_detail' %} active{% endif %}"{% if route == 'customers_list' %} aria-current="page"{% endif %}>Клиенты</a>
+                    <a href="{% url 'products_catalog' %}" class="nav-link{% if route == 'products_catalog' or route == 'product_create' or route == 'product_edit' or route == 'product_detail' or route == 'category_create' or route == 'upload_products' or route == 'supplier_create' %} active{% endif %}"{% if route == 'products_catalog' %} aria-current="page"{% endif %}>
+                        <i class="fa-solid fa-boxes-stacked fa-fw me-1" aria-hidden="true"></i>Каталог
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'sale_create' %}" class="nav-link{% if route == 'sale_create' or route == 'sale_edit' or route == 'sale_detail' %} active{% endif %}"{% if route == 'sale_create' %} aria-current="page"{% endif %}>Продажа</a>
+                    <a href="{% url 'customers_list' %}" class="nav-link{% if route == 'customers_list' or route == 'customer_create' or route == 'customer_detail' %} active{% endif %}"{% if route == 'customers_list' %} aria-current="page"{% endif %}>
+                        <i class="fa-solid fa-users fa-fw me-1" aria-hidden="true"></i>Клиенты
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'receipt_create' %}" class="nav-link{% if route == 'receipt_create' or route == 'receipt_edit' or route == 'receipt_detail' %} active{% endif %}"{% if route == 'receipt_create' %} aria-current="page"{% endif %}>Приход</a>
+                    <a href="{% url 'sale_create' %}" class="nav-link{% if route == 'sale_create' or route == 'sale_edit' or route == 'sale_detail' %} active{% endif %}"{% if route == 'sale_create' %} aria-current="page"{% endif %}>
+                        <i class="fa-solid fa-cart-shopping fa-fw me-1" aria-hidden="true"></i>Продажа
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'movement_report' %}" class="nav-link{% if route == 'movement_report' %} active{% endif %}"{% if route == 'movement_report' %} aria-current="page"{% endif %}>Движения</a>
+                    <a href="{% url 'receipt_create' %}" class="nav-link{% if route == 'receipt_create' or route == 'receipt_edit' or route == 'receipt_detail' %} active{% endif %}"{% if route == 'receipt_create' %} aria-current="page"{% endif %}>
+                        <i class="fa-solid fa-download fa-fw me-1" aria-hidden="true"></i>Приход
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'dashboard' %}" class="nav-link{% if route == 'dashboard' %} active{% endif %}"{% if route == 'dashboard' %} aria-current="page"{% endif %}>Аналитика</a>
+                    <a href="{% url 'movement_report' %}" class="nav-link{% if route == 'movement_report' %} active{% endif %}"{% if route == 'movement_report' %} aria-current="page"{% endif %}>
+                        <i class="fa-solid fa-right-left fa-fw me-1" aria-hidden="true"></i>Движения
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a href="{% url 'client_predictions' %}" class="nav-link{% if route == 'client_predictions' %} active{% endif %}"{% if route == 'client_predictions' %} aria-current="page"{% endif %}>Прогноз</a>
+                    <a href="{% url 'client_predictions' %}" class="nav-link{% if route == 'client_predictions' %} active{% endif %}"{% if route == 'client_predictions' %} aria-current="page"{% endif %}>
+                        <i class="fa-solid fa-arrow-trend-up fa-fw me-1" aria-hidden="true"></i>Прогноз
+                    </a>
                 </li>
             </ul>
             {% endwith %}

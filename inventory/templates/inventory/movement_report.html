@@ -4,9 +4,31 @@
 Операции
 {% endblock %}
 
+{% block extra_head %}
+<style>
+    .movement-report .operation-receipt { --operation-color: #162033; --operation-tint: #eef2f6; }
+    .movement-report .operation-sale { --operation-color: #076e59; --operation-tint: #e0f5ec; }
+    .movement-report .operation-draft { --operation-color: #bd3038; --operation-tint: #fff0ef; }
+    .movement-report :is(.operation-receipt, .operation-sale):not(.btn) { color: var(--operation-color); }
+    .movement-report .badge:is(.operation-receipt, .operation-sale) { background-color: var(--operation-tint); }
+    .movement-report .btn:is(.operation-receipt, .operation-sale, .operation-draft) {
+        --bs-btn-color: var(--operation-color);
+        --bs-btn-bg: var(--operation-tint);
+        --bs-btn-border-color: var(--operation-color);
+        --bs-btn-hover-color: #fff;
+        --bs-btn-hover-bg: var(--operation-color);
+        --bs-btn-hover-border-color: var(--operation-color);
+        --bs-btn-active-color: #fff;
+        --bs-btn-active-bg: var(--operation-color);
+        --bs-btn-active-border-color: var(--operation-color);
+    }
+    .movement-report .btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+</style>
+{% endblock %}
+
 {% block content %}
 
-<div class="page-section">
+<div class="page-section movement-report">
 
     <div class="mb-4">
         <div class="section-heading justify-content-md-start mb-2">
@@ -14,21 +36,19 @@
             </h1>
 
             <div class="btn-group shadow-sm" role="group" aria-label="Фильтр операций">
-                <a href="?" class="btn {% if not request.GET.type or request.GET.type == 'all' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                <a href="?" class="btn {% if request.GET.status == 'draft' %}btn-outline-secondary{% elif not request.GET.type or request.GET.type == 'all' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
                     Все
                 </a>
-                <a href="?type=IN" class="btn {% if request.GET.type == 'IN' %}btn-success{% else %}btn-outline-success{% endif %}">
+                <a href="?type=IN" class="btn operation-receipt{% if request.GET.type == 'IN' %} active{% endif %}"{% if request.GET.type == 'IN' %} aria-current="page"{% endif %}>
                     Приход
                 </a>
-                <a href="?type=OUT" class="btn {% if request.GET.type == 'OUT' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                <a href="?type=OUT" class="btn operation-sale{% if request.GET.type == 'OUT' %} active{% endif %}"{% if request.GET.type == 'OUT' %} aria-current="page"{% endif %}>
                     Продажа
                 </a>
             </div>
-            <div class="btn-group shadow-sm" role="group">
-                <a href="?status=draft" class="btn {% if request.GET.status == 'draft' %}btn-warning{% else %}btn-outline-warning{% endif %}">
-                    <i></i> Непроведенные
-                </a>
-            </div>
+            <a href="?status=draft" class="btn operation-draft{% if request.GET.status == 'draft' %} active{% endif %}"{% if request.GET.status == 'draft' %} aria-current="page"{% endif %}>
+                Непроведенные
+            </a>
         </div>
     </div>
 
@@ -74,9 +94,9 @@
 
                         <td>
                             {% if doc.type == 'IN' %}
-                                <span class="badge bg-success">Приход</span>
+                                <span class="badge operation-receipt">Приход</span>
                             {% elif doc.type == 'OUT' %}
-                                <span class="badge bg-danger">Отгрузка</span>
+                                <span class="badge operation-sale">Отгрузка</span>
                             {% else %}
                                 <span class="badge bg-secondary">{{ doc.type }}</span>
                             {% endif %}
@@ -86,14 +106,14 @@
                             {% if doc.type == 'IN' and doc.document %}
                                 <a href="{% url 'receipt_detail' doc.document.id %}?return_to={{ request.get_full_path|urlencode:"" }}"
                                    onclick="event.stopPropagation(); window.location.href=this.href; return false;"
-                                   class="fw-bold text-decoration-none text-primary">
+                                   class="operation-receipt fw-bold text-decoration-none">
                                     Приход №{{ doc.doc_number }}
                                 </a>
 
                             {% elif doc.type == 'OUT' and doc.document %}
                                 <a href="{% url 'sale_detail' doc.document.id %}?return_to={{ request.get_full_path|urlencode:"" }}"
                                    onclick="event.stopPropagation(); window.location.href=this.href; return false;"
-                                   class="fw-bold text-decoration-none text-primary">
+                                   class="operation-sale fw-bold text-decoration-none">
                                     Продажа №{{ doc.doc_number }}
                                 </a>
 
@@ -161,9 +181,9 @@
                                                 </td>
                                                 <td>
                                                     {% if doc.type == 'IN' %}
-                                                        <span class="text-success fw-bold">+{{ item.quantity }}</span>
+                                                        <span class="operation-receipt fw-bold">+{{ item.quantity }}</span>
                                                     {% elif doc.type == 'OUT' %}
-                                                        <span class="text-danger fw-bold">-{{ item.quantity }}</span>
+                                                        <span class="operation-sale fw-bold">-{{ item.quantity }}</span>
                                                     {% else %}
                                                         {{ item.quantity }}
                                                     {% endif %}

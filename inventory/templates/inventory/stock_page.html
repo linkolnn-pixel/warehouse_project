@@ -430,27 +430,6 @@
         <h1 class="page-title">Управление остатками</h1>
     </header>
 
-    <section class="metrics-row" aria-label="Сводная статистика склада">
-        <div class="metric-block">
-            <span class="metric-label">Общий остаток</span>
-            <span class="metric-value">{{ total_quantity }}<span class="metric-unit">шт</span></span>
-        </div>
-
-        <div class="metric-block">
-            <span class="metric-label">В закупке</span>
-            <span class="metric-value">{{ total_cost|floatformat:2 }}<span class="metric-unit">₽</span></span>
-        </div>
-
-        <div class="metric-block">
-            <span class="metric-label">В рознице</span>
-            <span class="metric-value">{{ total_retail|floatformat:2 }}<span class="metric-unit">₽</span></span>
-        </div>
-
-        <div class="metric-block">
-            <span class="metric-label">Прибыль</span>
-            <span class="metric-value is-profit">{{ total_profit|floatformat:2 }}<span class="metric-unit">₽</span></span>
-        </div>
-    </section>
 
     <!-- Единая панель фильтров -->
     <div class="filters-toolbar">

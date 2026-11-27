@@ -1,5 +1,4 @@
 from datetime import timedelta
-from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import DecimalField, F, Sum
@@ -8,7 +7,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 
-from inventory.models import Customer, Product, Receipt, Sale, SaleItem, Transaction, Warehouse
+from inventory.models import Customer, Product, Receipt, Sale, Transaction, Warehouse
 
 
 @login_required
@@ -19,6 +18,7 @@ def dashboard_view(request):
     products = Product.objects.with_balances(warehouse_id)
 
     total_stock_cost = sum(p.stock_cost for p in products)
+    total_units = sum(max(p.balance or 0, 0) for p in products)
     total_expected_profit = sum((p.stock_profit or 0) for p in products)
     out_of_stock_products = [p for p in products if (p.balance or 0) <= 0]
     out_of_stock_count = len(out_of_stock_products)
@@ -64,9 +64,18 @@ def dashboard_view(request):
 
         return revenue, net_profit, list(top_products), delivery_in, delivery_out, total_delivery
 
-    revenue_1m, profit_1m, top_1m, delivery_in_1m, delivery_out_1m, total_delivery_1m = get_stats_since(30)
-    revenue_6m, profit_6m, top_6m, delivery_in_6m, delivery_out_6m, total_delivery_6m = get_stats_since(180)
-    revenue_1y, profit_1y, top_1y, delivery_in_1y, delivery_out_1y, total_delivery_1y = get_stats_since(365)
+    periods = []
+    for days, label in ((30, "За 30 дней"), (180, "За полгода"), (365, "За год")):
+        revenue, profit, top_products, *_ = get_stats_since(days)
+        periods.append(
+            {
+                "label": label,
+                "revenue": revenue,
+                "profit": profit,
+                "margin": profit / revenue * 100 if revenue > 0 else None,
+                "top_products": top_products,
+            }
+        )
 
     recent_transactions = Transaction.objects.select_related(
         "product", "warehouse", "receipt__supplier", "sale__customer"
@@ -82,6 +91,7 @@ def dashboard_view(request):
         Sale.objects.filter(posted=True, customer__isnull=False)
         .select_related("customer")
         .prefetch_related("items__product")
+        .order_by("-date", "-pk")
     )
 
     if start_date:
@@ -110,6 +120,9 @@ def dashboard_view(request):
         clients_data[cid]["sales_list"].append(sale)
 
     analysis_data = list(clients_data.values())
+    for data in analysis_data:
+        revenue = data["total_revenue"]
+        data["margin"] = data["total_profit"] / revenue * 100 if revenue > 0 else None
 
     if sort_by == "profit_desc":
         analysis_data.sort(key=lambda x: x["total_profit"], reverse=True)
@@ -122,62 +135,14 @@ def dashboard_view(request):
 
     all_clients = Customer.objects.filter(sale__posted=True).distinct().order_by("last_name", "first_name")
 
-    # --- 5. ABC-АНАЛИЗ ---
-    sales_data = (
-        SaleItem.objects.filter(sale__posted=True)
-        .values("product__id", "product__name", "product__sku")
-        .annotate(total_revenue=Sum(F("quantity") * F("sale_price"), output_field=DecimalField()))
-        .order_by("-total_revenue")
-    )
-
-    total_revenue_all = sum((item["total_revenue"] or Decimal("0.0")) for item in sales_data)
-
-    abc_data = []
-    if total_revenue_all > 0:
-        cumulative_revenue = Decimal("0.0")
-
-        for item in sales_data:
-            revenue = item["total_revenue"] or Decimal("0.0")
-            if revenue <= 0:
-                continue
-
-            cumulative_revenue += revenue
-            cumulative_percentage = (cumulative_revenue / total_revenue_all) * 100
-
-            if cumulative_percentage <= 80:
-                abc_class = "A"
-            elif cumulative_percentage <= 95:
-                abc_class = "B"
-            else:
-                abc_class = "C"
-
-            abc_data.append(
-                {
-                    "id": item["product__id"],
-                    "name": item["product__name"],
-                    "sku": item["product__sku"],
-                    "revenue": revenue,
-                    "share": (revenue / total_revenue_all) * 100,
-                    "abc_class": abc_class,
-                }
-            )
-
-    # --- 6. ФОРМИРОВАНИЕ ОБЩЕГО КОНТЕКСТА ---
     context = {
         "total_stock_cost": total_stock_cost,
+        "total_units": total_units,
         "total_expected_profit": total_expected_profit,
         "out_of_stock_count": out_of_stock_count,
         "out_of_stock_products": out_of_stock_products,
         "recent_transactions": recent_transactions,
-        "revenue_1m": revenue_1m,
-        "profit_1m": profit_1m,
-        "revenue_6m": revenue_6m,
-        "profit_6m": profit_6m,
-        "revenue_1y": revenue_1y,
-        "profit_1y": profit_1y,
-        "top_1m": top_1m,
-        "top_6m": top_6m,
-        "top_1y": top_1y,
+        "periods": periods,
         # Переменные для блока анализа клиентов
         "analysis_data": analysis_data,
         "all_clients": all_clients,
@@ -185,9 +150,6 @@ def dashboard_view(request):
         "start_date": start_date,
         "end_date": end_date,
         "sort_by": sort_by,
-        # Переменные для ABC-анализа
-        "abc_data": abc_data,
-        "total_revenue": total_revenue_all,
     }
 
     return render(request, "inventory/dashboard.html", context)

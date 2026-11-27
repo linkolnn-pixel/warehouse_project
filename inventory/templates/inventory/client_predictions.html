@@ -44,11 +44,11 @@
                             <td class="fw-bold">{{ p.exhaustion_date|date:"d.m.Y" }}</td>
                             <td>
                                 {% if p.days_left < 0 %}
-                                    <span class="badge bg-danger">Товар закончился ({{ p.days_left|default:"0"|slugify|slice:"1:" }} дн. назад)</span>
+                                    <span class="badge lh-sm text-wrap text-start" style="--bs-badge-font-size: 14px; --bs-badge-color: #bd3038; background-color: #fff0ef;">Товар закончился ({{ p.days_left|default:"0"|slugify|slice:"1:" }} дн. назад)</span>
                                 {% elif p.days_left <= 7 %}
-                                    <span class="badge bg-warning text-dark">Закончится через {{ p.days_left }} дн. (Пора звонить)</span>
+                                    <span class="badge bg-warning text-dark lh-sm text-wrap text-start" style="--bs-badge-font-size: 14px;">Закончится через {{ p.days_left }} дн. (Пора звонить)</span>
                                 {% else %}
-                                    <span class="badge bg-success">Ещё есть на {{ p.days_left }} дн.</span>
+                                    <span class="badge lh-sm text-wrap text-start" style="--bs-badge-font-size: 14px; --bs-badge-color: #076e59; background-color: #e0f5ec;">Ещё есть на {{ p.days_left }} дн.</span>
                                 {% endif %}
                             </td>
                         </tr>

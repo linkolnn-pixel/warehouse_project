@@ -20,7 +20,7 @@ from inventory.services import (
 
 def _document_return_url(request):
     return return_destination(
-        request, reverse("movement_report"), "movement_report", "dashboard", "customer_detail", "product_detail"
+        request, reverse("movement_report"), "movement_report", "home", "dashboard", "customer_detail", "product_detail"
     )
 
 

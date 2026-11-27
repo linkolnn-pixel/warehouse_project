@@ -1,314 +1,172 @@
 {% extends 'inventory/base.html' %}
-{% load humanize %}
-{% block title %}Дашборд{% endblock %}
+{% load i18n static %}
+{% block title %}Аналитика — Склад{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'inventory/dashboard.css' %}">
+{% endblock %}
 
 {% block content %}
-<div class="page-section">
-    <h1 class="page-title mb-4">Обзор склада</h1>
+{% language "ru" %}
+<div class="analytics-dashboard">
+    <h1 class="visually-hidden">Аналитика склада</h1>
 
-    <!-- ВЕРХНИЙ РЯД: Карточки текущих остатков -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-boxes me-2"></i>В товарах заморожено</h5>
-                    <h3 class="card-text">{{ total_stock_cost|floatformat:2 }} ₽</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-chart-line me-2"></i>Ожидаемая прибыль</h5>
-                    <h3 class="card-text">{{ total_expected_profit|floatformat:2 }} ₽</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="fas fa-exclamation-triangle me-2"></i>Товар закончился</h5>
-                    <h3 class="card-text">{{ out_of_stock_count }} позиций</h3>
-                    <button type="button" class="btn btn-outline-secondary btn-sm stretched-link"
-                            data-bs-toggle="modal" data-bs-target="#outOfStockModal">Посмотреть список</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <section class="analytics-grid" aria-label="Сводка остатков">
+        <article class="analytics-panel analytics-metric analytics-metric-profit">
+            <h2><i class="fa-solid fa-arrow-trend-up" aria-hidden="true"></i> Ожидаемая прибыль</h2>
+            <p class="analytics-value">{{ total_expected_profit|floatformat:"2g" }} ₽</p>
+        </article>
+        <article class="analytics-panel analytics-metric">
+            <h2><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i> В товарах заморожено</h2>
+            <p class="analytics-value">{{ total_stock_cost|floatformat:"2g" }} ₽</p>
+            <p class="analytics-note">На складе {{ total_units|floatformat:"-2g" }} шт.</p>
+        </article>
+        <article class="analytics-panel analytics-metric analytics-metric-stockout">
+            <h2><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i> Товар закончился</h2>
+            <p class="analytics-value">{{ out_of_stock_count|floatformat:"0g" }} поз.</p>
+            <button type="button" class="analytics-stockout-link stretched-link" data-bs-toggle="modal" data-bs-target="#outOfStockModal">
+                Показать список <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </button>
+        </article>
+    </section>
 
-    <!-- СРЕДНИЙ РЯД: Выручка, Прибыль и Топ-3 товара за периоды -->
-    <div class="row mb-4">
-        <!-- Блок за месяц -->
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title text-center text-primary mb-3">За 30 дней</h5>
-                    <h4 class="card-text text-center mb-2">
-                        <small class="text-muted d-block fs-6 mb-1">Выручка</small>
-                        {{ revenue_1m|floatformat:2 }} ₽
-                    </h4>
-                    <h4 class="card-text text-center mb-4 text-success">
-                        <small class="text-success d-block fs-6 mb-1 opacity-75">Чистая прибыль</small>
-                        {{ profit_1m|floatformat:2 }} ₽
-                    </h4>
-
-                    <h6 class="text-secondary small fw-bold">Топ-3 продаваемых товаров:</h6>
-                    <ul class="list-group list-group-flush small">
-                        {% for item in top_1m %}
-                            <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between align-items-center">
-                                {{ item.product_name }}
-                                <span class="badge bg-primary rounded-pill">{{ item.total_sold }} шт.</span>
-                            </li>
-                        {% empty %}
-                            <li class="list-group-item bg-transparent px-0 py-1 text-muted">Нет продаж</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Блок за полгода -->
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title text-center text-warning mb-3">За полгода</h5>
-                    <h4 class="card-text text-center mb-2">
-                        <small class="text-muted d-block fs-6 mb-1">Выручка</small>
-                        {{ revenue_6m|floatformat:2 }} ₽
-                    </h4>
-                    <h4 class="card-text text-center mb-4 text-success">
-                        <small class="text-success d-block fs-6 mb-1 opacity-75">Чистая прибыль</small>
-                        {{ profit_6m|floatformat:2 }} ₽
-                    </h4>
-
-                    <h6 class="text-secondary small fw-bold">Топ-3 продаваемых товаров:</h6>
-                    <ul class="list-group list-group-flush small">
-                        {% for item in top_6m %}
-                            <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between align-items-center">
-                                {{ item.product_name }}
-                                <span class="badge bg-warning text-dark rounded-pill">{{ item.total_sold }} шт.</span>
-                            </li>
-                        {% empty %}
-                            <li class="list-group-item bg-transparent px-0 py-1 text-muted">Нет продаж</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Блок за год -->
-        <div class="col-md-4 mb-3">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title text-center text-danger mb-3">За год</h5>
-                    <h4 class="card-text text-center mb-2">
-                        <small class="text-muted d-block fs-6 mb-1">Выручка</small>
-                        {{ revenue_1y|floatformat:2 }} ₽
-                    </h4>
-                    <h4 class="card-text text-center mb-4 text-success">
-                        <small class="text-success d-block fs-6 mb-1 opacity-75">Чистая прибыль</small>
-                        {{ profit_1y|floatformat:2 }} ₽
-                    </h4>
-
-                    <h6 class="text-secondary small fw-bold">Топ-3 продаваемых товаров:</h6>
-                    <ul class="list-group list-group-flush small">
-                        {% for item in top_1y %}
-                            <li class="list-group-item bg-transparent px-0 py-1 d-flex justify-content-between align-items-center">
-                                {{ item.product_name }}
-                                <span class="badge bg-danger rounded-pill">{{ item.total_sold }} шт.</span>
-                            </li>
-                        {% empty %}
-                            <li class="list-group-item bg-transparent px-0 py-1 text-muted">Нет продаж</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- РЯД: Анализ по клиентам -->
-    <div class="container mt-4">
-        <h2 class="mb-4">Анализ по клиентам</h2>
-
-        <div class="accordion shadow-sm" id="clientsAccordion">
-            <!-- Панель фильтров и сортировки -->
-            <form method="GET" class="card shadow-sm p-3 mb-4 bg-white border-0">
-                <div class="row g-3 align-items-end">
-
-                    <!-- Клиент -->
-                    <div class="col-md-3">
-                        <label for="client_id" class="form-label small text-muted mb-1">Клиент</label>
-                        <select name="client_id" id="client_id" class="form-select">
-                            <option value="">Все клиенты</option>
-                            {% for client in all_clients %}
-                                <option value="{{ client.id }}" {% if selected_client == client.id %}selected{% endif %}>
-                                    {% if client.company_name %}{{ client.company_name }}{% else %}{{ client.first_name }} {{ client.last_name }}{% endif %}
-                                </option>
-                            {% endfor %}
-                        </select>
+    <section class="analytics-grid" aria-label="Продажи за периоды">
+        {% for period in periods %}
+            <article class="analytics-panel analytics-period">
+                <h2>{{ period.label }}</h2>
+                <dl class="analytics-period-values">
+                    <div><dt>Выручка</dt><dd>{{ period.revenue|floatformat:"2g" }} ₽</dd></div>
+                    <div>
+                        <dt>Чистая прибыль</dt>
+                        <dd class="analytics-profit-value">
+                            {{ period.profit|floatformat:"2g" }} ₽
+                            {% if period.margin != None %}<span class="analytics-margin">Маржа {{ period.margin|floatformat:1 }}%</span>{% endif %}
+                        </dd>
                     </div>
+                </dl>
+                <h3>Топ-3 продаваемых товаров</h3>
+                <ul class="analytics-top-list">
+                    {% for item in period.top_products %}
+                        <li><span>{{ item.product_name }}</span><span class="analytics-count">{{ item.total_sold }} шт.</span></li>
+                    {% empty %}
+                        <li class="analytics-note">Нет продаж</li>
+                    {% endfor %}
+                </ul>
+            </article>
+        {% endfor %}
+    </section>
 
-                    <!-- Период С -->
-                    <div class="col-md-2">
-                        <label for="start_date" class="form-label small text-muted mb-1">Период с</label>
-                        <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date }}">
-                    </div>
+    <section class="analytics-clients" aria-labelledby="analytics-clients-title">
+        <div class="analytics-section-heading">
+            <h2 id="analytics-clients-title">Анализ по клиентам</h2>
+            <span class="analytics-note">Клиентов: {{ analysis_data|length }}</span>
+        </div>
+        <form method="GET" class="analytics-panel analytics-filters">
+            <div>
+                <label for="client_id" class="form-label small text-muted mb-1">Клиент</label>
+                <select name="client_id" id="client_id" class="form-select">
+                    <option value="">Все клиенты</option>
+                    {% for client in all_clients %}
+                        <option value="{{ client.id }}" {% if selected_client == client.id %}selected{% endif %}>
+                            {% if client.company_name %}{{ client.company_name }}{% else %}{{ client.first_name }} {{ client.last_name }}{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="start_date" class="form-label small text-muted mb-1">Период с</label>
+                <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date }}">
+            </div>
+            <div>
+                <label for="end_date" class="form-label small text-muted mb-1">Период по</label>
+                <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date }}">
+            </div>
+            <div>
+                <label for="sort_by" class="form-label small text-muted mb-1">Сортировка</label>
+                <select name="sort_by" id="sort_by" class="form-select">
+                    <option value="profit_desc" {% if sort_by == 'profit_desc' %}selected{% endif %}>По прибыли (убывание)</option>
+                    <option value="revenue_desc" {% if sort_by == 'revenue_desc' %}selected{% endif %}>По выручке (убывание)</option>
+                    <option value="count_desc" {% if sort_by == 'count_desc' %}selected{% endif %}>По кол-ву продаж</option>
+                    <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>По имени (А-Я)</option>
+                </select>
+            </div>
+            <div class="analytics-filter-actions">
+                <button type="submit" class="btn btn-primary">Применить</button>
+                <a href="{% url 'home' %}" class="btn btn-outline-secondary">Сбросить</a>
+            </div>
+        </form>
 
-                    <!-- Период ПО -->
-                    <div class="col-md-2">
-                        <label for="end_date" class="form-label small text-muted mb-1">Период по</label>
-                        <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date }}">
-                    </div>
-
-                    <!-- Сортировка -->
-                    <div class="col-md-3">
-                        <label for="sort_by" class="form-label small text-muted mb-1">Сортировка</label>
-                        <select name="sort_by" id="sort_by" class="form-select">
-                            <option value="profit_desc" {% if sort_by == 'profit_desc' %}selected{% endif %}>По прибыли (убывание)</option>
-                            <option value="revenue_desc" {% if sort_by == 'revenue_desc' %}selected{% endif %}>По выручке (убывание)</option>
-                            <option value="count_desc" {% if sort_by == 'count_desc' %}selected{% endif %}>По кол-ву продаж</option>
-                            <option value="name_asc" {% if sort_by == 'name_asc' %}selected{% endif %}>По имени (А-Я)</option>
-                        </select>
-                    </div>
-
-                    <!-- Кнопки -->
-                    <div class="col-md-2 d-flex gap-2">
-                        <button type="submit" class="btn btn-primary w-100">Применить</button>
-                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Сброс</a>
-                    </div>
-
-                </div>
-            </form>
-            {% for data in analysis_data %}
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="heading{{ forloop.counter }}">
-                        <button class="accordion-button collapsed d-flex justify-content-between" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}">
-                            <div class="row w-100 me-3 align-items-center">
-                                <div class="col-3 fw-bold text-primary">
-                                    {% if data.customer.company_name %}{{ data.customer.company_name }}{% else %}{{ data.customer.first_name }} {{ data.customer.last_name }}{% endif %}
-                                </div>
-                                <div class="col-2 text-muted small">
-                                    Последняя: {{ data.latest_date|date:"d.m.Y" }}
-                                </div>
-                                <div class="col-2">
-                                    {{ data.sales_count }} покупок
-                                </div>
-                                <div class="col-2 fw-bold">
-                                    {{ data.total_revenue|floatformat:"0" }} ₽
-                                </div>
-                                <div class="col-3 text-end fw-bold text-success">
-                                    Прибыль: {{ data.total_profit|floatformat:"0" }} ₽
-                                </div>
-                            </div>
-                        </button>
-                    </h2>
-
-                    <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#clientsAccordion">
-                        <div class="accordion-body bg-light">
-                            {% for sale in data.sales_list %}
-                                <div class="card mb-3 border-0 shadow-sm">
-                                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
-                                        <a href="{% url 'sale_detail' sale.pk %}?return_to={{ request.get_full_path|urlencode:"" }}" class="text-decoration-none fw-bold">Продажа №{{ sale.number }}</a>
-                                        <span class="text-muted small">{{ sale.date|date:"d.m.Y H:i" }}</span>
-                                    </div>
-                                    <div class="card-body p-0">
-                                        <div class="table-scroll" tabindex="0" aria-label="Таблица">
-                                        <table class="table table-sm table-borderless mb-0 align-middle">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th class="ps-3">Товар</th>
-                                                    <th>Кол-во</th>
-                                                    <th>Цена</th>
-                                                    <th>Прибыль</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for item in sale.items.all %}
+        <div class="analytics-panel analytics-client-panel">
+            <div class="analytics-client-grid analytics-client-head" aria-hidden="true">
+                <span>Клиент</span><span>Последний заказ</span><span>Покупок</span><span>Выручка</span><span>Прибыль</span>
+            </div>
+            <div class="accordion analytics-client-list" id="clientsAccordion">
+                {% for data in analysis_data %}
+                    <div class="accordion-item">
+                        <h3 class="accordion-header" id="heading{{ forloop.counter }}">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}" aria-expanded="false" aria-controls="collapse{{ forloop.counter }}">
+                                <span class="analytics-client-grid">
+                                    <strong class="analytics-client-name">{% if data.customer.company_name %}{{ data.customer.company_name }}{% else %}{{ data.customer.first_name }} {{ data.customer.last_name }}{% endif %}</strong>
+                                    <span class="analytics-note"><span class="visually-hidden">Последний заказ: </span>{{ data.latest_date|date:"d.m.Y" }}</span>
+                                    <span><span class="visually-hidden">Покупок: </span>{{ data.sales_count }}<span class="analytics-mobile-label" aria-hidden="true"> пок.</span></span>
+                                    <strong><span class="visually-hidden">Выручка: </span>{{ data.total_revenue|floatformat:"0g" }} ₽</strong>
+                                    <strong class="analytics-profit-value"><span class="visually-hidden">Прибыль: </span>{{ data.total_profit|floatformat:"0g" }} ₽
+                                        {% if data.margin != None %}<span class="analytics-margin"><span class="visually-hidden">Маржа: </span>{{ data.margin|floatformat:1 }}%</span>{% endif %}
+                                    </strong>
+                                </span>
+                            </button>
+                        </h3>
+                        <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#clientsAccordion">
+                            <div class="accordion-body analytics-client-details">
+                                {% for sale in data.sales_list %}
+                                    <div class="card mb-3 border-0 shadow-sm">
+                                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+                                            <a href="{% url 'sale_detail' sale.pk %}?return_to={{ request.get_full_path|urlencode:"" }}" class="text-decoration-none fw-bold">Продажа №{{ sale.number }}</a>
+                                            <span class="text-muted small">{{ sale.date|date:"d.m.Y H:i" }}</span>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <div class="table-scroll" tabindex="0" aria-label="Таблица">
+                                            <table class="table table-sm table-borderless mb-0 align-middle">
+                                                <thead class="table-light">
                                                     <tr>
-                                                        <td class="ps-3">{{ item.product.name }}</td>
-                                                        <td>{{ item.quantity }}</td>
-                                                        <td>{{ item.sale_price|floatformat:"0" }} ₽</td>
-                                                        <td class="text-success">{{ item.profit|floatformat:"0" }} ₽</td>
+                                                        <th class="ps-3">Товар</th>
+                                                        <th>Кол-во</th>
+                                                        <th>Цена</th>
+                                                        <th>Прибыль</th>
                                                     </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                            <tfoot class="border-top">
-                                                <tr>
-                                                    <td colspan="4" class="text-end pe-3 py-2">
-                                                        <small class="text-muted me-2">Доставка: -{{ sale.delivery_expense|floatformat:"0"|default:"0" }} ₽</small>
-                                                        <strong class="me-3">Чек: {{ sale.calculated_total|floatformat:"0" }} ₽</strong>
-                                                        <strong class="text-success">Прибыль: {{ sale.net_profit|floatformat:"0" }} ₽</strong>
-                                                    </td>
-                                                </tr>
-                                            </tfoot>
-                                        </table>
+                                                </thead>
+                                                <tbody>
+                                                    {% for item in sale.items.all %}
+                                                        <tr>
+                                                            <td class="ps-3">{{ item.product.name }}</td>
+                                                            <td>{{ item.quantity }}</td>
+                                                            <td>{{ item.sale_price|floatformat:"0" }} ₽</td>
+                                                            <td class="text-success">{{ item.profit|floatformat:"0" }} ₽</td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                                <tfoot class="border-top">
+                                                    <tr>
+                                                        <td colspan="4" class="text-end pe-3 py-2">
+                                                            <small class="text-muted me-2">Доставка: -{{ sale.delivery_expense|floatformat:"0"|default:"0" }} ₽</small>
+                                                            <strong class="me-3">Чек: {{ sale.calculated_total|floatformat:"0" }} ₽</strong>
+                                                            <strong class="text-success">Прибыль: {{ sale.net_profit|floatformat:"0" }} ₽</strong>
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            {% endfor %}
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
-                </div>
-            {% empty %}
-                <div class="alert alert-info">Нет проведенных продаж с указанными клиентами</div>
-            {% endfor %}
-        </div>
-    </div>
-    <!-- РЯД: ABC-анализ -->
-    <div class="container-fluid mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-graph-up-arrow text-primary"></i> ABC-анализ ассортимента</h2>
-            <h4 class="text-muted">Общая выручка: <span class="text-success fw-bold">{{ total_revenue|floatformat:2|intcomma }} ₽</span></h4>
-        </div>
-
-        <div class="card shadow-sm">
-            <div class="card-body p-0">
-                <div class="table-scroll" tabindex="0" aria-label="Таблица">
-                <table class="table table-hover mb-0 align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Класс</th>
-                            <th>Артикул</th>
-                            <th>Товар</th>
-                            <th>Выручка (₽)</th>
-                            <th>Доля (%)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in abc_data %}
-                        <tr>
-                            <td>
-                                {% if item.abc_class == 'A' %}
-                                    <span class="badge bg-success fs-6">Класс A</span>
-                                {% elif item.abc_class == 'B' %}
-                                    <span class="badge bg-warning text-dark fs-6">Класс B</span>
-                                {% else %}
-                                    <span class="badge bg-secondary fs-6">Класс C</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-muted">{{ item.sku|default:"-" }}</td>
-                            <td class="fw-bold">{{ item.name }}</td>
-                            <td>{{ item.revenue|floatformat:2|intcomma }}</td>
-                            <td>{{ item.share|floatformat:2 }}%</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center text-muted py-4">
-                                Нет данных о продажах. Проведите хотя бы один документ продажи.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                </div>
+                {% empty %}
+                    <div class="analytics-note analytics-empty">Нет проведенных продаж с указанными клиентами</div>
+                {% endfor %}
             </div>
         </div>
-
-        <div class="row mt-4 text-muted small">
-            <div class="col-md-4"><i class="bi bi-circle-fill text-success"></i> <b>Класс А:</b> 80% выручки. Обеспечьте постоянное наличие на складе.</div>
-            <div class="col-md-4"><i class="bi bi-circle-fill text-warning"></i> <b>Класс В:</b> 15% выручки. Поддерживайте умеренный запас.</div>
-            <div class="col-md-4"><i class="bi bi-circle-fill text-secondary"></i> <b>Класс С:</b> 5% выручки. Кандидаты на вывод из ассортимента.</div>
-        </div>
-    </div>
+    </section>
 </div>
 
 <!-- Модальное окно закончившихся товаров -->
@@ -339,4 +197,5 @@
     </div>
   </div>
 </div>
+{% endlanguage %}
 {% endblock %}
